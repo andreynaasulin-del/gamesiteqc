@@ -6,11 +6,101 @@
   font-display: swap;
 }
 :root {
-  --bg: #0b0d15;
-  --surface: #13131e;
-  --raised: #212233;
+  /* Not black. A page-wide black backdrop flattens every card on it and
+     makes the seam between two sections read as a cut. The base is deep
+     graphite; the page then walks through the tints below. */
+  --bg: #18181a;
+  --surface: #1c1c1e;
+  --raised: #272729;
+  /* ------------------------------------------------------------------
+     SECTION TINTS. Twelve stops applied as ONE continuous gradient (see
+     atmosphere.css, which owns the layer they are painted on) rather than
+     per-section fills. Two consequences, both deliberate:
+       · there is no seam to fade, because there is no edge — the colour
+         is already mid-transition everywhere you stop scrolling;
+       · a section can fade its content in without its background
+         flickering, which is what a per-section fill did.
+     Each section then adds its own glow on top (`--glow`), so the block
+     still has a colour of its own.
+
+     Three failed attempts are baked into these numbers, and each failed
+     for its own reason:
+       · Indigo/violet (hue ~260) — the house style of every AI product
+         shipped since 2023. Dates the page on sight, and it has nothing
+         to do with a brand built on peach-to-coral.
+       · Desaturated orange-brown (hue ~35) — at 10-18% lightness a
+         yellow-leaning hue has no chroma left to read as a colour, so it
+         lands as mud. "Warm grey" and "dirty grey" are the same swatch.
+       · Deep ember (hue ~355, real chroma) — it read as expensive, but a
+         page-wide red wash is a mood, and the mood was loud. Every card
+         on top of it picked up a tint it never asked for.
+     The lesson in all three is the same, and it is about AMOUNT, not hue:
+     they each tried to give the page a colour. Grey stops being dirty when
+     it stops pretending to be a colour — so the ramp below moves R and B
+     by 4-8 points against a fixed G and never more. That is enough for two
+     adjacent screens to feel like different rooms, and far too little to
+     name. The only saturated thing on screen is still the brand's own
+     coral, which is exactly how an accent earns attention.
+     ------------------------------------------------------------------ */
+  /* Twelve stops. The lightness ramp is unchanged in principle — dark at
+     the hero so the game cards pop, airiest through the middle, settling
+     again at the footer — but every stop now also has a TEMPERATURE, and
+     that is the part that makes the page feel like somewhere rather than
+     like a dark theme.
+
+     The construction is mechanical on purpose, because "warm grey" done by
+     eye is how you get mud. Green carries ~71% of perceived luminance, so
+     G alone drives the lightness ramp and never moves for temperature:
+       warm (rose)   R = G+10, B = G+3
+       cool (steel)  R = G-5,  B = G+11
+     Swinging R and B in opposite directions costs ~0.5 of a level of
+     luminance, so a warm stop and a cool stop at the same G read as the
+     same brightness — the page changes colour without changing depth.
+
+     Warm leans ROSE (B barely drops below G), not amber. That distinction
+     is the difference between this and the orange-brown attempt that got
+     thrown out: at 12% lightness a yellow-leaning hue has no chroma left
+     to read as colour and lands as dirt, while rose keeps a red channel
+     with somewhere to go. Cool leans STEEL (hue ~205), not indigo — see
+     atmosphere.css for why violet is not an option here.
+
+     The oscillation is warm → cool → warm → cool, mapped to what each
+     block is doing: warm where the page is being human (hero, gallery,
+     CTA, community, footer), cool where it is being technical or asking
+     you to think (capabilities, workspace, workflow, pricing, FAQ). */
+  /* The hero's two stops are the only ones held near-neutral (R = G+2),
+     and not for lack of nerve: the aurora and the bridge wash already put
+     two warm layers over this exact range, and warmth is additive. At
+     R = G+5 the whole first screen went brown. The hero is warm — it is
+     just not the ramp's job to say so here. */
+  /* One stop per screen, because since the screen-fit pass every desktop
+     block IS exactly one screen (see screen-fit.css). Twelve screens,
+     twelve stops, and atmosphere.css pins stop N to the CENTRE of screen
+     N — so a boundary is never where a stop sits, it is always the
+     steepest part of the transition between two of them. A stop landing
+     on a boundary is what makes a gradient show its seams: the colour is
+     continuous there but its slope is not, and the eye reads a slope
+     break as a line.
+
+     The R/B swing used to be 4-8 points, which was honest about not
+     wanting a "colour" but too timid to survive the grain layer and an
+     8-bit channel — two adjacent screens differed by about as much as a
+     JPEG artefact. At ±10 warm / ±11 cool the rooms are distinguishable
+     when you scroll past them and still unnameable when you stop. */
+  --t-00: #171314; /* hero            G19 warm, held back (aurora on top) */
+  --t-01: #131823; /* capabilities 01 G24 steel */
+  --t-02: #191d27; /* capabilities 02 G29 steel */
+  --t-03: #1f222b; /* capabilities 03 G34 steel, lifting */
+  --t-04: #202530; /* workspace       G37 steel, the coolest daylight */
+  --t-05: #302629; /* explore         G38 rose, the warmest and airiest */
+  --t-06: #1f242f; /* workflow        G36 steel */
+  --t-07: #2e2226; /* CTA             G34 rose, deepest warm */
+  --t-08: #281e21; /* community       G30 rose */
+  --t-09: #151a25; /* pricing         G26 steel */
+  --t-10: #121620; /* FAQ             G22 steel, settling */
+  --t-11: #1c1215; /* footer          G18 rose, back to the hero's key */
   --text: #fff;
-  --muted: #b6b6c6;
+  --muted: #b6b5b6;
   --peach: #ff9569;
   --coral: #dd344d;
   --accent: linear-gradient(110deg, #ff9569, #ff9569 25%, #ed6b64 80%, #dd344d);
@@ -20,16 +110,27 @@
   --fill-hover: rgba(255, 255, 255, 0.09);
   --radius: 24px;
   --max: 1312px;
+  /* The header is fixed and transparent, so nothing reserves space for it:
+     the hero pads itself by this, and anchor jumps clear it by this. One
+     number, two places that must never disagree. */
+  --header-h: 64px;
   /* Motion. `--ease-out-quint` for anything entering the screen — it front-
      loads the distance so the element reads as "already arriving". `--ease-
      in-out-quart` for things already on screen moving A→B. No ease-in token:
      the first 80ms of an ease-in look like nothing happened. */
   --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Steeper than quint: ~80% of the distance is covered in the first third
+     of the duration. Motion that starts fast and lands slowly reads as
+     weight arriving; motion that eases in reads as a loading state. Used
+     by the hero deck, which has to feel like cards being dealt. */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
   color-scheme: dark;
   font-family: "League Spartan", sans-serif;
   color: var(--text);
-  background: var(--bg);
+  /* The canvas behind the ramp: matches the first stop, so an overscroll
+     bounce at the top of the page reveals more of the same colour. */
+  background: var(--t-00);
 }
 * {
   box-sizing: border-box;
@@ -38,6 +139,11 @@ html {
   scroll-behavior: smooth;
   scroll-padding-top: 90px;
 }
+/* <body> deliberately has NO background. The ramp lives on `body::before`
+   in atmosphere.css, together with the washes and the grain that have to
+   sit on top of it — a negative-z-index layer paints above the ROOT's
+   background but below a background painted on <body> itself, so leaving a
+   fill here would bury both of them. */
 body {
   margin: 0;
   font-size: 18px;
@@ -200,11 +306,6 @@ p {
     border-color: var(--line-hover);
   }
 }
-.light {
-  --fill: rgba(19, 19, 30, 0.04);
-  --fill-hover: rgba(19, 19, 30, 0.09);
-  --line-hover: rgba(19, 19, 30, 0.32);
-}
 .button.small {
   font-size: 15px;
   min-height: 40px;
@@ -219,11 +320,41 @@ p {
     transform: translate(2px, -1px);
   }
 }
+/* The spark marks the two buttons that start something (the hero CTA and
+   the closing CTA) and nothing else on the page, so it is allowed to
+   breathe. A twinkle, not a pulse: opacity and a 4% scale, three seconds
+   apart, held flat for most of the cycle. The test for an idle animation
+   on a CTA is whether you notice it while reading the sentence next to
+   the button — this one you do not, you notice it in peripheral vision,
+   which is the entire job. Transform-only, so it never costs a layout. */
 .spark {
   width: 18px;
   height: 18px;
   background: currentColor;
   mask: url("./sparkles.svg") center/contain no-repeat;
+  animation: spark-twinkle 3.2s var(--ease-in-out-quart) infinite;
+}
+/* `scale`/`rotate` as independent properties, not inside `transform`. An
+   animation wins the cascade over a transition on the same property, so
+   keyframing `transform` here would silently kill the 1px hover nudge on
+   every sparked button. These compose with it instead. */
+@keyframes spark-twinkle {
+  0%,
+  70%,
+  100% {
+    opacity: 1;
+    scale: 1;
+    rotate: 0deg;
+  }
+  82% {
+    opacity: 0.72;
+    scale: 1.14;
+    rotate: 9deg;
+  }
+}
+/* A button in the middle of being pressed should not also be twinkling. */
+.button:active .spark {
+  animation: none;
 }
 /* Inline SVG icons (src/landing/icons.js). Sized from the parent's font so
    the same markup works at 15px in a small pill and 18px in a full one. */
@@ -318,13 +449,28 @@ p {
   border-radius: 50%;
   background: var(--peach);
 }
-.light {
-  background: #fff;
-  color: var(--surface);
-  --text: var(--surface);
-  --muted: #656572;
-  --line: rgba(19, 19, 30, 0.13);
-  color-scheme: light;
+/* ------------------------------------------------------------------
+   SECTIONS DO NOT PAINT LIGHT. This is the whole rule, and it used to be
+   broken right here.
+
+   There was a per-section glow on `main > section::before`: one radial
+   per block, clipped to the block, with a mask fading its top and bottom
+   14% so the radial's own edge would not show. The mask fixed the edge it
+   was aimed at and created a worse one, because it forces the light to
+   ZERO at every section boundary. Twelve blocks meeting edge-to-edge then
+   means twelve dark valleys, each with a slope-break at the 86% knee that
+   the eye resolves as a hard horizontal line. That is the band: not a
+   colour problem, a clipping problem wearing a mask.
+
+   Light now lives entirely on the document-tall layer in atmosphere.css,
+   where there are no internal edges to clip against and every block's
+   light keeps bleeding ~16svh into its neighbours. All that survives here
+   is the positioning context the content itself needs.
+   ------------------------------------------------------------------ */
+main > section,
+.footer {
+  position: relative;
+  isolation: isolate;
 }
 .sr-only {
   position: absolute;
@@ -348,10 +494,6 @@ p {
 }
 .skip-link:focus {
   top: 12px;
-}
-.grid-bg {
-  background-image: radial-gradient(circle, #ffffff12 0.7px, transparent 0.8px);
-  background-size: 20px 20px;
 }
 .frame {
   border: 1px solid var(--line);
@@ -379,16 +521,26 @@ p {
   opacity: 1;
   transform: translate3d(0, 0, 0);
 }
+/* A block-level arrival is mostly a dissolve, not a slide. 900ms of
+   opacity against 18px of travel: long enough that the section's glow
+   blooms in rather than snapping on, short enough that a fast scroller
+   never catches a half-lit block. The translate is deliberately smaller
+   than the old 24px — at 24px the section pushed its own hairline border
+   past the one above it and read as a jolt at the seam. */
 .section-fade {
   opacity: 0;
-  transform: translate3d(0, 24px, 0);
+  transform: translate3d(0, 18px, 0);
   transition:
-    opacity 700ms var(--ease-out-quint),
-    transform 700ms var(--ease-out-quint);
+    opacity 900ms var(--ease-out-quint),
+    transform 900ms var(--ease-out-quint);
+  will-change: opacity, transform;
 }
+/* `will-change: auto` on arrival: a page holding ten promoted layers costs
+   memory for motion that will never run again. */
 .section-fade-in {
   opacity: 1;
   transform: translate3d(0, 0, 0);
+  will-change: auto;
 }
 /* ------------------------------------------------------------------
    CELLS. One grammar for every card on the page: hairline border, faint
@@ -435,17 +587,6 @@ p {
   );
   background-size: 250% 100%;
   animation: skel-sweep 1.6s var(--ease-in-out-quart) infinite;
-}
-.light .skel {
-  background: #eaeaf0;
-}
-.light .skel::after {
-  background-image: linear-gradient(
-    100deg,
-    transparent 20%,
-    rgba(255, 255, 255, 0.7) 50%,
-    transparent 80%
-  );
 }
 .skel > img,
 .skel > video {

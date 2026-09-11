@@ -14,6 +14,7 @@ const NAMES = [
   "log-out",
   "gamepad",
   "expand",
+  "check",
 ];
 
 test("every icon renders a decorative inline SVG on the 24-unit grid", () => {

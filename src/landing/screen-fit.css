@@ -1,0 +1,416 @@
+/* ==========================================================================
+   SCREEN FIT — one block, one screen.
+
+   The page used to be sized in pixels: 100px of section padding, a 610px
+   hero card, a 270px illustration well. On a 1440x900 laptop that means the
+   first screen ends mid-card and every section below it is cut in half by
+   the fold. A block that never resolves inside one screen has no shape —
+   the reader scrolls through fragments and never sees a composition.
+
+   So the vertical rhythm is measured in `svh`, not px. Every top-level
+   block is at least one screen tall and centres its own content; every
+   piece of vertical furniture inside it (padding, media height, heading
+   size) is a clamp between a floor, a share of the screen, and the original
+   pixel value as the ceiling. On a tall monitor nothing changes — the
+   ceilings are the old numbers. On a short one everything gives at once,
+   proportionally, instead of one element blowing the block past the fold.
+
+   Scoped to >=901px wide AND >=620px tall: on a phone, and on a laptop in a
+   half-height window, stacking normally and letting the block run long is
+   the correct answer — a forced 100svh there strands content off-screen.
+   ========================================================================== */
+
+@media (min-width: 901px) and (min-height: 620px) {
+  :root {
+    /* One number drives the gaps between every block on the page. */
+    --pad-y: clamp(36px, 6.5svh, 92px);
+  }
+
+  /* A section is a screen. Content is optically centred inside it, so a
+     block that happens to be short sits in the middle of the view instead
+     of clinging to the top edge with a hole underneath. */
+  .section {
+    min-height: 100svh;
+    padding-block: var(--pad-y);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  /* Section headings answer to the screen's height as well as its width:
+     48px of uppercase over a 620px screen is a banner, not a heading. */
+  h2 {
+    font-size: clamp(32px, min(3.6vw, 6.4svh), 48px);
+  }
+  /* Fixed header: an anchor jump must not land under it. */
+  html {
+    scroll-padding-top: calc(var(--header-h) + 16px);
+  }
+
+  /* ---- Hero ---------------------------------------------------------- */
+  /* The showcase takes whatever the copy leaves. No magic number: the
+     cards are a flex child with `min-height:0`, so they absorb the
+     remainder of the screen and derive their width from their own aspect
+     ratio. Resize the window and the composition re-solves itself. */
+  .hero {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding:
+      calc(var(--header-h) + clamp(20px, 3.6svh, 40px)) 0
+      clamp(14px, 2.4svh, 34px);
+  }
+  /* Small, and capped by the screen's height as well as its width. The
+     ticker is one line, so every pixel of type here is a pixel off the
+     cards — and the cards are what the screen is for. */
+  .hero h1 {
+    font-size: clamp(24px, min(2.9vw, 4.8svh), 38px);
+  }
+  .hero-actions {
+    margin-top: clamp(12px, 2.4svh, 26px);
+  }
+  /* `width: 100%` is not redundant next to `margin-inline: auto`: an auto
+     cross-axis margin on a flex item cancels the stretch and sizes the box
+     to its content, and this box's only in-flow content is a 280px meta
+     line. Without it the whole showcase collapses to 287px. */
+  .hero-showcase {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    margin: clamp(12px, 2.4svh, 33px) auto 0;
+  }
+  /* .hero-deck is the flex child that absorbs the screen now, and it is a
+     column flex container itself so .hero-cards can inherit that height by
+     flexing rather than by `height: 100%` — a percentage height resolved
+     against a flex-sized parent is auto, and auto against three absolutely
+     positioned cards is zero. */
+  .hero-deck {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .hero-cards {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+  }
+  /* The ceiling goes from 66vw/944px to 82vw/1180px. Everything above was
+     bookkeeping to get here: the centre card is the product demo, it is
+     playable, and at 527×336 it was a thumbnail. */
+  .hero-card {
+    height: 100%;
+    width: auto;
+    aspect-ratio: 944 / 602;
+    max-width: min(82vw, 1180px);
+  }
+  .hero-meta {
+    flex: 0 0 auto;
+  }
+
+  /* ---- Capabilities: the heading band, then three full screens -------- */
+  /* The band is not a screen of its own — a two-line title alone on 800px
+     of graphite is a pause nobody asked for. It is a fixed slice off the
+     top of the FIRST feature's screen, and the first feature gives that
+     slice back out of its own height, so heading + slide one still resolve
+     together in a single view. */
+  .capabilities {
+    --cap-band: clamp(140px, 23svh, 210px);
+  }
+  .capabilities > .section-heading {
+    height: var(--cap-band);
+    padding-top: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding-bottom: clamp(10px, 2svh, 24px);
+  }
+  .feature {
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    padding-block: clamp(28px, 5svh, 70px);
+  }
+  .feature:first-child {
+    min-height: calc(100svh - var(--cap-band));
+  }
+  .feature:first-child .feature-visual {
+    max-height: calc(76svh - var(--cap-band) * 0.8);
+  }
+  .feature-copy h3 {
+    font-size: clamp(28px, min(3vw, 5.4svh), 40px);
+    margin: clamp(8px, 1.6svh, 16px) 0 clamp(12px, 2svh, 20px);
+  }
+  .feature-copy p {
+    margin-bottom: clamp(14px, 2.4svh, 23px);
+  }
+  .feature-visual {
+    max-height: 76svh;
+    margin-inline: auto;
+  }
+  .feature-visual.visual-project {
+    padding: clamp(18px, 3svh, 35px);
+    gap: clamp(12px, 2.2svh, 24px);
+  }
+  .visual-team {
+    padding: clamp(18px, 3svh, 35px);
+  }
+  .team-label {
+    margin-bottom: clamp(12px, 2.6svh, 28px);
+  }
+  .team-prompt {
+    margin-top: clamp(18px, 4.6svh, 55px);
+  }
+
+  /* ---- Workspace ------------------------------------------------------ */
+  .workspace {
+    padding-top: var(--pad-y);
+  }
+  .workspace-grid {
+    margin-top: clamp(24px, 4.6svh, 64px);
+  }
+  .integration-art,
+  .app-art {
+    height: clamp(172px, 25svh, 270px);
+    margin-bottom: clamp(10px, 2svh, 20px);
+  }
+  .workspace-card {
+    padding: clamp(20px, 3.4svh, 36px) 26px;
+  }
+  .workspace-card p {
+    margin-bottom: clamp(14px, 2.6svh, 25px);
+  }
+
+  /* ---- Explore gallery ------------------------------------------------ */
+  .explore {
+    padding-block: var(--pad-y);
+  }
+  .gallery {
+    margin-top: clamp(22px, 4.2svh, 65px);
+  }
+  /* The frame gives up its 1312:786 ratio rather than its width. Capping
+     the height while the ratio is live transfers the cap back to the
+     inline axis — the frame shrinks to 790px and strands 260px of empty
+     graphite down each side. So the ratio goes, the width stays, and the
+     screenshot crops (object-fit: cover) into a letterbox that widens on a
+     short screen and relaxes back to the original proportion on a tall
+     one. A cropped game still reads as a game; a postage stamp does not. */
+  .gallery-viewport {
+    aspect-ratio: auto;
+    height: min(62svh, 786px);
+  }
+  .gallery-info {
+    bottom: clamp(34px, 6svh, 64px);
+  }
+  .gallery-info h3 {
+    font-size: clamp(24px, 4.4svh, 38px);
+  }
+  .gallery-status {
+    margin-top: clamp(10px, 2svh, 18px);
+  }
+
+  /* ---- Three steps ---------------------------------------------------- */
+  .steps-grid {
+    margin: clamp(24px, 4.4svh, 64px) 0 clamp(20px, 3.6svh, 50px);
+  }
+  /* Both of these keep a fixed ratio, so a height cap transfers to their
+     width and they shrink off their own left edge. They stay centred in
+     the cell instead — a square illustration reading a little smaller is
+     fine, one hanging off-axis is not. */
+  .step-art {
+    max-height: 42svh;
+    margin-inline: auto;
+  }
+  .step h3 {
+    font-size: clamp(19px, 3svh, 24px);
+    margin: clamp(12px, 2.4svh, 27px) 0 clamp(7px, 1.4svh, 12px);
+  }
+  .step > p {
+    font-size: clamp(14px, 2.1svh, 17px);
+  }
+  .mini-game > img {
+    height: clamp(120px, 22svh, 230px);
+  }
+
+  /* ---- Closing CTA ---------------------------------------------------- */
+  .cta-section {
+    padding-block: var(--pad-y);
+  }
+  .cta-panel {
+    padding: clamp(44px, 9svh, 90px) 24px;
+  }
+  .cta-panel .eyebrow {
+    margin-bottom: clamp(12px, 2.4svh, 23px);
+  }
+  .cta-panel > p:not(.eyebrow) {
+    margin: clamp(12px, 2.2svh, 22px) auto clamp(18px, 3.2svh, 32px);
+  }
+
+  /* ---- Community ------------------------------------------------------ */
+  .community-cards {
+    margin-top: clamp(24px, 4.6svh, 54px);
+  }
+  .community header > p:last-child {
+    margin-top: clamp(12px, 2.4svh, 24px);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   PRICING ON A SHORT LAPTOP.
+   Pricing is the one block whose height is content, not styling: three cards
+   × six model rows is a comparison table, and shrinking type to make it fit
+   would destroy the only thing the block exists to do. landing.css already
+   has a <=900px tier; this is the second one, and it buys its ~220px by
+   removing duplication rather than by squeezing:
+     · the heading paragraph says what the legend beside it already says —
+       "one pool, refills monthly, Pro opens the rest". One of the two goes.
+     · the credit well's fact line repeats the same legend a third time,
+       once per card. All three go.
+   What survives is what differs between the plans, which is the whole point.
+   -------------------------------------------------------------------------- */
+@media (min-width: 1001px) and (max-height: 880px) {
+  .pricing.section {
+    padding-block: 36px 30px;
+  }
+  .pricing-heading h2 {
+    font-size: 32px;
+    margin-top: 6px;
+  }
+  .pricing-heading > div > p:last-child,
+  .plan-credits__facts,
+  .pricing-legend span {
+    display: none;
+  }
+  /* The legend loses its second line too: "One credit pool" carries the
+     fact on its own, and "Code, visuals, 3D and sound share it" is the
+     same sentence with more words. */
+  .pricing-legend li {
+    padding: 4px 11px 3px 7px;
+    grid-template-columns: 26px 1fr;
+  }
+  .pricing-legend .i {
+    width: 26px;
+    height: 26px;
+    padding: 6px;
+  }
+  .plan-grid {
+    margin-top: 14px;
+  }
+  .plan-card {
+    padding: 16px 18px 12px;
+  }
+  .plan-pitch {
+    margin-top: 6px;
+  }
+  .plan-credits {
+    margin-top: 10px;
+    padding: 9px 13px 8px;
+  }
+  .plan-credits__figure strong {
+    font-size: 24px;
+  }
+  .plan-price {
+    margin-top: 10px;
+  }
+  .plan-price strong {
+    font-size: 28px;
+  }
+  .plan-action,
+  .plan-models {
+    margin-top: 7px;
+  }
+  .plan-savings {
+    min-height: 24px;
+    margin-top: 5px;
+  }
+  .plan-model {
+    min-height: 24px;
+  }
+  .plan-models__head {
+    padding-bottom: 6px;
+  }
+  .plan-perks {
+    padding-top: 7px;
+    font-size: 11.5px;
+  }
+  .plan-foot {
+    margin-top: 10px;
+    padding-top: 8px;
+  }
+}
+
+/* NARROW DESKTOP, 1001–1360px. "MONTHLY PRO" plus two badges is ~363px of
+   content in a 344px card head, so the Pro card's badges wrap to a second
+   line — and because only that one card wraps, its price, its CTA and its
+   ladder all sit 26px below the other two. Three cards that no longer
+   share a baseline read as a bug, not a layout. The secondary badge is
+   what goes: "Built for shipping" and "Lowest per credit" are said better
+   by the pitch line and the savings pill directly underneath them. The
+   discount badge stays — that one is the offer. */
+@media (min-width: 1001px) and (max-width: 1360px) {
+  .plan-badge:not(.plan-badge--discount) {
+    display: none;
+  }
+  .plan-card__head {
+    flex-wrap: nowrap;
+  }
+}
+
+/* The last 50px, on a 768px-tall window. Same rule as the tier above: buy
+   height by deleting repetition, never information. The ladder's subtitle
+   ("Full line-up, no ceilings") restates the ✓/✗ column underneath it
+   three times over; the heading above it does not. */
+@media (min-width: 1001px) and (max-height: 800px) {
+  .pricing.section {
+    padding-block: 30px 24px;
+  }
+  .plan-models__head p {
+    display: none;
+  }
+  .plan-models__head {
+    padding-bottom: 5px;
+  }
+  .plan-models__mark {
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+  }
+  .plan-models__mark .i {
+    width: 13px;
+    height: 13px;
+  }
+  .plan-model {
+    min-height: 22px;
+  }
+  /* Everything else here is air, not content: one or two pixels per row,
+     taken everywhere at once so no single element looks squeezed. The CTA
+     keeps its full height — a cramped button is a lost conversion. */
+  .pricing-legend li {
+    padding: 3px 10px 2px 6px;
+    grid-template-columns: 24px 1fr;
+  }
+  .pricing-legend .i {
+    width: 24px;
+    height: 24px;
+    padding: 5px;
+  }
+  .plan-card {
+    padding: 14px 16px 10px;
+  }
+  .plan-credits {
+    padding: 7px 12px 6px;
+  }
+  .plan-credits__figure strong {
+    font-size: 22px;
+  }
+  .plan-savings {
+    min-height: 20px;
+    padding: 3px 8px;
+    font-size: 12px;
+  }
+  .plan-perks {
+    padding-top: 5px;
+  }
+}

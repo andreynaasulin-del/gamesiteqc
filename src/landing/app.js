@@ -1,6 +1,18 @@
 import { GameCard } from "./hero-game.js";
 import { games, gameAsset } from "./games.js";
 import { icon, hydrateIcons } from "./icons.js";
+import {
+  plans,
+  anchorPrice,
+  formatCredits,
+  yearlySavings,
+  monthlyEquivalent,
+  MODEL_CATALOG,
+  UNLOCK_LABEL,
+  ACCESS_PANEL,
+  PLAN_DISCOUNT,
+  PLANS_URL,
+} from "./plans.js";
 
 // Content is sourced from Quadcode's public showcase, not generated customer claims.
 const asset = (name) => `landing/${name}`;
@@ -119,12 +131,106 @@ const tags = (items) =>
 
 function featureVisual(type) {
   if (type === "project") {
-    return `<div class="project-window"><div class="window-bar"><span class="window-dots" aria-hidden="true">●●●</span><span>quadcode.ai · your workspace</span><span>${icon("expand")}</span></div><img src="${asset("quadcode-ide.webp")}" alt="Real Quadcode desktop interface with chat, project files and preview area" width="1280" height="720" loading="lazy"></div><div class="project-prompt"><span>Example prompt</span><p>Build a 3D adventure. Make it my own.</p><footer><span>Code · Visuals · Sound</span>${icon("arrow-up", "i send-symbol")}</footer></div>`;
+    return `<div class="project-window"><div class="window-bar"><span class="window-dots" aria-hidden="true">●●●</span><span>quadcode.ai · your workspace</span><span>${icon("expand")}</span></div><video class="project-window__video" data-feature-video src="${asset("quadcode-ide.mp4")}" poster="${asset("quadcode-ide.webp")}" width="1280" height="720" muted loop playsinline preload="metadata" aria-label="Quadcode desktop interface: a prompt is typed, GPT-6 Astra edits the project files, and the running game appears in the Result tab"></video></div><div class="project-prompt"><span>Example prompt</span><p>Build a 3D adventure. Make it my own.</p><footer><span>Code · Visuals · Sound</span>${icon("arrow-up", "i send-symbol")}</footer></div>`;
   }
   if (type === "team") {
     return `<div class="team-composition"><div class="team-label">One brief. Your own creative team.</div><div class="agent-portraits">${agents.map((agent) => `<div class="portrait"><img src="${asset(agent.image)}" alt="${agent.name}, Quadcode ${agent.role.toLowerCase()} agent" width="200" height="250" loading="lazy"><div class="portrait-caption"><strong>${agent.name}</strong><span>${escapeHtml(agent.role)}</span></div></div>`).join("")}</div><div class="team-prompt">Your game. Everyone on the same page.</div></div>`;
   }
   return `<img src="${asset("goth-room.webp")}" alt="Gothic room built with Quadcode: stained glass, volumetric lighting and candles" width="1280" height="720" loading="lazy"><div class="world-caption"><span class="eyebrow">Built with Quadcode</span><strong>A world worth exploring.</strong><p>Gothic Room · Real-time 3D environment</p></div>`;
+}
+
+// ---- Pricing cards ---------------------------------------------------------
+// Card anatomy, top to bottom, in the order a buyer actually reads:
+//   name → one-line pitch → CREDITS (the thing compared, biggest type, in its
+//   own well) → price with the struck anchor → CTA → "save $X" (yearly only,
+//   computed) → MODEL LADDER (every model family with a state: included,
+//   capped, or locked with the tier that opens it) → short checklist → billing.
+// The CTA sits above the lists on purpose: the button is visible before the
+// reader has committed to scanning six rows of models.
+// The featured tier gets a gradient hairline and a lighter fill, never extra
+// height — a taller middle card knocks the row off its baseline and reads as
+// a layout bug rather than a recommendation.
+// One row of the ladder reads as a table line: ROLE · model · [ceiling] · state.
+//   full    → ✓  name            [1080p]  Included
+//   capped  → ✓  name            [720p]   Up to 720p   (the ceiling IS the state)
+//   locked  → ✕  name (dimmed)            From Pro     (peach outline: a pointer)
+function modelRowMarkup(entry, access) {
+  const locked = access == null;
+  const capped = !locked && access.state === "capped";
+  const limit = !locked && access.limit && !capped ? `<span class="plan-chip plan-chip--limit">${escapeHtml(access.limit)}</span>` : "";
+  const state = locked ? UNLOCK_LABEL : capped ? `Up to ${access.limit}` : "Included";
+  const stateClass = locked ? " plan-chip--locked" : capped ? " plan-chip--capped" : " plan-chip--on";
+  return `<li class="plan-model${locked ? " plan-model--locked" : ""}">
+    ${icon(locked ? "x" : "check", "i plan-model__mark")}
+    <span class="plan-model__role">${escapeHtml(entry.role)}</span>
+    <span class="plan-model__name">${escapeHtml(entry.name)}</span>
+    <span class="plan-model__chips">${limit}<span class="plan-chip${stateClass}">${escapeHtml(state)}</span></span>
+  </li>`;
+}
+
+// Price line. Everything is normalised to a month so the three cards share
+// one unit: a yearly plan shows its per-month figure big and the actual
+// charge small — "$15 / month · $180 billed once" — because "$180" against
+// "$29" is not a comparison anyone can make in their head.
+function priceMarkup(plan) {
+  const perMonth = monthlyEquivalent(plan);
+  const wasPerMonth = anchorPrice(plan.price) / (plan.per === "year" ? 12 : 1);
+  const billed =
+    plan.per === "year"
+      ? `<span class="plan-price__billed">$${plan.price} billed once a year</span>`
+      : `<span class="plan-price__billed">billed monthly</span>`;
+  return `<p class="plan-price">
+    <s aria-label="Regular price">$${wasPerMonth}</s>
+    <strong>$${perMonth}</strong>
+    <span class="plan-price__per">/ month</span>
+    ${billed}
+  </p>`;
+}
+
+function planCardMarkup(plan) {
+  const discount = `${Math.round(PLAN_DISCOUNT * 100)}% off`;
+  const savings = yearlySavings(plan);
+  const lockedCount = MODEL_CATALOG.filter((entry) => plan.models[entry.id] == null).length;
+  const panel = lockedCount ? ACCESS_PANEL.partial : ACCESS_PANEL.full;
+  const tierClass = plan.featured ? " plan-card--featured" : plan.per === "year" ? " plan-card--yearly" : "";
+  return `<article class="plan-card${tierClass}" data-plan="${plan.id}" data-reveal>
+    <header class="plan-card__head">
+      <h3>${escapeHtml(plan.name)}</h3>
+      <span class="plan-badges">
+        <span class="plan-badge plan-badge--discount">${discount}</span>
+        ${plan.badge ? `<span class="plan-badge">${escapeHtml(plan.badge)}</span>` : ""}
+      </span>
+    </header>
+    <p class="plan-pitch">${escapeHtml(plan.pitch)}</p>
+    <div class="plan-credits">
+      <p class="plan-credits__figure">${icon("sparkles", "i plan-credits__icon")}<strong>${formatCredits(plan.credits)}</strong><span>${escapeHtml(plan.unit)}</span></p>
+      <ul class="plan-credits__facts">
+        <li>${icon("check")}Fixed amount · refilled every month · one pool for everything</li>
+      </ul>
+    </div>
+    ${priceMarkup(plan)}
+    <div class="plan-action">
+      <a class="button${plan.featured ? "" : " secondary"} plan-cta" href="${PLANS_URL}">${escapeHtml(plan.cta)} ${icon("arrow-right")}</a>
+      ${
+        savings
+          ? `<p class="plan-savings plan-savings--win">Save <strong>$${savings}</strong> vs 12 × Monthly Pro</p>`
+          : `<p class="plan-savings">${escapeHtml(plan.billing)}</p>`
+      }
+    </div>
+    <section class="plan-models${lockedCount ? "" : " plan-models--full"}" aria-label="Models included in ${escapeHtml(plan.name)}">
+      <header class="plan-models__head">
+        <span class="plan-models__mark">${icon(lockedCount ? "lock" : "lock-open")}</span>
+        <div>
+          <h4>${escapeHtml(panel.title)}</h4>
+          <p>${escapeHtml(panel.note)}</p>
+        </div>
+      </header>
+      <ul>${MODEL_CATALOG.map((entry) => modelRowMarkup(entry, plan.models[entry.id])).join("")}</ul>
+    </section>
+    <ul class="plan-perks">${plan.features
+      .map((feature) => `<li>${escapeHtml(feature)}</li>`)
+      .join("")}</ul>
+  </article>`;
 }
 
 function renderContent() {
@@ -134,6 +240,7 @@ function renderContent() {
         `<article class="feature"><div class="container feature-inner"><div class="feature-copy" data-reveal><span class="feature-number">0${index + 1} / CREATE WITHOUT THE CHAOS</span><h3>${feature.title}</h3><p>${escapeHtml(feature.copy)}</p>${tags(feature.tags)}</div><div class="feature-visual visual-${feature.visual}" data-reveal>${featureVisual(feature.visual)}</div></div></article>`,
     )
     .join("");
+  $("#plan-list").innerHTML = plans.map(planCardMarkup).join("");
   $("#faq-list").innerHTML = faqData
     .map(
       ([question, answer], index) =>
@@ -216,14 +323,21 @@ function gameCardMarkup(game, index, total) {
     <div class="hero-game__poster" data-game-poster>${posterMarkup(game, index)}</div>
     <div class="hero-game__chip"><span>${pad(index + 1)}</span>${escapeHtml(game.category)}</div>
     <button class="hero-game__exit" type="button" data-game-exit aria-label="Exit ${escapeHtml(game.title)}">${game.id === "strike" ? "" : "<kbd>Esc</kbd>"}Exit ${icon("x")}</button>
+    <!-- Reading order is the point of this structure. Play used to be the
+         copy block's second child, bottom-aligned against a column that
+         ended in two rows of keyboard chips — so the page's second most
+         important action shared a baseline with its least important line
+         and sat 170px away from the sentence that sells it. It now closes
+         the left column: title, one sentence, button. The key legend is a
+         legend, so it goes to the right and stays out of the path. -->
     <div class="hero-card-copy hero-game__copy">
-      <div>
+      <div class="hero-game__pitch">
         <h3>${escapeHtml(game.title)}</h3>
         <p>${escapeHtml(game.description)}</p>
-        ${controlsMarkup(game.controls)}
+        ${action}
         <span class="hero-game__status" data-game-status aria-live="polite"></span>
       </div>
-      ${action}
+      ${controlsMarkup(game.controls)}
     </div>
     <button class="hero-card-cover" aria-label="Show ${escapeHtml(game.title)}" data-featured="${index}"></button>
   </article>`;
@@ -236,11 +350,41 @@ function initializeHero() {
     .join("");
   const cards = $$(".hero-card--game");
   const controllers = cards.map((card, index) => new GameCard(card, games[index]));
+  // Moving a card between the two side slots means crossing the entire deck.
+  // Animated, that is a dimmed card sliding ~1000px through the middle of
+  // the composition, behind the one the viewer is actually looking at — the
+  // single biggest reason switching felt untidy. So that one card cuts
+  // instead: fade out, jump while invisible, fade back in. The two cards
+  // that matter (the one arriving at the centre and the one leaving it)
+  // still travel, so the deck reads as continuous.
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+  const OPPOSITE = { left: "right", right: "left" };
+  const setPosition = (card, next) => {
+    const previous = card.dataset.position;
+    if (previous === next) return;
+    if (reduced.matches || OPPOSITE[previous] !== next) {
+      card.dataset.position = next;
+      return;
+    }
+    card.classList.add("is-hopping");
+    clearTimeout(card.hopTimer);
+    card.hopTimer = setTimeout(() => {
+      card.dataset.position = next;
+      // Force the teleport to land in its own style flush, otherwise the
+      // browser coalesces it with the class removal below and animates the
+      // very slide we are trying to avoid.
+      void card.offsetWidth;
+      card.classList.remove("is-hopping");
+    }, 190);
+  };
+
   const controller = new Carousel($(".hero-showcase"), total, (active) => {
     cards.forEach((card, index) => {
       const distance = (index - active + total) % total;
-      card.dataset.position =
-        distance === 0 ? "center" : distance === 1 ? "right" : distance === total - 1 ? "left" : "back";
+      setPosition(
+        card,
+        distance === 0 ? "center" : distance === 1 ? "right" : distance === total - 1 ? "left" : "back",
+      );
       $(".hero-card-cover", card).setAttribute(
         "aria-label",
         `${distance === 0 ? "Selected: " : "Show "}${games[index].title}`,
@@ -592,11 +736,102 @@ function initializeFaq() {
   });
 }
 
-// ---- Header shelf ----------------------------------------------------------
-function initializeHeaderShelf() {
+// ---- Feature clips ---------------------------------------------------------
+// A muted loop that decodes while it is three screens away is a tax on every
+// visitor's battery. The clip loads and plays only while it is on screen, and
+// with `prefers-reduced-motion: reduce` it never plays at all — the poster is
+// the same frame, so the slide still reads.
+function initializeFeatureVideo() {
+  const videos = $$("[data-feature-video]");
+  if (!videos.length) return;
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (typeof IntersectionObserver === "undefined") return;
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach(({ target, isIntersecting }) => {
+        if (isIntersecting) {
+          if (target.preload !== "auto") target.preload = "auto";
+          target.play().catch(() => {
+            /* Autoplay refused: the poster stays, nothing breaks. */
+          });
+        } else if (!target.paused) {
+          target.pause();
+        }
+      });
+    },
+    { threshold: 0.35 },
+  );
+  videos.forEach((video) => observer.observe(video));
+
+  // A backgrounded tab keeps rAF-throttled video decoding alive in some
+  // browsers; stop it explicitly and resume only if still in view.
+  document.addEventListener("visibilitychange", () => {
+    videos.forEach((video) => {
+      if (document.hidden) video.pause();
+      else if (video.getBoundingClientRect().top < innerHeight)
+        video.play().catch(() => {});
+    });
+  });
+}
+
+// ---- Header: transparent, and it gets out of the way -----------------------
+// No shelf, no fill. The nav's only state is presence: scroll down and it
+// lifts off the top edge, scroll up and it comes back (CSS owns the motion —
+// see `.site-header.is-hidden`).
+// Direction is read from an accumulator, not from the sign of a single
+// scroll event. A trackpad emits a 1px event in the wrong direction all the
+// time, and a raw sign test makes the header strobe. Travel is summed while
+// the direction holds and reset the moment it flips, so the header only
+// moves once the reader has actually committed: 64px down to hide it (one
+// header's worth — below that you are still reading the same line), 24px up
+// to bring it back (going back is an intention, it should feel instant).
+// Two overrides: the top of the page always shows it, and so does keyboard
+// focus landing inside it — a Tab stop you cannot see is a broken page.
+function initializeHeaderAutoHide() {
   const header = $(".site-header");
-  const update = () => header.classList.toggle("is-scrolled", scrollY > 8);
-  addEventListener("scroll", update, { passive: true });
+  const TOP_ZONE = 80;
+  const COMMIT_DOWN = 64;
+  const COMMIT_UP = 24;
+  let last = Math.max(0, scrollY);
+  let travel = 0;
+  let hidden = false;
+  let queued = false;
+
+  const setHidden = (next) => {
+    if (next === hidden) return;
+    hidden = next;
+    header.classList.toggle("is-hidden", next);
+  };
+
+  const update = () => {
+    queued = false;
+    const y = Math.max(0, scrollY);
+    const step = y - last;
+    last = y;
+    if (y <= TOP_ZONE) {
+      travel = 0;
+      setHidden(false);
+      return;
+    }
+    travel = (travel > 0) === (step > 0) ? travel + step : step;
+    if (travel > COMMIT_DOWN) setHidden(true);
+    else if (travel < -COMMIT_UP) setHidden(false);
+  };
+
+  addEventListener(
+    "scroll",
+    () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(update);
+    },
+    { passive: true },
+  );
+  header.addEventListener("focusin", () => {
+    travel = 0;
+    setHidden(false);
+  });
   update();
 }
 
@@ -609,4 +844,5 @@ initializeNavigation();
 initializeReveal();
 initializeSkeletons();
 initializeFaq();
-initializeHeaderShelf();
+initializeFeatureVideo();
+initializeHeaderAutoHide();

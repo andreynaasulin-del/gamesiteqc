@@ -12,6 +12,8 @@
     <link rel="icon" href="landing/quadcode-mark.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="src/landing/tokens.css" />
     <link rel="stylesheet" href="src/landing/landing.css" />
+    <link rel="stylesheet" href="src/landing/screen-fit.css" />
+    <link rel="stylesheet" href="src/landing/atmosphere.css" />
     <script type="module" src="src/landing/app.js"></script>
   </head>
   <body>
@@ -31,6 +33,7 @@
         <a href="#capabilities">Capabilities</a>
         <a href="#workflow">How it works</a>
         <a href="#community">Community</a>
+        <a href="#pricing">Pricing</a>
         <a href="#faq">FAQ</a>
       </nav>
       <a
@@ -49,15 +52,37 @@
     </header>
     <main id="main">
       <section class="hero" id="games" aria-labelledby="hero-title">
-        <div class="perspective-grid" aria-hidden="true"><div></div></div>
+        <div class="aurora" aria-hidden="true"></div>
         <div class="hero-intro">
-          <h1 id="hero-title">
-            Create games<br />with <span class="accent">one prompt</span>
+          <!-- The headline is one line of running text, not three stacked
+               ones. The real sentence is in .sr-only for screen readers,
+               crawlers and the accessible name of the section; the track
+               below it is decorative duplication and nothing else, which
+               is why it is aria-hidden. -->
+          <h1 id="hero-title" class="hero-ticker">
+            <span class="sr-only">Create games with one prompt</span>
+            <span class="hero-ticker__viewport" aria-hidden="true">
+              <span class="hero-ticker__track">
+                <span class="hero-ticker__group"
+                  ><span>Create games <b>with one prompt</b></span
+                  ><span>Create games <b>with one prompt</b></span
+                  ><span>Create games <b>with one prompt</b></span
+                  ><span>Create games <b>with one prompt</b></span></span
+                ><span class="hero-ticker__group"
+                  ><span>Create games <b>with one prompt</b></span
+                  ><span>Create games <b>with one prompt</b></span
+                  ><span>Create games <b>with one prompt</b></span
+                  ><span>Create games <b>with one prompt</b></span></span
+                >
+              </span>
+            </span>
           </h1>
-          <a class="button" href="https://quadcode.ai/#download"
-            ><span class="spark" aria-hidden="true"></span>Start creating</a
-          >
-          <p class="platform-note">Desktop app for macOS & Windows</p>
+          <div class="hero-actions">
+            <a class="button" href="https://quadcode.ai/#download"
+              ><span class="spark" aria-hidden="true"></span>Start creating</a
+            >
+            <p class="platform-note">Desktop app for macOS &amp; Windows</p>
+          </div>
         </div>
         <div
           class="hero-showcase"
@@ -66,23 +91,34 @@
           aria-label="Featured Quadcode projects — the first one is playable"
           tabindex="0"
         >
-          <div class="hero-cards" id="hero-cards"></div>
-          <div class="hero-controls">
+          <!-- .hero-deck exists so the arrows have the CARDS as their
+               positioning context. Parented to .hero-showcase they would
+               centre on the showcase, counter and hint included, and sit
+               low. -->
+          <div class="hero-deck">
+            <div class="hero-cards" id="hero-cards"></div>
             <button
-              class="icon-button"
+              class="icon-button hero-nav hero-nav--prev"
               data-hero-prev
               aria-label="Previous featured project"
             >
-              <i data-icon="arrow-left"></i></button
-            ><span id="hero-counter" aria-live="polite">01 / 03</span
-            ><button
-              class="icon-button"
+              <i data-icon="arrow-left"></i>
+            </button>
+            <button
+              class="icon-button hero-nav hero-nav--next"
               data-hero-next
               aria-label="Next featured project"
             >
               <i data-icon="arrow-right"></i>
             </button>
           </div>
+          <p class="hero-meta">
+            <span class="hero-hint"
+              ><i data-icon="play"></i>Click any card — it plays right here</span
+            ><span class="hero-counter" id="hero-counter" aria-live="polite"
+              >01 / 03</span
+            >
+          </p>
         </div>
         <p class="hero-caption">
           Imagined by creators. Built with <strong>quadcode.ai</strong>
@@ -90,7 +126,7 @@
       </section>
 
       <section
-        class="capabilities grid-bg"
+        class="capabilities"
         id="capabilities"
         aria-labelledby="capabilities-title"
       >
@@ -102,7 +138,7 @@
       </section>
 
       <section
-        class="workspace section grid-bg"
+        class="workspace section"
         id="workspace"
         aria-labelledby="workspace-title"
       >
@@ -161,7 +197,7 @@
       </section>
 
       <section
-        class="explore section grid-bg"
+        class="explore section"
         id="explore"
         aria-labelledby="explore-title"
       >
@@ -221,7 +257,7 @@
       </section>
 
       <section
-        class="steps section light"
+        class="steps section"
         id="workflow"
         aria-labelledby="steps-title"
       >
@@ -331,7 +367,7 @@
 
       <section class="cta-section section" aria-labelledby="cta-title">
         <div class="cta-panel container frame">
-          <div class="perspective-grid" aria-hidden="true"><div></div></div>
+          <div class="aurora" aria-hidden="true"></div>
           <p class="eyebrow" data-reveal>From your imagination to your project</p>
           <h2 id="cta-title">
             Describe a game.<br />Your agents build
@@ -345,7 +381,7 @@
       </section>
 
       <section
-        class="community section light"
+        class="community section"
         id="community"
         aria-labelledby="community-title"
       >
@@ -396,6 +432,53 @@
         </div>
       </section>
 
+      <section
+        class="pricing section"
+        id="pricing"
+        aria-labelledby="pricing-title"
+      >
+        <div class="container">
+          <header class="pricing-heading">
+            <div>
+              <p class="eyebrow" data-reveal>Credits, not seats</p>
+              <h2 id="pricing-title">Pick the pace you build at</h2>
+              <p>
+                Same app, same three agents on every plan. You pick two
+                things: how many credits land each month — and which models
+                may spend them.
+              </p>
+            </div>
+            <ul class="pricing-legend" data-reveal aria-label="How plans work">
+              <li>
+                <i data-icon="sparkles"></i>
+                <div><strong>One credit pool</strong><span>Code, visuals, 3D and sound share it</span></div>
+              </li>
+              <li>
+                <i data-icon="check"></i>
+                <div><strong>Refills monthly</strong><span>On every plan, yearly included</span></div>
+              </li>
+              <li>
+                <i data-icon="lock"></i>
+                <div><strong>Locked = opens on Pro</strong><span>Cinematic video and audio models</span></div>
+              </li>
+            </ul>
+          </header>
+          <div class="plan-grid" id="plan-list"></div>
+          <div class="plan-foot" data-reveal>
+            <p class="plan-footnote">
+              Prices in USD, before tax. Every plan is managed and cancelled
+              from your profile.
+            </p>
+            <aside class="plan-enterprise">
+              <span>Studio or classroom? Shared credit pools, invoicing, onboarding.</span>
+              <a class="plan-enterprise__link" href="mailto:support@quadcode.ai"
+                >Talk to us <i data-icon="arrow-up-right"></i
+              ></a>
+            </aside>
+          </div>
+        </div>
+      </section>
+
       <section class="faq section" id="faq" aria-labelledby="faq-title">
         <div class="container">
           <h2 class="center" id="faq-title">Got any questions left?</h2>
@@ -403,7 +486,7 @@
         </div>
       </section>
     </main>
-    <footer class="footer light">
+    <footer class="footer">
       <div class="container">
         <div class="footer-top">
           <div class="footer-intro" data-reveal>
@@ -422,6 +505,7 @@
             <a href="#capabilities">Capabilities</a><a href="#explore">Games</a
             ><a href="play.html">Playground</a
             ><a href="https://quadcode.ai/#integrations">Integrations</a
+            ><a href="#pricing">Pricing</a
             ><a href="https://quadcode.ai/#download">Download</a>
           </div>
           <div class="footer-column" data-reveal>
