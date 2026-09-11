@@ -1,0 +1,44 @@
+{
+  "schema": "quadcode.character.v1",
+  "gender": "woman",
+  "height": 1.23,
+  "rig": {
+    "sockets": {
+      "handRight": {
+        "gltf": "DEF-hand.R",
+        "three": "DEF-handR",
+        "purpose": "weapons, tools, held props (primary hand)"
+      },
+      "handLeft": {
+        "gltf": "DEF-hand.L",
+        "three": "DEF-handL",
+        "purpose": "shields, off-hand props"
+      },
+      "head": {
+        "gltf": "DEF-head",
+        "three": "DEF-head",
+        "purpose": "hats, helmets, name tags, cameras"
+      },
+      "chest": {
+        "gltf": "DEF-spine.003",
+        "three": "DEF-spine003",
+        "purpose": "backpacks, capes, chest emblems"
+      },
+      "hips": {
+        "gltf": "DEF-hips",
+        "three": "DEF-hips",
+        "purpose": "belts, holsters; also the root-motion pelvis bone"
+      },
+      "footLeft": {
+        "gltf": "DEF-foot.L",
+        "three": "DEF-footL",
+        "purpose": "foot effects, footstep events"
+      },
+      "footRight": {
+        "gltf": "DEF-foot.R",
+        "three": "DEF-footR",
+        "purpose": "foot effects, footstep events"
+      }
+    }
+  }
+}
