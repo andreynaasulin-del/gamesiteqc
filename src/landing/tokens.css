@@ -1,0 +1,581 @@
+@font-face {
+  font-family: "League Spartan";
+  src: url("../ui/league-spartan.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+:root {
+  --bg: #0b0d15;
+  --surface: #13131e;
+  --raised: #212233;
+  --text: #fff;
+  --muted: #b6b6c6;
+  --peach: #ff9569;
+  --coral: #dd344d;
+  --accent: linear-gradient(110deg, #ff9569, #ff9569 25%, #ed6b64 80%, #dd344d);
+  --line: rgba(255, 255, 255, 0.12);
+  --line-hover: rgba(255, 255, 255, 0.28);
+  --fill: rgba(255, 255, 255, 0.04);
+  --fill-hover: rgba(255, 255, 255, 0.09);
+  --radius: 24px;
+  --max: 1312px;
+  /* Motion. `--ease-out-quint` for anything entering the screen — it front-
+     loads the distance so the element reads as "already arriving". `--ease-
+     in-out-quart` for things already on screen moving A→B. No ease-in token:
+     the first 80ms of an ease-in look like nothing happened. */
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+  color-scheme: dark;
+  font-family: "League Spartan", sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 90px;
+}
+body {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.45;
+}
+button,
+input,
+textarea {
+  font: inherit;
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+button {
+  cursor: pointer;
+  color: inherit;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+img,
+video {
+  display: block;
+  max-width: 100%;
+}
+button {
+  border: 0;
+}
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+h1,
+h2,
+h3 {
+  line-height: 1.05;
+}
+h1,
+h2 {
+  text-transform: uppercase;
+  letter-spacing: -0.025em;
+}
+h1 {
+  font-size: 72px;
+  font-weight: 700;
+}
+h2 {
+  font-size: 48px;
+  font-weight: 700;
+}
+h3 {
+  font-size: 32px;
+  font-weight: 600;
+}
+p {
+  color: var(--muted);
+}
+:focus-visible {
+  outline: 3px solid var(--peach);
+  outline-offset: 5px;
+}
+::selection {
+  background: var(--peach);
+  color: var(--bg);
+}
+[hidden] {
+  display: none !important;
+}
+.container {
+  width: min(var(--max), calc(100% - 96px));
+  margin-inline: auto;
+}
+.section {
+  padding-block: 100px;
+}
+.center {
+  text-align: center;
+}
+.accent {
+  background: var(--accent);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+.eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--peach);
+}
+/* ------------------------------------------------------------------
+   THE ONLY TWO BUTTONS ON THIS PAGE.
+   primary   — the brand gradient. The single most important action in a
+               viewport. Never two side by side.
+   secondary — transparent with a hairline. Everything else, including the
+               second half of any two-button row.
+   Shape, rhythm and interaction are identical; only colour differs, so a
+   mixed row sits on one baseline. Feedback budget: hover shifts colour,
+   press scales to .97 in 120ms, an arrow nudges 2px. No lift, no bloom —
+   a glow made every pill look like a state (hovered? loading?).
+   ------------------------------------------------------------------ */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 13px 25px 11px;
+  border: 1px solid transparent;
+  border-radius: 100px;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  background: var(--accent);
+  color: var(--bg);
+  box-shadow: 0 8px 24px -12px rgba(237, 107, 100, 0.85);
+  transition:
+    transform 120ms var(--ease-out-quint),
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    filter 180ms ease,
+    opacity 180ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .button:hover {
+    filter: brightness(1.07);
+  }
+}
+.button:active {
+  transform: scale(0.97);
+}
+.button:disabled,
+.button[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.button.secondary,
+.button.dark,
+.button.outline {
+  background: var(--fill);
+  color: var(--text);
+  border-color: var(--line);
+  box-shadow: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .button.secondary:hover,
+  .button.dark:hover,
+  .button.outline:hover {
+    filter: none;
+    background: var(--fill-hover);
+    border-color: var(--line-hover);
+  }
+}
+.light {
+  --fill: rgba(19, 19, 30, 0.04);
+  --fill-hover: rgba(19, 19, 30, 0.09);
+  --line-hover: rgba(19, 19, 30, 0.32);
+}
+.button.small {
+  font-size: 15px;
+  min-height: 40px;
+  padding: 11px 19px 9px;
+}
+/* The arrow is the whole animation budget of a link: 2px right on hover. */
+.resource-link > .i {
+  transition: transform 200ms var(--ease-out-quint);
+}
+@media (hover: hover) and (pointer: fine) {
+  a:hover > .resource-link > .i {
+    transform: translate(2px, -1px);
+  }
+}
+.spark {
+  width: 18px;
+  height: 18px;
+  background: currentColor;
+  mask: url("./sparkles.svg") center/contain no-repeat;
+}
+/* Inline SVG icons (src/landing/icons.js). Sized from the parent's font so
+   the same markup works at 15px in a small pill and 18px in a full one. */
+.i {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 1.1em;
+  height: 1.1em;
+  vertical-align: -0.15em;
+}
+.i svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.button .i {
+  width: 18px;
+  height: 18px;
+}
+.button.small .i {
+  width: 16px;
+  height: 16px;
+}
+.icon-button .i {
+  width: 20px;
+  height: 20px;
+}
+/* Leading icons (download, play) get the same nudge as trailing arrows —
+   but toward the label, so the button reads as "coming together". */
+@media (hover: hover) and (pointer: fine) {
+  .button:hover > .i:first-child:not(:only-child) {
+    transform: translateX(-1px) scale(1.08);
+  }
+  .button:hover > .i:last-child:not(:only-child) {
+    transform: translate(2px, -1px);
+  }
+  .icon-button:hover .i {
+    transform: scale(1.12);
+  }
+}
+.icon-button .i,
+.button .i {
+  transition: transform 200ms var(--ease-out-quint);
+}
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  background: var(--fill);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  font-size: 25px;
+  line-height: 1;
+  transition:
+    transform 120ms var(--ease-out-quint),
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .icon-button:hover {
+    background: var(--fill-hover);
+    border-color: var(--line-hover);
+  }
+}
+.icon-button:active {
+  transform: scale(0.94);
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+/* A label you cannot click should not be shaped like a button: pills are for
+   actions, chips get 8px corners. */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  background: var(--fill);
+  color: var(--muted);
+  padding: 7px 12px 5px;
+  border-radius: 8px;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+.tag::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--peach);
+}
+.light {
+  background: #fff;
+  color: var(--surface);
+  --text: var(--surface);
+  --muted: #656572;
+  --line: rgba(19, 19, 30, 0.13);
+  color-scheme: light;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: 16px;
+  z-index: 1000;
+  padding: 12px;
+  background: var(--peach);
+  color: var(--bg);
+}
+.skip-link:focus {
+  top: 12px;
+}
+.grid-bg {
+  background-image: radial-gradient(circle, #ffffff12 0.7px, transparent 0.8px);
+  background-size: 20px 20px;
+}
+.frame {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+}
+/* ------------------------------------------------------------------
+   SCROLL REVEAL. Tagged at runtime by app.js (a no-JS visit sees plain,
+   fully visible content). `.sr` is for headings, subtitles and anything
+   opted in with [data-reveal]; `.section-fade` is the whole <section>, so
+   grids and media arrive with their heading instead of popping in before
+   it. `--sr-delay` is set per reveal *batch* — 60ms per element crossing
+   the threshold together, capped at 4 — never by DOM position.
+   ------------------------------------------------------------------ */
+.sr {
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
+  transition:
+    opacity 560ms var(--ease-out-quint),
+    transform 560ms var(--ease-out-quint);
+  transition-delay: var(--sr-delay, 0ms);
+}
+.sr-in {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+.section-fade {
+  opacity: 0;
+  transform: translate3d(0, 24px, 0);
+  transition:
+    opacity 700ms var(--ease-out-quint),
+    transform 700ms var(--ease-out-quint);
+}
+.section-fade-in {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+/* ------------------------------------------------------------------
+   CELLS. One grammar for every card on the page: hairline border, faint
+   fill, and on hover the border steps up and the fill brightens. No lift —
+   a card that jumps 5px reads as a button, and these are containers.
+   ------------------------------------------------------------------ */
+.cell {
+  border: 1px solid var(--line);
+  background: var(--fill);
+  transition:
+    border-color 200ms ease,
+    background-color 200ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .cell:hover,
+  a.cell:hover {
+    border-color: var(--line-hover);
+    background: var(--fill-hover);
+  }
+}
+/* ------------------------------------------------------------------
+   SKELETONS. app.js puts `.skel` on an image's container until the image
+   has decoded, then swaps it for `.skel-done` and the image fades in.
+   The shimmer is a diagonal band on a flat placeholder — the same shape
+   the image will occupy, so nothing jumps. One sweep every 1.6s: slow
+   enough to read as "waiting", not "broken". Reduced motion: flat.
+   ------------------------------------------------------------------ */
+.skel {
+  position: relative;
+  isolation: isolate;
+  background: var(--raised);
+}
+.skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.07) 50%,
+    transparent 80%
+  );
+  background-size: 250% 100%;
+  animation: skel-sweep 1.6s var(--ease-in-out-quart) infinite;
+}
+.light .skel {
+  background: #eaeaf0;
+}
+.light .skel::after {
+  background-image: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.7) 50%,
+    transparent 80%
+  );
+}
+.skel > img,
+.skel > video {
+  opacity: 0;
+}
+/* fill-mode `backwards`, not `both`: the last keyframe is the natural
+   state, and holding it forever would pin transform:none over the poster's
+   hover scale. */
+.skel-done > img,
+.skel-done > video {
+  animation: img-in 480ms var(--ease-out-quint) backwards;
+}
+@keyframes skel-sweep {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+@keyframes img-in {
+  from {
+    opacity: 0;
+    transform: scale(1.015);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* ------------------------------------------------------------------
+   OPEN / CLOSE. Anything that appears on click enters with the same
+   240ms rise-and-fade the scroll reveal uses, so "I clicked" and "I
+   scrolled" produce one motion language.
+   ------------------------------------------------------------------ */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* Exit keyframes are separate names on purpose: a CSS animation only
+   restarts when animation-name changes, so `modal-in reverse` on the same
+   element never fires a second animationend. */
+@keyframes modal-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+}
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skel::after {
+    animation: none;
+  }
+  .skel-done > img,
+  .skel-done > video {
+    animation: none;
+  }
+}
+@media (max-width: 767px) {
+  .container {
+    width: calc(100% - 40px);
+  }
+  .section {
+    padding-block: 64px;
+  }
+  h1 {
+    font-size: 48px;
+  }
+  h2 {
+    font-size: 34px;
+  }
+  h3 {
+    font-size: 28px;
+  }
+  body {
+    font-size: 16px;
+  }
+  .button {
+    font-size: 16px;
+  }
+  .button.small {
+    font-size: 14px;
+  }
+  .tag {
+    font-size: 13px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

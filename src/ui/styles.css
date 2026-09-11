@@ -1,0 +1,868 @@
+/* ------------------------------------------------------------------ *
+ * Quadcode Games Playground — UI shell
+ * The 3D view owns the whole viewport; everything here floats on top.
+ * Palette and type come from the Quadcode guidebook: League Spartan,
+ * #0B0D15 / #13131E / #212233, accent #FF9569 → #DD344D.
+ * ------------------------------------------------------------------ */
+
+@font-face {
+  font-family: 'League Spartan';
+  src: url('./league-spartan.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  --bg: #0b0d15;
+  --surface: #13131e;
+  --surface-2: #212233;
+  --ink: #ffffff;
+  --ink-dim: rgba(255, 255, 255, 0.62);
+  --ink-faint: rgba(255, 255, 255, 0.38);
+  --line: rgba(255, 255, 255, 0.1);
+  --coral: #ff9569;
+  --rose: #dd344d;
+  --accent: linear-gradient(110deg, #ff9569, #ed6b64 55%, #dd344d);
+  --hud-accent: var(--coral);
+  --radius: 16px;
+  --shadow: 0 14px 44px rgba(0, 0, 0, 0.5);
+  --font: 'League Spartan', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --glass: rgba(19, 19, 30, 0.72);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+#viewport {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 2px 6px 0;
+  margin-right: 4px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.07);
+  font: 600 12px/1 var(--font);
+  color: var(--ink);
+  letter-spacing: 0.04em;
+}
+
+/* ------------------------------------------------------------------ *
+ * Loading veil
+ * ------------------------------------------------------------------ */
+
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(90% 70% at 50% 25%, #212233 0%, var(--bg) 70%);
+  transition: opacity 0.7s ease, visibility 0.7s;
+}
+
+.loader.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.loader__inner {
+  text-align: center;
+  width: min(380px, 80vw);
+}
+
+.loader__mark {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto;
+  display: block;
+  animation: mark-breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes mark-breathe {
+  0%,
+  100% {
+    transform: scale(0.94);
+    filter: drop-shadow(0 0 0 rgba(255, 149, 105, 0));
+  }
+  50% {
+    transform: scale(1.04);
+    filter: drop-shadow(0 0 22px rgba(255, 149, 105, 0.55));
+  }
+}
+
+.loader__title {
+  margin: 22px 0 6px;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.loader__sub {
+  margin: 0 0 22px;
+  font-size: 14px;
+  color: var(--ink-dim);
+}
+
+.loader__bar {
+  height: 3px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.loader__bar i {
+  display: block;
+  height: 100%;
+  width: 0%;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+
+.loader__status {
+  margin: 14px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* ------------------------------------------------------------------ *
+ * HUD frame
+ * ------------------------------------------------------------------ */
+
+.hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+  font-size: 14px;
+  user-select: none;
+  -webkit-user-select: none;
+  opacity: 0;
+  transition: opacity 0.6s ease 0.2s;
+}
+
+.hud.is-ready {
+  opacity: 1;
+}
+
+.hud__panel {
+  position: absolute;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow);
+  line-height: 1.6;
+}
+
+/* ---- brand ------------------------------------------------------- */
+
+.hud__brand {
+  position: absolute;
+  left: 28px;
+  top: 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  pointer-events: auto;
+}
+
+.hud__logo img {
+  display: block;
+  height: 28px;
+  width: auto;
+}
+
+.hud__brand-tag {
+  padding: 5px 10px 3px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+/* ---- CTA --------------------------------------------------------- */
+
+.hud__cta {
+  position: absolute;
+  right: 28px;
+  top: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  pointer-events: auto;
+  box-shadow: 0 10px 30px -10px rgba(255, 149, 105, 0.7);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.hud__cta svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.18s ease;
+}
+
+.hud__cta:hover,
+.hud__cta:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px -10px rgba(255, 149, 105, 0.85);
+  outline: none;
+}
+
+.hud__cta:hover svg {
+  transform: translateX(3px);
+}
+
+/* ---- help -------------------------------------------------------- */
+
+.hud__help {
+  left: 28px;
+  bottom: 28px;
+  max-width: 300px;
+  color: var(--ink-dim);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.hud__help.is-hidden,
+.hud.is-onboarding .hud__help {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.hud__help-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+}
+
+.hud__help-row + .hud__help-row {
+  margin-top: 6px;
+}
+
+.hud__help-row--dim {
+  margin-top: 10px !important;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-faint);
+}
+
+.hud__help strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* ---- credit ------------------------------------------------------ */
+
+.hud__credit {
+  position: absolute;
+  right: 28px;
+  bottom: 30px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  text-decoration: none;
+  pointer-events: auto;
+  transition: color 0.2s ease;
+}
+
+.hud__credit:hover {
+  color: var(--ink-dim);
+}
+
+/* ------------------------------------------------------------------ *
+ * Ability bar
+ * ------------------------------------------------------------------ */
+
+.hud__abilities {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.ability-card {
+  position: relative;
+  width: 132px;
+  padding: 14px 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease,
+    box-shadow 0.18s ease;
+  user-select: none;
+}
+
+.ability-card:hover {
+  transform: translateY(-3px);
+  background: rgba(33, 34, 51, 0.82);
+}
+
+.ability-card:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.ability-card.is-active {
+  border-color: var(--accent, var(--coral));
+  background: rgba(33, 34, 51, 0.9);
+  box-shadow: 0 0 0 1px var(--accent, var(--coral)) inset, var(--shadow),
+    0 0 28px -6px var(--accent, var(--coral));
+}
+
+.hud__abilities.is-armed .ability-card.is-active {
+  animation: ability-armed 1.05s ease-in-out infinite;
+}
+
+@keyframes ability-armed {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px var(--accent) inset, var(--shadow), 0 0 22px -8px var(--accent);
+  }
+  50% {
+    box-shadow: 0 0 0 2px var(--accent) inset, var(--shadow), 0 0 36px -2px var(--accent);
+  }
+}
+
+.ability-card__sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 0deg,
+    rgba(11, 13, 21, 0.82) calc(var(--cooldown, 0) * 360deg),
+    transparent 0
+  );
+  opacity: 0;
+  transition: opacity 0.12s linear;
+  pointer-events: none;
+}
+
+.ability-card.is-cooling .ability-card__sweep {
+  opacity: 1;
+}
+
+.ability-card.is-cooling .ability-card__glyph,
+.ability-card.is-cooling .ability-card__label {
+  opacity: 0.45;
+}
+
+.ability-card__glyph {
+  position: relative;
+  display: block;
+  color: var(--accent, var(--coral));
+}
+
+.ability-card__glyph .glyph-svg {
+  display: block;
+  width: 36px;
+  height: 36px;
+  margin: 2px auto 0;
+  filter: drop-shadow(0 0 6px var(--accent, var(--coral)));
+  transition: filter 0.18s ease, opacity 0.18s ease;
+}
+
+.ability-card.is-active .glyph-svg {
+  filter: drop-shadow(0 0 12px var(--accent, var(--coral)));
+}
+
+.ability-card__label {
+  position: relative;
+  display: block;
+  margin-top: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: opacity 0.18s ease;
+}
+
+.ability-card__key {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 1;
+  padding: 3px 6px 1px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-dim);
+}
+
+/* ------------------------------------------------------------------ *
+ * Toast & paused badge
+ * ------------------------------------------------------------------ */
+
+.hud__toast {
+  position: absolute;
+  left: 50%;
+  top: 84px;
+  transform: translate(-50%, -12px);
+  padding: 10px 18px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(19, 19, 30, 0.94);
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.hud__toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.hud__paused {
+  position: absolute;
+  left: 50%;
+  top: 30px;
+  transform: translate(-50%, -8px);
+  padding: 6px 16px 4px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 149, 105, 0.45);
+  background: rgba(19, 19, 30, 0.9);
+  color: var(--coral);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.hud__paused.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* ------------------------------------------------------------------ *
+ * Onboarding — one card, once, out of the way on the first input.
+ * ------------------------------------------------------------------ */
+
+/*
+ * The card sits in the left column, not over the character: the hero is the
+ * point of the first screen, so the copy stays out of its way. The backdrop is
+ * a side gradient rather than a flat dim, for the same reason.
+ */
+.hud__onboard {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-items: center;
+  justify-content: start;
+  padding-left: clamp(28px, 6vw, 96px);
+  background: linear-gradient(90deg, rgba(11, 13, 21, 0.72) 0%, rgba(11, 13, 21, 0.35) 42%, rgba(11, 13, 21, 0) 70%);
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.hud__onboard.is-visible {
+  opacity: 1;
+}
+
+.hud__onboard[hidden] {
+  display: none;
+}
+
+.onboard {
+  width: min(400px, calc(100vw - 40px));
+  padding: 30px 30px 24px;
+  border-radius: 24px;
+  border: 1px solid var(--line);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 45%),
+    rgba(19, 19, 30, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow), 0 0 60px -30px var(--coral);
+  transform: translateY(10px);
+  transition: transform 0.35s cubic-bezier(0.2, 0.85, 0.25, 1);
+}
+
+.hud__onboard.is-visible .onboard {
+  transform: none;
+}
+
+.onboard__mark {
+  display: block;
+  width: 40px;
+  height: 40px;
+}
+
+.onboard__title {
+  margin: 18px 0 20px;
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 0.98;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+.onboard__steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.onboard__steps li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  font-size: 15px;
+}
+
+.onboard__steps li span {
+  margin-left: 8px;
+  color: var(--ink-dim);
+}
+
+.onboard__steps kbd {
+  margin-right: 2px;
+}
+
+.onboard__mouse,
+.onboard__click {
+  position: relative;
+  display: inline-block;
+  width: 16px;
+  height: 22px;
+  margin: 0 6px 0 3px;
+  border-radius: 8px;
+  border: 1.5px solid var(--ink);
+}
+
+.onboard__mouse::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 4px;
+  width: 2px;
+  height: 5px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--ink);
+}
+
+.onboard__click {
+  border-color: var(--coral);
+  background: linear-gradient(90deg, var(--coral) 50%, transparent 50%) top / 100% 45% no-repeat;
+}
+
+/* Touch glyphs: a fingertip dot, a hot one, and a pair. */
+.onboard__tap {
+  position: relative;
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  margin: 0 6px 0 2px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink);
+}
+
+.onboard__tap::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+
+.onboard__tap--hot {
+  border-color: var(--coral);
+}
+
+.onboard__tap--hot::before {
+  background: var(--coral);
+}
+
+.onboard__tap--two::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: -4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink-dim);
+  background: var(--surface);
+}
+
+.onboard__go {
+  width: 100%;
+  margin-top: 20px;
+  padding: 15px 20px 13px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font: 700 16px/1 var(--font);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 12px 30px -10px rgba(255, 149, 105, 0.7);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.onboard__go:hover,
+.onboard__go:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 36px -10px rgba(255, 149, 105, 0.85);
+  outline: none;
+}
+
+.onboard__hint {
+  margin: 14px 0 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ink-faint);
+}
+
+/* ------------------------------------------------------------------ *
+ * Responsive
+ * ------------------------------------------------------------------ */
+
+/* Keep the help panel above the six-card bar on laptop widths. */
+@media (max-width: 1700px) {
+  .hud__help { bottom: 140px; }
+  .hud__credit { display: none; }
+}
+
+/* Six cards need ~850px; below this the side panels would collide with them. */
+@media (max-width: 1180px) {
+  .hud__help,
+  .hud__credit {
+    display: none;
+  }
+  .ability-card {
+    width: 112px;
+    padding: 12px 8px 10px;
+  }
+  .ability-card__label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+  }
+}
+
+@media (max-width: 760px) {
+  .hud__help,
+  .hud__credit,
+  .hud__brand-tag {
+    display: none;
+  }
+  .hud__brand {
+    left: 16px;
+    top: 16px;
+  }
+  .hud__logo img {
+    height: 24px;
+  }
+  .hud__cta {
+    right: 16px;
+    top: 14px;
+    padding: 10px 14px 8px;
+    font-size: 14px;
+  }
+  /*
+   * Six slots in one row on a phone: glyph-only tiles, the name lives in the
+   * toast that fires on selection. Keys are hidden — nobody has a Q on a phone.
+   */
+  .hud__abilities {
+    left: 12px;
+    right: 12px;
+    bottom: 14px;
+    transform: none;
+    gap: 6px;
+  }
+  .ability-card {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    padding: 10px 4px 8px;
+    border-radius: 14px;
+  }
+  .ability-card__glyph .glyph-svg {
+    width: 28px;
+    height: 28px;
+  }
+  .ability-card__label,
+  .ability-card__key {
+    display: none;
+  }
+  /* Bottom sheet: the character stays in view above the copy. */
+  .hud__onboard {
+    align-items: end;
+    justify-content: stretch;
+    padding: 0 12px 80px;
+    background: linear-gradient(180deg, rgba(11, 13, 21, 0) 30%, rgba(11, 13, 21, 0.7) 70%);
+  }
+  .onboard {
+    width: auto;
+    padding: 20px 20px 18px;
+    border-radius: 20px;
+  }
+  .onboard__mark {
+    width: 30px;
+    height: 30px;
+  }
+  .onboard__title {
+    margin: 12px 0 14px;
+    font-size: 26px;
+  }
+  .onboard__title br {
+    display: none;
+  }
+  .onboard__steps {
+    gap: 6px;
+  }
+  .onboard__steps li {
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+  .onboard__go {
+    margin-top: 14px;
+    padding: 13px 18px 11px;
+  }
+  .onboard__hint {
+    margin-top: 10px;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Embedded in the landing hero card (play.html?embed)
+ * The page around the card already carries the brand, the CTA and the
+ * credit; inside the card only the game and its controls remain.
+ * ------------------------------------------------------------------ */
+
+.is-embed .hud__brand,
+.is-embed .hud__cta,
+.is-embed .hud__credit {
+  display: none;
+}
+
+.is-embed .loader {
+  background: radial-gradient(90% 70% at 50% 40%, #212233 0%, var(--bg) 70%);
+}
+
+.is-embed .loader__title {
+  font-size: 24px;
+}
+
+/* The card is ~610px tall and its bottom 150px belong to the ability bar:
+   the onboarding card hangs from the top and never reaches into that zone. */
+.is-embed .hud__onboard {
+  align-items: start;
+  padding: 22px 0 150px clamp(20px, 4vw, 48px);
+}
+
+.is-embed .onboard {
+  width: min(330px, calc(100vw - 40px));
+  max-height: 100%;
+  overflow: auto;
+  padding: 18px 20px 16px;
+}
+
+.is-embed .onboard__mark {
+  display: none; /* the landing already shows the brand */
+}
+
+.is-embed .onboard__title {
+  margin: 0 0 12px;
+  font-size: 26px;
+}
+
+.is-embed .onboard__steps {
+  gap: 6px;
+}
+
+.is-embed .onboard__steps li {
+  padding: 7px 10px;
+  font-size: 14px;
+}
+
+.is-embed .onboard__go {
+  margin-top: 14px;
+  padding: 13px 18px 11px;
+}
+
+.is-embed .onboard__hint {
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+.is-embed .hud__toast {
+  top: 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader__mark,
+  .hud__abilities.is-armed .ability-card.is-active {
+    animation: none;
+  }
+  .hud,
+  .hud__onboard,
+  .onboard {
+    transition: none;
+  }
+}

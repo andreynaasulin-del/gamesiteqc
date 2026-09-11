@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#0B0D15" />
+    <meta
+      name="description"
+      content="Create games with Quadcode AI. Play the first Quadcode game right in your browser, then meet the specialized agents for code, visuals, 3D and sound. Available for macOS and Windows."
+    />
+    <title>Create games with AI — Quadcode</title>
+    <link rel="icon" href="landing/quadcode-mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="src/landing/tokens.css" />
+    <link rel="stylesheet" href="src/landing/landing.css" />
+    <script type="module" src="src/landing/app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <a class="brand" href="#" aria-label="Quadcode AI home"
+        ><img
+          src="landing/quadcode-logo.png"
+          alt="quadcode.ai"
+          width="168"
+          height="38"
+      /></a>
+      <nav id="main-nav" class="main-nav" aria-label="Main navigation">
+        <a class="nav-active" href="#games" aria-current="page"
+          >Games <span class="nav-label">NEW</span></a
+        >
+        <a href="#capabilities">Capabilities</a>
+        <a href="#workflow">How it works</a>
+        <a href="#community">Community</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <a
+        class="button secondary small header-cta"
+        href="https://quadcode.ai/#download"
+        >Get Quadcode <i data-icon="download"></i></a
+      >
+      <button
+        class="menu-toggle icon-button"
+        aria-label="Open navigation"
+        aria-expanded="false"
+        aria-controls="main-nav"
+      >
+        <span></span><span></span>
+      </button>
+    </header>
+    <main id="main">
+      <section class="hero" id="games" aria-labelledby="hero-title">
+        <div class="perspective-grid" aria-hidden="true"><div></div></div>
+        <div class="hero-intro">
+          <h1 id="hero-title">
+            Create games<br />with <span class="accent">one prompt</span>
+          </h1>
+          <a class="button" href="https://quadcode.ai/#download"
+            ><span class="spark" aria-hidden="true"></span>Start creating</a
+          >
+          <p class="platform-note">Desktop app for macOS & Windows</p>
+        </div>
+        <div
+          class="hero-showcase"
+          role="region"
+          aria-roledescription="carousel"
+          aria-label="Featured Quadcode projects — the first one is playable"
+          tabindex="0"
+        >
+          <div class="hero-cards" id="hero-cards"></div>
+          <div class="hero-controls">
+            <button
+              class="icon-button"
+              data-hero-prev
+              aria-label="Previous featured project"
+            >
+              <i data-icon="arrow-left"></i></button
+            ><span id="hero-counter" aria-live="polite">01 / 03</span
+            ><button
+              class="icon-button"
+              data-hero-next
+              aria-label="Next featured project"
+            >
+              <i data-icon="arrow-right"></i>
+            </button>
+          </div>
+        </div>
+        <p class="hero-caption">
+          Imagined by creators. Built with <strong>quadcode.ai</strong>
+        </p>
+      </section>
+
+      <section
+        class="capabilities grid-bg"
+        id="capabilities"
+        aria-labelledby="capabilities-title"
+      >
+        <header class="section-heading container">
+          <p class="eyebrow" data-reveal>Your solo creator superpower</p>
+          <h2 id="capabilities-title">Powered by your AI team</h2>
+        </header>
+        <div id="feature-list"></div>
+      </section>
+
+      <section
+        class="workspace section grid-bg"
+        id="workspace"
+        aria-labelledby="workspace-title"
+      >
+        <div class="container">
+          <h2 class="center" id="workspace-title">
+            Your tools.<br />One creative workspace.
+          </h2>
+          <div class="workspace-grid">
+            <article class="workspace-card frame" data-reveal>
+              <div class="integration-art" aria-hidden="true">
+                <span class="tool-tile tile-one">Git</span
+                ><span class="tool-tile tile-two">MCP</span
+                ><span class="tool-tile tile-main"
+                  ><img
+                    src="landing/quadcode-mark.svg"
+                    alt=""
+                    width="88"
+                    height="88" /></span
+                ><span class="tool-tile tile-four">CLI</span
+                ><span class="tool-tile tile-five">3D</span>
+              </div>
+              <h3>The stack you already love</h3>
+              <p>
+                Bring your models, tools and workflows.<br />MCP and CLI
+                integrations connect them.
+              </p>
+              <a
+                class="button secondary"
+                href="https://quadcode.ai/#integrations"
+                >Explore integrations <i data-icon="arrow-up-right"></i></a
+              >
+            </article>
+            <article class="workspace-card frame" data-reveal>
+              <div class="app-art" aria-hidden="true">
+                <div class="app-tile">
+                  <img
+                    src="landing/quadcode-mark.svg"
+                    alt=""
+                    width="100"
+                    height="100"
+                  />
+                </div>
+                <div class="app-shadow"></div>
+              </div>
+              <h3>Your own AI studio</h3>
+              <p>
+                Code, design, 3D and sound.<br />One desktop app. Your actual
+                project files.
+              </p>
+              <a class="button secondary" href="https://quadcode.ai/#download"
+                ><i data-icon="download"></i>Get Quadcode</a
+              >
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="explore section grid-bg"
+        id="explore"
+        aria-labelledby="explore-title"
+      >
+        <div class="container">
+          <h2 class="center" id="explore-title">Explore Quadcode games</h2>
+          <div
+            class="gallery"
+            data-reveal
+            role="region"
+            aria-roledescription="carousel"
+            aria-label="Quadcode game previews"
+            tabindex="0"
+          >
+            <div class="gallery-viewport frame">
+              <img
+                id="gallery-image"
+                src="landing/dragon.webp"
+                alt="Dragon flying over a volcanic landscape"
+                width="1280"
+                height="720"
+                loading="lazy"
+              />
+              <div class="gallery-shade"></div>
+              <button
+                class="icon-button gallery-prev"
+                aria-label="Previous game preview"
+              >
+                <i data-icon="arrow-left"></i></button
+              ><button
+                class="icon-button gallery-next"
+                aria-label="Next game preview"
+              >
+                <i data-icon="arrow-right"></i>
+              </button>
+              <div class="gallery-info">
+                <div>
+                  <span class="eyebrow" id="gallery-category"
+                    >3D · Flying game</span
+                  >
+                  <h3 id="gallery-title">Dragon Flight</h3>
+                </div>
+                <button class="button secondary small" id="open-preview">
+                  <i data-icon="play"></i>Watch preview
+                </button>
+              </div>
+            </div>
+            <div
+              class="gallery-thumbnails"
+              id="gallery-thumbnails"
+              aria-label="Choose a game preview"
+            ></div>
+            <p class="gallery-status" aria-live="polite" id="gallery-status">
+              Dragon Flight · 1 of 5
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="steps section light"
+        id="workflow"
+        aria-labelledby="steps-title"
+      >
+        <div class="container">
+          <h2 class="center" id="steps-title">Three steps to a game</h2>
+          <div class="steps-grid">
+            <article class="step" data-reveal>
+              <div class="step-art step-prompt">
+                <span class="step-number">01</span>
+                <div class="mini-prompt">
+                  <div class="prompt-genres">
+                    <span class="selected">Adventure</span><span>RPG</span
+                    ><span>3D</span>
+                  </div>
+                  <p>Create a dragon flying through a volcanic world.</p>
+                  <div class="mini-prompt-footer">
+                    <span>Example prompt</span
+                    ><i class="send-symbol" data-icon="arrow-up"></i>
+                  </div>
+                </div>
+              </div>
+              <h3>Build the prompt</h3>
+              <p>
+                Describe the world, the characters and how you want to play.
+                Start with your idea.
+              </p>
+            </article>
+            <article class="step" data-reveal>
+              <div class="step-art step-build">
+                <span class="step-number">02</span>
+                <div class="mini-agents">
+                  <div class="mini-agent">
+                    <img
+                      src="landing/cody.jpg"
+                      alt=""
+                      width="42"
+                      height="42"
+                      loading="lazy"
+                    />
+                    <div>
+                      <strong>Cody</strong><span>Game logic & code</span>
+                    </div>
+                    <span class="agent-status" aria-hidden="true"></span>
+                  </div>
+                  <div class="mini-agent">
+                    <img
+                      src="landing/lumi.jpg"
+                      alt=""
+                      width="42"
+                      height="42"
+                      loading="lazy"
+                    />
+                    <div>
+                      <strong>Lumi</strong><span>Worlds & visual design</span>
+                    </div>
+                    <span class="agent-status" aria-hidden="true"></span>
+                  </div>
+                  <div class="mini-agent">
+                    <img
+                      src="landing/sonic.jpg"
+                      alt=""
+                      width="42"
+                      height="42"
+                      loading="lazy"
+                    />
+                    <div><strong>Sonic</strong><span>Motion & sound</span></div>
+                    <span class="agent-status" aria-hidden="true"></span>
+                  </div>
+                </div>
+              </div>
+              <h3>Your agents build</h3>
+              <p>
+                Specialists work on the code, visuals and sound, using the tools
+                your project needs.
+              </p>
+            </article>
+            <article class="step" data-reveal>
+              <div class="step-art step-play">
+                <span class="step-number">03</span>
+                <div class="mini-game">
+                  <div class="window-bar">
+                    <span>dragon-world</span><span>Preview <i data-icon="arrow-up-right"></i></span>
+                  </div>
+                  <img
+                    src="landing/dragon.webp"
+                    alt="Dragon Flight game preview"
+                    width="640"
+                    height="360"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+              <h3>Play & iterate</h3>
+              <p>
+                Run your project. Try it out. Ask for changes and keep shaping
+                it into your game.
+              </p>
+            </article>
+          </div>
+          <div class="center" data-reveal>
+            <a class="button secondary" href="https://quadcode.ai/#download"
+              >Start now <i data-icon="arrow-right"></i></a
+            >
+          </div>
+        </div>
+      </section>
+
+      <section class="cta-section section" aria-labelledby="cta-title">
+        <div class="cta-panel container frame">
+          <div class="perspective-grid" aria-hidden="true"><div></div></div>
+          <p class="eyebrow" data-reveal>From your imagination to your project</p>
+          <h2 id="cta-title">
+            Describe a game.<br />Your agents build
+            <span class="accent">the rest.</span>
+          </h2>
+          <p>Code, visuals, 3D and sound — all in one workspace.</p>
+          <a class="button" href="https://quadcode.ai/#download"
+            ><span class="spark" aria-hidden="true"></span>Start creating</a
+          >
+        </div>
+      </section>
+
+      <section
+        class="community section light"
+        id="community"
+        aria-labelledby="community-title"
+      >
+        <div class="container">
+          <header class="center">
+            <p class="eyebrow" data-reveal>The Quadcode community</p>
+            <h2 id="community-title">
+              Real projects.<br />Shared by creators.
+            </h2>
+            <p>
+              See the process, not just the result.<br />Guides, workflows and
+              project files you can build on.
+            </p>
+          </header>
+          <div class="community-cards">
+            <a href="https://guides.quadcode.ai/#guides" class="community-card" data-reveal
+              ><span class="resource-index">01 / LEARN</span>
+              <h3>Go from a blank project<br />to your first build.</h3>
+              <p>
+                Step-by-step guides that show the brief, the decisions and the
+                finished files.
+              </p>
+              <span class="resource-link"
+                >Explore guides <i data-icon="arrow-up-right"></i></span
+              ></a
+            ><a href="https://guides.quadcode.ai/#guides" class="community-card" data-reveal
+              ><span class="resource-index">02 / EXPERIMENT</span>
+              <h3>Start with something<br />you can take apart.</h3>
+              <p>
+                Ready-to-go projects. Open the files, see how they work and make
+                them your own.
+              </p>
+              <span class="resource-link"
+                >Discover projects <i data-icon="arrow-up-right"></i></span
+              ></a
+            ><a href="https://guides.quadcode.ai/#guides" class="community-card" data-reveal
+              ><span class="resource-index">03 / CREATE</span>
+              <h3>Give your agents<br />a repeatable workflow.</h3>
+              <p>
+                Explore skills for design, development and game creation in the
+                community library.
+              </p>
+              <span class="resource-link"
+                >Browse workflows <i data-icon="arrow-up-right"></i></span
+              ></a
+            >
+          </div>
+        </div>
+      </section>
+
+      <section class="faq section" id="faq" aria-labelledby="faq-title">
+        <div class="container">
+          <h2 class="center" id="faq-title">Got any questions left?</h2>
+          <div id="faq-list" class="faq-list"></div>
+        </div>
+      </section>
+    </main>
+    <footer class="footer light">
+      <div class="container">
+        <div class="footer-top">
+          <div class="footer-intro" data-reveal>
+            <a class="footer-brand" href="#games"
+              ><img
+                src="landing/quadcode-mark.svg"
+                alt=""
+                width="38"
+                height="38"
+              /><span>quadcode.ai</span></a
+            >
+            <h2>Your own<br />creative superpower.</h2>
+          </div>
+          <div class="footer-column" data-reveal>
+            <h3>Product</h3>
+            <a href="#capabilities">Capabilities</a><a href="#explore">Games</a
+            ><a href="play.html">Playground</a
+            ><a href="https://quadcode.ai/#integrations">Integrations</a
+            ><a href="https://quadcode.ai/#download">Download</a>
+          </div>
+          <div class="footer-column" data-reveal>
+            <h3>Resources</h3>
+            <a href="https://guides.quadcode.ai/#guides">Community</a
+            ><a href="#workflow">How it works</a><a href="#faq">FAQ</a>
+          </div>
+          <div class="footer-column" data-reveal>
+            <h3>Legal</h3>
+            <a href="https://quadcode.ai/privacy">Privacy policy</a
+            ><a href="https://quadcode.ai/terms">Terms & conditions</a>
+          </div>
+        </div>
+        <div class="footer-bottom" data-reveal>
+          <span>© <span id="year">2026</span> Quadcode</span
+          ><span>Made with Quadcode AI</span><a href="#games">Back to top <i data-icon="arrow-up"></i></a>
+        </div>
+      </div>
+    </footer>
+    <dialog id="project-dialog" aria-labelledby="dialog-title">
+      <button
+        class="icon-button dialog-close"
+        aria-label="Close project preview"
+      >
+        <i data-icon="x"></i></button
+      ><img
+        id="dialog-image"
+        src="landing/dragon.webp"
+        alt=""
+        width="1280"
+        height="720"
+      />
+      <div class="dialog-body">
+        <p class="eyebrow">Quadcode project preview</p>
+        <h2 id="dialog-title">Dragon Flight</h2>
+        <p id="dialog-description"></p>
+        <a
+          class="button"
+          id="dialog-link"
+          href="https://quadcode.ai/#make-alive"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Explore on Quadcode <i data-icon="arrow-up-right"></i></a
+        >
+        <p class="dialog-note">
+          Opens the original Quadcode showcase in a new tab.
+        </p>
+      </div>
+    </dialog>
+    <noscript
+      ><div class="noscript">
+        Enable JavaScript to play the demo and explore the project galleries.
+        <a href="play.html">Open the playground directly</a> or
+        <a href="https://quadcode.ai/#download">get Quadcode here.</a>
+      </div></noscript
+    >
+  </body>
+</html>

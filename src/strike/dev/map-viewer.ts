@@ -1,0 +1,613 @@
+/**
+ * `?dev=map` — W1-A dev entry: load a map-editor GLB, fly around it, inspect everything the map
+ * pipeline produced (zones, spawns, doors, collider, navmesh, raycasts).
+ *
+ * `?nobatch=1` loads the map without static batching, to compare draw calls.
+ *
+ * Controls: click to capture the mouse (or drag), WASD + Space/Q up-down, Shift to sprint,
+ * E toggles the door or window the camera is looking at, P flips the post chain, Esc to release.
+ * Overlays: Z zones · S spawns · D doors · C collider (movement → bullet → off) ·
+ * N navmesh · R raycast probe · G glass panes. With the R probe on, clicking a pane breaks it.
+ * S and D only toggle while the cursor is free, because they double as movement keys.
+ */
+import {
+  DoubleSide,
+  Box3,
+  BoxGeometry,
+  BufferAttribute,
+  BufferGeometry,
+  CanvasTexture,
+  Color,
+  ConeGeometry,
+  Group,
+  Line,
+  LineBasicMaterial,
+  LineSegments,
+  Mesh,
+  MeshBasicMaterial,
+  Object3D,
+  SphereGeometry,
+  Sprite,
+  SpriteMaterial,
+  Vector3,
+} from 'three'
+import { DOORS, TEAMS } from '../config'
+import { createRenderer } from '../engine/renderer'
+import { createLoaders } from '../engine/loaders'
+import { createEnvironment } from '../engine/environment'
+import { loadMap } from '../map/map-loader'
+import { colliderTriangleCount, createWorldQuery } from '../map/collider'
+import { createDoorSystem, type DoorSystem } from '../map/doors'
+import { createGlassSystem } from '../map/glass'
+import { resolveSpawns } from '../map/spawns'
+import { buildNavigation, createNavMeshHelper } from '../map/navmesh'
+import type { GlassPane, HitResult, MapData, SpawnLayout } from '../types'
+
+type OverlayKey = 'z' | 's' | 'd' | 'c' | 'n' | 'r' | 'g'
+
+const OVERLAY_LABELS: Record<OverlayKey, string> = {
+  z: 'zones',
+  s: 'spawns',
+  d: 'doors',
+  c: 'collider',
+  n: 'navmesh',
+  r: 'raycast',
+  g: 'glass',
+}
+
+const FLY_SPEED = 6
+const FLY_SPRINT = 18
+/** The viewer interacts from the air, so it reaches farther than the in-game `interactRange`. */
+const VIEWER_INTERACT_RANGE = Math.max(DOORS.interactRange, 8)
+const LOOK_SENSITIVITY = 0.0022
+const PROBE_RANGE = 60
+const MAX_PITCH = Math.PI / 2 - 0.02
+
+const _forward = new Vector3()
+const _right = new Vector3()
+const _move = new Vector3()
+const _probeDir = new Vector3()
+const _probeEnd = new Vector3()
+const _interactDir = new Vector3()
+
+export async function start(): Promise<void> {
+  const container = document.getElementById('app')!
+  container.style.cssText = 'position:fixed;inset:0;margin:0;background:#0d0d0f;overflow:hidden'
+
+  const params = new URLSearchParams(location.search)
+  const mapUrl = params.get('map') ?? '/maps/house.glb'
+  const batchStatic = params.get('nobatch') !== '1'
+
+  const engine = await createRenderer(container)
+  const loaders = createLoaders(engine.renderer)
+
+  const t0 = performance.now()
+  const map = await loadMap(mapUrl, loaders, { batchStatic })
+  const loadMs = performance.now() - t0
+  engine.scene.add(map.root)
+
+  const environment = createEnvironment(engine, map.bounds)
+  // Bullet collider + moving leaves: what a paintball actually sees.
+  const world = createWorldQuery(map.bulletCollider ?? map.collider, map.doors, map.breakables)
+  const doors = createDoorSystem(map)
+  const glass = createGlassSystem(map, engine.scene)
+  const nav = await buildNavigation(map)
+  const spawns = resolveSpawns(map, world, nav)
+
+  doors.onToggle((door, open) => {
+    console.info(
+      `[doors] ${door.kind ?? 'door'} ${door.label} (${door.id}) → ${open ? 'open' : 'closed'}`,
+    )
+  })
+
+  /** E: toggle whatever openable the fly camera is pointing at. */
+  function interact(): void {
+    camera.getWorldDirection(_interactDir)
+    const target = doors.findInteractable(camera.position, _interactDir, VIEWER_INTERACT_RANGE)
+    if (!target) {
+      console.info('[doors] nothing to open here')
+      return
+    }
+    doors.toggle(target.id)
+  }
+
+  // ---- overlays -----------------------------------------------------------
+  const overlays = new Group()
+  overlays.name = 'debug-overlays'
+  engine.scene.add(overlays)
+
+  const zoneOverlay = buildZoneOverlay(map)
+  const spawnOverlay = buildSpawnOverlay(spawns)
+  const doorOverlay = buildDoorOverlay(map)
+  const colliderOverlay = buildColliderOverlay(map)
+  // C cycles the two colliders rather than toggling one: the whole point of the split is that
+  // they differ around windows, and you can only see that by flipping between them.
+  let colliderView = 0
+  const navOverlay = createNavMeshHelper(nav) ?? new Group()
+  const probeOverlay = buildProbeOverlay()
+  const glassOverlay = buildGlassOverlay(map)
+  overlays.add(
+    zoneOverlay.group,
+    spawnOverlay,
+    doorOverlay.group,
+    colliderOverlay.group,
+    navOverlay,
+    probeOverlay.group,
+    glassOverlay.group,
+  )
+
+  const visible: Record<OverlayKey, boolean> = {
+    z: false, s: true, d: true, c: false, n: false, r: false, g: false,
+  }
+  const objects: Record<OverlayKey, Object3D> = {
+    z: zoneOverlay.group,
+    s: spawnOverlay,
+    d: doorOverlay.group,
+    c: colliderOverlay.group,
+    n: navOverlay,
+    r: probeOverlay.group,
+    g: glassOverlay.group,
+  }
+  const applyVisibility = () => {
+    for (const key of Object.keys(objects) as OverlayKey[]) objects[key].visible = visible[key]
+    colliderOverlay.show(colliderView)
+  }
+  applyVisibility()
+
+  // ---- fly camera ---------------------------------------------------------
+  const camera = engine.camera
+  const center = map.bounds.getCenter(new Vector3())
+  const size = map.bounds.getSize(new Vector3())
+  camera.position.set(center.x, Math.max(2, map.bounds.min.y + 1.7), center.z + Math.min(size.z, 14) * 0.5 + 6)
+  camera.rotation.order = 'YXZ'
+  let yaw = Math.atan2(-(center.x - camera.position.x), -(center.z - camera.position.z))
+  let pitch = -0.12
+
+  const keys = new Set<string>()
+  let probeHit: HitResult | null = null
+  let pointerLocked = false
+  let dragging = false
+  const canvas = engine.renderer.domElement
+
+  const moveActive = () => pointerLocked || dragging
+
+  canvas.addEventListener('mousedown', (e) => {
+    // With the R probe on, a click on a pane shatters it — the quickest way to eyeball shards.
+    if (e.button === 0 && visible.r && probeHit?.kind === 'glass') {
+      const pane = map.breakables?.find((p) => p.mesh === probeHit?.object)
+      if (pane && glass.break(pane.id, probeHit.point, _probeDir)) {
+        console.info(`[glass] ${pane.id} shattered (${glass.states().length} broken)`)
+      }
+      return
+    }
+    if (e.button === 0 && !pointerLocked) {
+      // Chrome rejects the promise when the lock was released moments ago — ignore it so the
+      // console stays clean.
+      const pending = canvas.requestPointerLock?.() as unknown as Promise<void> | undefined
+      if (pending && typeof pending.catch === 'function') pending.catch(() => {})
+      dragging = true
+    }
+  })
+  window.addEventListener('mouseup', () => {
+    dragging = false
+  })
+  document.addEventListener('pointerlockchange', () => {
+    pointerLocked = document.pointerLockElement === canvas
+    if (!pointerLocked) keys.clear()
+  })
+  window.addEventListener('mousemove', (e) => {
+    if (!moveActive()) return
+    yaw -= e.movementX * LOOK_SENSITIVITY
+    pitch -= e.movementY * LOOK_SENSITIVITY
+    pitch = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, pitch))
+  })
+
+  window.addEventListener('keydown', (e) => {
+    const key = e.key.toLowerCase()
+    keys.add(key)
+    if (key === 'e' && !e.repeat) interact()
+    // P flips the whole post chain, which is the only way to judge it: same frame, same light.
+    if (key === 'p' && !e.repeat) {
+      engine.post.settings.enabled = !engine.post.settings.enabled
+      console.info(`[post] ${engine.post.describe()}`)
+    }
+    if (!(key in OVERLAY_LABELS)) return
+    // S and D are also movement keys — only treat them as toggles with the cursor free.
+    if ((key === 's' || key === 'd') && moveActive()) return
+    if (e.repeat) return
+    const overlayKey = key as OverlayKey
+    if (overlayKey === 'c') {
+      colliderView = (colliderView + 1) % (colliderOverlay.views.length + 1)
+      visible.c = colliderView > 0
+    } else {
+      visible[overlayKey] = !visible[overlayKey]
+    }
+    applyVisibility()
+  })
+  window.addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()))
+  window.addEventListener('blur', () => keys.clear())
+
+  // ---- HUD ----------------------------------------------------------------
+  const panel = document.createElement('div')
+  panel.style.cssText = [
+    'position:fixed;top:12px;left:12px;z-index:10',
+    'font:11px/1.55 "JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace',
+    'color:#e4e4e7;background:rgba(13,13,15,.82);border:1px solid #27272a;border-radius:10px',
+    // `white-space:pre` cannot wrap, so the box sizes to its widest line instead of clipping.
+    'padding:10px 12px;white-space:pre;pointer-events:none;backdrop-filter:blur(6px)',
+    'width:max-content;max-height:calc(100vh - 24px);overflow:hidden',
+  ].join(';')
+  container.appendChild(panel)
+
+  // `renderer.info` is reset at the top of every `render()`, and the panel is built inside the
+  // frame — so sample it from a timer, which lands between frames with last frame's totals.
+  const info = engine.renderer.info
+  let draws = 0
+  let drawnTris = 0
+  window.setInterval(() => {
+    draws = info.render.drawCalls
+    drawnTris = info.render.triangles
+  }, 250)
+  const sceneTris = countSceneTriangles(map)
+  const colliderTris = colliderTriangleCount(map.collider)
+  const bulletTris = map.bulletCollider ? colliderTriangleCount(map.bulletCollider) : colliderTris
+  // First point of each team in grid order — the true anchors are printed to the console by
+  // resolveSpawns, since SpawnLayout has nowhere to carry them.
+  const firstA = spawns.a[0]?.position
+  const firstB = spawns.b[0]?.position
+
+  let fps = 0
+  let fpsAccum = 0
+  let fpsFrames = 0
+  let panelDue = 0
+
+  function renderPanel(now: number) {
+    if (now < panelDue) return
+    panelDue = now + 200
+    const doorStates = map.doors
+      .map(
+        (d) =>
+          `${(d.kind ?? 'door').padEnd(6)} ${d.id.slice(-6)} ` +
+          `${doors.isOpen(d.id) ? 'OPEN' : 'shut'} ${doors.openness(d.id).toFixed(2)}`,
+      )
+      .join('\n  ')
+    panel.textContent = [
+      `PAINT STRIKE · map viewer`,
+      `map        ${map.name}`,
+      `backend    ${engine.backend}   ${fps.toFixed(0)} fps`,
+      `post (P)   ${engine.post.describe()}`,
+      `load       ${loadMs.toFixed(0)} ms   batching ${batchStatic ? 'on' : 'off (?nobatch=1)'}`,
+      `draws      ${draws} calls / ${drawnTris.toLocaleString()} tris drawn`,
+      `tris       ${sceneTris.toLocaleString()} scene / ${colliderTris.toLocaleString()} movement` +
+        ` / ${bulletTris.toLocaleString()} bullet collider`,
+      `levels     ${map.levels.length}   zones ${map.zones.length}   openables ${map.doors.length}` +
+        ` (${map.doors.filter((d) => d.kind === 'window').length} windows)   spawnNodes ${map.spawnNodes.length}`,
+      `bounds     ${fmt(map.bounds.min)} → ${fmt(map.bounds.max)}`,
+      `spawns     source=${spawns.source}  a=${spawns.a.length} b=${spawns.b.length}`,
+      `  first A  ${firstA ? fmt(firstA) : '—'}`,
+      `  first B  ${firstB ? fmt(firstB) : '—'}`,
+      `navmesh    ${nav.ready ? 'ready' : 'FAILED (straight-line fallback)'}`,
+      `camera     ${fmt(camera.position)}`,
+      map.doors.length ? `openables (E toggles)\n  ${doorStates}` : 'openables  none',
+      `glass      ${map.breakables?.length ?? 0} panes, ${glass.states().length} broken` +
+        `${visible.r ? ' · click a pane to break it' : ''}`,
+      visible.r
+        ? `probe      ${probeHit ? `${probeHit.kind} @ ${probeHit.distance.toFixed(2)} m  n=${fmt(probeHit.normal, 2)}` : 'no hit'}`
+        : 'probe      off (R)',
+      '',
+      `overlays   ${(Object.keys(OVERLAY_LABELS) as OverlayKey[])
+        .map((k) =>
+          k === 'c'
+            ? `C:collider${colliderView ? `*(${colliderOverlay.views[colliderView - 1]})` : ''}`
+            : `${k.toUpperCase()}:${OVERLAY_LABELS[k]}${visible[k] ? '*' : ''}`,
+        )
+        .join(' ')}`,
+      `click to fly · WASD + Space/Q · Shift fast · E interact · P post · Esc frees cursor`,
+      `(S/D toggle only while the cursor is free)`,
+    ].join('\n')
+  }
+
+  // ---- frame --------------------------------------------------------------
+  engine.onUpdate((dt) => {
+    if (moveActive()) {
+      _forward.set(-Math.sin(yaw), 0, -Math.cos(yaw))
+      _right.set(Math.cos(yaw), 0, -Math.sin(yaw))
+      _move.set(0, 0, 0)
+      if (keys.has('w')) _move.add(_forward)
+      if (keys.has('s')) _move.sub(_forward)
+      if (keys.has('d')) _move.add(_right)
+      if (keys.has('a')) _move.sub(_right)
+      // E is the interact key now (like in game), so vertical fly moved to Space / Q.
+      if (keys.has(' ')) _move.y += 1
+      if (keys.has('q')) _move.y -= 1
+      if (_move.lengthSq() > 0) {
+        _move.normalize().multiplyScalar((keys.has('shift') ? FLY_SPRINT : FLY_SPEED) * dt)
+        camera.position.add(_move)
+      }
+    }
+
+    doors.update(dt)
+    glass.update(dt)
+  })
+
+  engine.onRender((_alpha, dt) => {
+    camera.rotation.set(pitch, yaw, 0)
+    environment.update(camera.position)
+    doorOverlay.update(doors)
+
+    if (visible.g) glassOverlay.update()
+    probeHit = null
+    if (visible.r) {
+      camera.getWorldDirection(_probeDir)
+      probeHit = world.raycast(camera.position, _probeDir, PROBE_RANGE)
+      _probeEnd.copy(probeHit ? probeHit.point : _probeDir.multiplyScalar(PROBE_RANGE).add(camera.position))
+      probeOverlay.update(camera.position, _probeEnd, probeHit)
+    }
+
+    fpsAccum += dt
+    fpsFrames++
+    if (fpsAccum >= 0.25) {
+      fps = fpsFrames / fpsAccum
+      fpsAccum = 0
+      fpsFrames = 0
+    }
+    renderPanel(performance.now())
+  })
+
+  engine.start()
+
+  console.info(
+    `[map-viewer] ${map.name} · backend=${engine.backend} · ${loadMs.toFixed(0)} ms · ` +
+      `${map.levels.length} levels, ${map.zones.length} zones, ${map.doors.length} openables, ` +
+      `${colliderTris} collider tris · spawns=${spawns.source} · navmesh=${nav.ready}`,
+  )
+
+  // Optional debugging handle (allowed by ARCHITECTURE.md).
+  ;(window as unknown as { __ps: unknown }).__ps = {
+    engine, map, world, doors, glass, spawns, nav, environment,
+    post: engine.post,
+    /** Park the fly camera for a reproducible screenshot. Angles in degrees. */
+    view(x: number, y: number, z: number, yawDeg: number, pitchDeg: number) {
+      camera.position.set(x, y, z)
+      yaw = (yawDeg * Math.PI) / 180
+      pitch = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, (pitchDeg * Math.PI) / 180))
+      return `${fmt(camera.position)} yaw=${yawDeg} pitch=${pitchDeg}`
+    },
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Overlay builders
+// ---------------------------------------------------------------------------
+
+function buildZoneOverlay(map: MapData): { group: Group } {
+  const group = new Group()
+  group.name = 'overlay-zones'
+  for (const zone of map.zones) {
+    const color = new Color(zone.color || '#8b8b93')
+    // WebGPURenderer does not support LineLoop, so close the ring by repeating the first point.
+    const ring = [...zone.polygon, zone.polygon[0]]
+    const positions = new Float32Array(ring.length * 3)
+    ring.forEach((p, i) => {
+      positions[i * 3] = p.x
+      positions[i * 3 + 1] = zone.floorY + 0.03
+      positions[i * 3 + 2] = p.y
+    })
+    const geometry = new BufferGeometry()
+    geometry.setAttribute('position', new BufferAttribute(positions, 3))
+    group.add(new Line(geometry, new LineBasicMaterial({ color, depthTest: false })))
+    const sprite = makeLabel(zone.label, zone.color || '#e4e4e7')
+    sprite.position.set(zone.centroid.x, zone.floorY + 1.2, zone.centroid.z)
+    group.add(sprite)
+  }
+  return { group }
+}
+
+function buildSpawnOverlay(spawns: SpawnLayout): Group {
+  const group = new Group()
+  group.name = 'overlay-spawns'
+  const cone = new ConeGeometry(0.18, 0.55, 10)
+  const arrow = new BoxGeometry(0.04, 0.04, 0.7)
+  for (const team of ['a', 'b'] as const) {
+    // depthTest off, like the door markers: spawns are usually indoors and you want to see
+    // where they are from outside the building.
+    const material = new MeshBasicMaterial({ color: TEAMS[team].colorHex, depthTest: false })
+    for (const point of spawns[team]) {
+      const marker = new Mesh(cone, material)
+      marker.position.copy(point.position).y += 0.3
+      group.add(marker)
+      const dir = new Mesh(arrow, material)
+      dir.position.copy(point.position).y += 0.12
+      dir.rotation.order = 'YXZ'
+      dir.rotation.y = point.yaw
+      dir.translateZ(-0.45)
+      group.add(dir)
+    }
+  }
+  return group
+}
+
+function buildDoorOverlay(map: MapData): {
+  group: Group
+  update(doors: Pick<DoorSystem, 'openness'>): void
+} {
+  const group = new Group()
+  group.name = 'overlay-doors'
+  const doorGeometry = new SphereGeometry(0.13, 12, 8)
+  // Windows get a smaller marker so the two kinds are told apart at a glance.
+  const windowGeometry = new SphereGeometry(0.08, 10, 6)
+  const entries = map.doors.map((door) => {
+    const isWindow = door.kind === 'window'
+    const material = new MeshBasicMaterial({ color: 0xef4444, depthTest: false })
+    const mesh = new Mesh(isWindow ? windowGeometry : doorGeometry, material)
+    mesh.position.copy(door.center)
+    group.add(mesh)
+    return { id: door.id, material, isWindow }
+  })
+  const openDoor = new Color(0x22c55e)
+  const openWindow = new Color(0x38bdf8)
+  const shut = new Color(0xef4444)
+  const mid = new Color()
+  return {
+    group,
+    update(doors) {
+      for (const entry of entries) {
+        mid.copy(shut).lerp(entry.isWindow ? openWindow : openDoor, doors.openness(entry.id))
+        entry.material.color.copy(mid)
+      }
+    },
+  }
+}
+
+/**
+ * One wireframe per collider. `views[i]` names the mesh shown by `show(i + 1)`; `show(0)` hides
+ * them all. A map without openable windows has a single collider object, hence a single view.
+ */
+function buildColliderOverlay(map: MapData): {
+  group: Group
+  views: string[]
+  show(view: number): void
+} {
+  const group = new Group()
+  group.name = 'overlay-collider'
+  const views: string[] = ['movement']
+  const meshes = [colliderWireframe(map.collider.geometry, 0x22d3ee)]
+  if (map.bulletCollider && map.bulletCollider !== map.collider) {
+    views.push('bullet')
+    meshes.push(colliderWireframe(map.bulletCollider.geometry, 0xf472b6))
+  }
+  for (const mesh of meshes) group.add(mesh)
+  return {
+    group,
+    views,
+    show(view) {
+      for (let i = 0; i < meshes.length; i++) meshes[i].visible = view === i + 1
+    },
+  }
+}
+
+function colliderWireframe(geometry: MapData['collider']['geometry'], color: number): Mesh {
+  const mesh = new Mesh(
+    geometry,
+    new MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 0.35, side: DoubleSide }),
+  )
+  mesh.matrixAutoUpdate = false
+  mesh.matrixWorldAutoUpdate = false
+  mesh.frustumCulled = false
+  return mesh
+}
+
+/**
+ * Wireframe box per glass pane, refreshed from the pane's live matrix so a pane inside a swinging
+ * sash keeps its highlight, and hidden once the pane is broken.
+ */
+function buildGlassOverlay(map: MapData): { group: Group; update(): void } {
+  const group = new Group()
+  group.name = 'overlay-glass'
+  const material = new LineBasicMaterial({ color: 0x38bdf8, depthTest: false })
+  const entries: { pane: GlassPane; box: LineSegments }[] = []
+  for (const pane of map.breakables ?? []) {
+    const geometry = pane.mesh.geometry
+    if (!geometry.boundingBox) geometry.computeBoundingBox()
+    const bounds = geometry.boundingBox
+    if (!bounds) continue
+    const box = new LineSegments(boxEdges(bounds), material)
+    box.matrixAutoUpdate = false
+    box.frustumCulled = false
+    group.add(box)
+    entries.push({ pane, box })
+  }
+  return {
+    group,
+    update() {
+      for (const entry of entries) {
+        entry.box.visible = !entry.pane.broken
+        entry.box.matrix.copy(entry.pane.mesh.matrixWorld)
+        entry.box.matrixWorld.copy(entry.pane.mesh.matrixWorld)
+      }
+    },
+  }
+}
+
+/** The 12 edges of a local-space box, as a line-segment geometry. */
+function boxEdges(box: Box3): BufferGeometry {
+  const { min, max } = box
+  const c: [number, number, number][] = [
+    [min.x, min.y, min.z], [max.x, min.y, min.z], [max.x, min.y, max.z], [min.x, min.y, max.z],
+    [min.x, max.y, min.z], [max.x, max.y, min.z], [max.x, max.y, max.z], [min.x, max.y, max.z],
+  ]
+  const pairs = [0,1, 1,2, 2,3, 3,0, 4,5, 5,6, 6,7, 7,4, 0,4, 1,5, 2,6, 3,7]
+  const positions = new Float32Array(pairs.length * 3)
+  pairs.forEach((index, i) => {
+    positions[i * 3] = c[index][0]
+    positions[i * 3 + 1] = c[index][1]
+    positions[i * 3 + 2] = c[index][2]
+  })
+  const geometry = new BufferGeometry()
+  geometry.setAttribute('position', new BufferAttribute(positions, 3))
+  return geometry
+}
+
+function buildProbeOverlay(): {
+  group: Group
+  update(from: Vector3, to: Vector3, hit: HitResult | null): void
+} {
+  const group = new Group()
+  group.name = 'overlay-probe'
+  const geometry = new BufferGeometry()
+  geometry.setAttribute('position', new BufferAttribute(new Float32Array(6), 3))
+  const line = new Line(geometry, new LineBasicMaterial({ color: 0xfacc15, depthTest: false }))
+  line.frustumCulled = false
+  const marker = new Mesh(
+    new SphereGeometry(0.06, 10, 8),
+    new MeshBasicMaterial({ color: 0xfacc15, depthTest: false }),
+  )
+  marker.frustumCulled = false
+  group.add(line, marker)
+  const attribute = geometry.getAttribute('position') as BufferAttribute
+  return {
+    group,
+    update(from, to, hit) {
+      attribute.setXYZ(0, from.x, from.y, from.z)
+      attribute.setXYZ(1, to.x, to.y, to.z)
+      attribute.needsUpdate = true
+      marker.visible = hit !== null
+      if (hit) marker.position.copy(to)
+    },
+  }
+}
+
+function makeLabel(text: string, color: string): Sprite {
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 128
+  const ctx = canvas.getContext('2d')!
+  ctx.fillStyle = 'rgba(13,13,15,0.75)'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx.font = '600 64px Inter, system-ui, sans-serif'
+  ctx.fillStyle = color
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2)
+  const sprite = new Sprite(new SpriteMaterial({ map: new CanvasTexture(canvas), depthTest: false }))
+  sprite.scale.set(2, 0.5, 1)
+  return sprite
+}
+
+/** Only what is actually drawn: batching hides the originals rather than deleting them all. */
+function countSceneTriangles(map: MapData): number {
+  let total = 0
+  map.root.traverse((obj) => {
+    const mesh = obj as Mesh
+    if (!mesh.isMesh || !mesh.geometry || !mesh.visible) return
+    const index = mesh.geometry.getIndex()
+    const position = mesh.geometry.getAttribute('position')
+    if (index) total += index.count / 3
+    else if (position) total += position.count / 3
+  })
+  return Math.floor(total)
+}
+
+function fmt(v: Vector3, digits = 1): string {
+  return `${v.x.toFixed(digits)}, ${v.y.toFixed(digits)}, ${v.z.toFixed(digits)}`
+}

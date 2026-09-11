@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Quadcode Games Playground — six casts, one character</title>
+    <meta name="description" content="A real-time Three.js character with six castable abilities. Pick, aim, fire. A short interactive from Quadcode." />
+    <meta name="theme-color" content="#0b0d15" />
+    <link rel="icon" type="image/svg+xml" href="./brand/quadcode-mark.svg" />
+    <meta property="og:title" content="Quadcode Games Playground" />
+    <meta property="og:description" content="Six casts. One character. Go." />
+    <link rel="preload" as="fetch" href="./models/Idle.fbx" crossorigin />
+    <link rel="preload" as="fetch" href="./models/dummy.fbx" crossorigin />
+    <!-- `crossorigin` to match TextureLoader, which requests anonymously. -->
+    <link rel="preload" as="image" href="./models/diffuse.png" crossorigin />
+    <link rel="stylesheet" href="./src/ui/styles.css" />
+  </head>
+  <body>
+    <canvas id="viewport"></canvas>
+
+    <!-- Boot / loading veil -->
+    <div id="loader" class="loader">
+      <div class="loader__inner">
+        <img class="loader__mark" src="./brand/quadcode-mark.svg" alt="" width="56" height="56" />
+        <h1 class="loader__title">Games Playground</h1>
+        <p class="loader__sub">Six casts. One character. Go.</p>
+        <div class="loader__bar"><i id="loader-fill"></i></div>
+        <p class="loader__status" id="loader-status">Waking the character…</p>
+      </div>
+    </div>
+
+    <!-- Heads-up display (populated by src/ui/HUD.js) -->
+    <div id="hud" class="hud" aria-live="polite"></div>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

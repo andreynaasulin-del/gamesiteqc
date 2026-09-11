@@ -1,0 +1,394 @@
+/**
+ * Walk a map-editor exported glTF scene and pull out the gameplay registry (W1-A).
+ *
+ * The contract is documented in docs/ARCHITECTURE.md ("The map GLB contract"). Everything is
+ * optional: a plain GLB from anywhere parses to empty lists and stays fully static.
+ */
+import {
+  AnimationClip,
+  Box3,
+  Euler,
+  Matrix4,
+  Mesh,
+  Object3D,
+  PropertyBinding,
+  Quaternion,
+  Vector2,
+  Vector3,
+} from 'three'
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import type {
+  DoorInfo,
+  GlassPane,
+  LevelInfo,
+  SceneExtras,
+  SpawnNodeInfo,
+  ZoneInfo,
+} from '../types'
+
+export interface ParsedScene {
+  levels: LevelInfo[]
+  zones: ZoneInfo[]
+  spawnNodes: SpawnNodeInfo[]
+  doors: DoorInfo[]
+  /**
+   * Subtrees driven by a baked clip, split by what they mean for collision (W3-D):
+   *
+   * - `doorLeafNodes` — door panels. Cut from BOTH colliders: a doorway must be walk-through
+   *   whatever the door state, and bullets meet the panel through its own per-leaf BVH.
+   * - `windowLeafNodes` — window sashes. Cut from the BULLET collider only, so a paintball
+   *   flies through an open one; the movement collider keeps them in their closed rest pose,
+   *   which is what makes a window unpassable whether it is open or shut.
+   */
+  doorLeafNodes: Set<Object3D>
+  windowLeafNodes: Set<Object3D>
+  /**
+   * Every transparent mesh in the map — fixed window glass, French-door panes, the pane inside
+   * an openable sash. Paintballs shatter them (W4-A), so they are tested dynamically rather than
+   * baked into the bullet collider, and they are never merged into a batch: each one has to stay
+   * its own mesh so `glass.ts` can hide it.
+   *
+   * Ids are `glass:<index in traversal order>`, which is stable for a given GLB, so every client
+   * names the same pane without any of them having to agree over the network.
+   */
+  glassPanes: GlassPane[]
+  /**
+   * `kind: 'roof'` subtrees. Solid for players and bullets, but kept out of the NAVMESH source:
+   * recast accepts a house pitch as walkable at `NAVMESH.walkableSlopeAngle`, and bots then pick
+   * roam goals on the ridge that no path can reach.
+   */
+  roofNodes: Set<Object3D>
+  /** Zone and spawn marker nodes — excluded from the collider so markers never block anything. */
+  markerNodes: Set<Object3D>
+}
+
+const _matrix = new Matrix4()
+const _position = new Vector3()
+const _quaternion = new Quaternion()
+const _scale = new Vector3()
+const _euler = new Euler(0, 0, 0, 'YXZ')
+const _box = new Box3()
+const _size = new Vector3()
+const _local = new Vector3()
+
+export function parseSceneGraph(gltf: GLTF): ParsedScene {
+  const root = gltf.scene
+  root.updateMatrixWorld(true)
+
+  const levels: LevelInfo[] = []
+  const zones: ZoneInfo[] = []
+  const spawnNodes: SpawnNodeInfo[] = []
+  const doors: DoorInfo[] = []
+  const doorLeafNodes = new Set<Object3D>()
+  const windowLeafNodes = new Set<Object3D>()
+  const roofNodes = new Set<Object3D>()
+  const markerNodes = new Set<Object3D>()
+  const glassPanes: GlassPane[] = []
+
+  // Levels first: zones/spawns/doors resolve their owning level by walking up the tree.
+  const levelByNode = new Map<Object3D, LevelInfo>()
+
+  root.traverse((node) => {
+    const extras = extrasOf(node)
+    if (extras?.kind !== 'level') return
+    const level: LevelInfo = {
+      id: extras.nodeId ?? node.name ?? `level_${levels.length}`,
+      label: extras.label ?? `Level ${levels.length}`,
+      node,
+      y: worldY(node),
+    }
+    levels.push(level)
+    levelByNode.set(node, level)
+  })
+  levels.sort((a, b) => a.y - b.y)
+
+  // Glass first, in its own pass, so the ids only depend on the scene graph — not on whether a
+  // node happens to carry the map editor extras. Only what a player would call a window: transparent
+  // meshes owned by a `window` or `door` node. A house is full of other transparent surfaces —
+  // house v7 has 23 under a fridge, 2 on a side table and 1 at the site root — and none
+  // of those should burst into shards when a paintball clips them; they stay solid, unbreakable
+  // parts of the bullet collider.
+  root.traverse((node) => {
+    const mesh = node as Mesh
+    if (!mesh.isMesh || !isTransparent(mesh.material)) return
+    if (!GLAZED_KINDS.has(ownerKind(mesh))) return
+    glassPanes.push({ id: `glass:${glassPanes.length}`, mesh, broken: false })
+  })
+
+  root.traverse((node) => {
+    const extras = extrasOf(node)
+    if (!extras) return
+
+    switch (extras.kind) {
+      case 'zone': {
+        markerNodes.add(node)
+        const zone = parseZone(node, extras, levelOf(node, levelByNode))
+        if (zone) zones.push(zone)
+        break
+      }
+      case 'roof': {
+        roofNodes.add(node)
+        break
+      }
+      case 'spawn': {
+        markerNodes.add(node)
+        spawnNodes.push(parseSpawnNode(node, extras, levelOf(node, levelByNode), spawnNodes.length))
+        break
+      }
+      // Doors and windows are the same thing to the game: a node with a baked "open" clip.
+      case 'door':
+      case 'window': {
+        const openable = parseOpenable(gltf, node, extras)
+        if (openable) {
+          doors.push(openable.info)
+          const leaves = openable.info.kind === 'window' ? windowLeafNodes : doorLeafNodes
+          for (const animated of openable.animatedNodes) leaves.add(animated)
+        }
+        break
+      }
+      default:
+        break
+    }
+  })
+
+  return {
+    levels,
+    zones,
+    spawnNodes,
+    doors,
+    doorLeafNodes,
+    windowLeafNodes,
+    roofNodes,
+    markerNodes,
+    glassPanes,
+  }
+}
+
+/** Only these own breakable panes. Everything else keeps its glass as solid scenery. */
+const GLAZED_KINDS = new Set(['window', 'door'])
+
+/** The `kind` of the nearest ancestor carrying the map editor extras — what this mesh is part of. */
+function ownerKind(node: Object3D): string {
+  let current: Object3D | null = node
+  while (current) {
+    const kind = (current.userData as Partial<SceneExtras> | undefined)?.kind
+    if (typeof kind === 'string') return kind
+    current = current.parent
+  }
+  return ''
+}
+
+/** glTF `alphaMode: BLEND` reaches three as `transparent`; opacity covers a hand-authored GLB. */
+function isTransparent(material: Mesh['material']): boolean {
+  if (Array.isArray(material)) return material.some(isTransparent)
+  if (!material) return false
+  return material.transparent === true || material.opacity < 1
+}
+
+// ---------------------------------------------------------------------------
+
+function extrasOf(node: Object3D): SceneExtras | null {
+  const data = node.userData as Record<string, unknown> | undefined
+  if (!data || typeof data.kind !== 'string') return null
+  // Baked GLBs name their identity key after whichever tool exported them; take any `*Id`
+  // string once and expose it under our own name, so the parser never knows the exporter.
+  if (typeof data.nodeId !== 'string') {
+    const entry = Object.entries(data).find(([key, value]) => /Id$/.test(key) && typeof value === 'string')
+    if (entry) data.nodeId = entry[1]
+  }
+  return data as unknown as SceneExtras
+}
+
+function worldY(node: Object3D): number {
+  node.updateWorldMatrix(true, false)
+  node.matrixWorld.decompose(_position, _quaternion, _scale)
+  return _position.y
+}
+
+function levelOf(node: Object3D, levelByNode: Map<Object3D, LevelInfo>): LevelInfo | null {
+  let current: Object3D | null = node.parent
+  while (current) {
+    const level = levelByNode.get(current)
+    if (level) return level
+    current = current.parent
+  }
+  return null
+}
+
+/** World yaw of a node (radians, three convention: 0 = facing -Z). */
+function worldYaw(node: Object3D): number {
+  node.updateWorldMatrix(true, false)
+  _matrix.copy(node.matrixWorld)
+  _matrix.decompose(_position, _quaternion, _scale)
+  _euler.setFromQuaternion(_quaternion, 'YXZ')
+  return _euler.y
+}
+
+function parseZone(node: Object3D, extras: SceneExtras, level: LevelInfo | null): ZoneInfo | null {
+  const raw = extras.polygon
+  if (!Array.isArray(raw) || raw.length < 3) return null
+
+  node.updateWorldMatrix(true, false)
+  const polygon: Vector2[] = []
+  for (const pair of raw) {
+    if (!Array.isArray(pair) || pair.length < 2) continue
+    _local.set(pair[0], 0, pair[1])
+    node.localToWorld(_local)
+    polygon.push(new Vector2(_local.x, _local.z))
+  }
+  if (polygon.length < 3) return null
+
+  const floorY = level ? level.y + 0.05 : worldY(node)
+  const centroid2 = polygonCentroid(polygon)
+
+  return {
+    id: extras.nodeId ?? node.name,
+    label: extras.label ?? extras.nodeId ?? node.name,
+    color: extras.color ?? '#8b8b93',
+    levelId: level?.id ?? null,
+    node,
+    polygon,
+    centroid: new Vector3(centroid2.x, floorY, centroid2.y),
+    floorY,
+  }
+}
+
+function parseSpawnNode(
+  node: Object3D,
+  extras: SceneExtras,
+  level: LevelInfo | null,
+  index: number,
+): SpawnNodeInfo {
+  node.updateWorldMatrix(true, false)
+  node.matrixWorld.decompose(_position, _quaternion, _scale)
+  const extraYaw = typeof extras.rotation === 'number' ? extras.rotation : 0
+  return {
+    id: extras.nodeId ?? node.name ?? `spawn_${index}`,
+    label: extras.label ?? `Spawn ${index + 1}`,
+    levelId: level?.id ?? null,
+    position: _position.clone(),
+    yaw: normalizeAngle(worldYaw(node) + extraYaw),
+  }
+}
+
+/**
+ * A door or an openable window → `DoorInfo`. Both carry `openable: true` plus a 1 s "open"
+ * clip whose tracks target the moving leaves (door panels, `casement-window-sash`).
+ */
+function parseOpenable(
+  gltf: GLTF,
+  node: Object3D,
+  extras: SceneExtras,
+): { info: DoorInfo; animatedNodes: Object3D[] } | null {
+  if (extras.openable !== true) return null
+  const clipNames = extras.clips
+  if (!Array.isArray(clipNames) || clipNames.length === 0) return null
+
+  let clip: AnimationClip | undefined
+  for (const name of clipNames) {
+    clip = gltf.animations.find((a) => a.name === name)
+    if (clip) break
+  }
+  if (!clip) return null
+
+  // Track names target the animated LEAF nodes. Map-editor leaves them unnamed, so GLTFLoader falls
+  // back to the object uuid — PropertyBinding.findNode resolves both.
+  const animatedNodes: Object3D[] = []
+  for (const track of clip.tracks) {
+    const parsed = PropertyBinding.parseTrackName(track.name)
+    const nodeName = parsed.nodeName
+    if (!nodeName) continue
+    const target = PropertyBinding.findNode(gltf.scene, nodeName) as Object3D | null
+    // findNode returns the root itself when it cannot resolve the name — never accept that.
+    if (!target || target === gltf.scene) continue
+    if (!isDescendantOf(target, node)) continue
+    if (!animatedNodes.includes(target)) animatedNodes.push(target)
+  }
+  if (animatedNodes.length === 0) return null
+
+  const leafMeshes: Mesh[] = []
+  for (const animated of animatedNodes) {
+    animated.traverse((child) => {
+      if ((child as Mesh).isMesh) leafMeshes.push(child as Mesh)
+    })
+  }
+
+  node.updateWorldMatrix(true, true)
+  node.matrixWorld.decompose(_position, _quaternion, _scale)
+  const center = _position.clone()
+
+  _box.makeEmpty()
+  _box.setFromObject(node)
+  const halfWidth = _box.isEmpty()
+    ? 0.45
+    : Math.max(0.45, Math.max(_box.getSize(_size).x, _size.z) * 0.5)
+
+  return {
+    info: {
+      id: extras.nodeId ?? node.name,
+      label: extras.label ?? extras.nodeId ?? node.name,
+      kind: extras.kind === 'window' ? 'window' : 'door',
+      node,
+      clip,
+      center,
+      leafMeshes,
+      halfWidth,
+    },
+    animatedNodes,
+  }
+}
+
+function isDescendantOf(node: Object3D, ancestor: Object3D): boolean {
+  let current: Object3D | null = node
+  while (current) {
+    if (current === ancestor) return true
+    current = current.parent
+  }
+  return false
+}
+
+/** Area-weighted centroid of a simple polygon; falls back to the average for degenerate input. */
+export function polygonCentroid(polygon: Vector2[]): Vector2 {
+  let area = 0
+  let cx = 0
+  let cz = 0
+  for (let i = 0, n = polygon.length; i < n; i++) {
+    const a = polygon[i]
+    const b = polygon[(i + 1) % n]
+    const cross = a.x * b.y - b.x * a.y
+    area += cross
+    cx += (a.x + b.x) * cross
+    cz += (a.y + b.y) * cross
+  }
+  area *= 0.5
+  if (Math.abs(area) < 1e-6) {
+    let ax = 0
+    let az = 0
+    for (const p of polygon) {
+      ax += p.x
+      az += p.y
+    }
+    return new Vector2(ax / polygon.length, az / polygon.length)
+  }
+  return new Vector2(cx / (6 * area), cz / (6 * area))
+}
+
+/** Standard even-odd point-in-polygon test on the XZ plane. */
+export function pointInPolygon(polygon: Vector2[], x: number, z: number): boolean {
+  let inside = false
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const a = polygon[i]
+    const b = polygon[j]
+    if (a.y > z !== b.y > z && x < ((b.x - a.x) * (z - a.y)) / (b.y - a.y) + a.x) {
+      inside = !inside
+    }
+  }
+  return inside
+}
+
+function normalizeAngle(a: number): number {
+  let r = a % (Math.PI * 2)
+  if (r > Math.PI) r -= Math.PI * 2
+  if (r < -Math.PI) r += Math.PI * 2
+  return r
+}

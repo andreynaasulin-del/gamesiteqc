@@ -1,0 +1,8 @@
+.quadcodeai/
+.temp/
+node_modules/
+dist/
+archive/
+sitequadcode copy/
+.DS_Store
+*.log
