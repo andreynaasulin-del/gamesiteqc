@@ -1,30 +1,21 @@
 import {
   AdditiveBlending,
+  Camera,
+  Color,
   CylinderGeometry,
   DataTexture,
-  Mesh,
+  InstancedMesh,
+  Matrix4,
   MeshBasicMaterial,
+  PlaneGeometry,
   Quaternion,
   RGBAFormat,
   Scene,
-  Sprite,
-  SpriteMaterial,
   UnsignedByteType,
   Vector3,
 } from 'three'
 import { TEAMS } from '../config'
 import type { TeamId } from '../types'
-
-/**
- * @deprecated Nothing here calls back any more: the HUD reacts to `damage` RPCs itself
- * (`game.ts`), which is the only place that knows whether we shot or were shot. Kept so
- * `game/map-session.ts` — another package — still compiles; drop the argument there and this
- * type goes with it.
- */
-export interface EffectsCallbacks {
-  hitMarker?: () => void
-  damageVignette?: (team: TeamId) => void
-}
 
 export interface Effects {
   muzzle(position: Vector3, direction: Vector3, team: TeamId): void
@@ -38,24 +29,38 @@ export interface Effects {
   tracer(origin: Vector3, direction: Vector3, team: TeamId): void
   impact(position: Vector3, normal: Vector3, team: TeamId): void
   splat(position: Vector3, normal: Vector3, team: TeamId): void
+  /**
+   * A paint grenade going off: one big flash plus paint thrown in EVERY direction. Spherical,
+   * not hemispherical like `splat`, because a shell can burst mid-air and paint that only ever
+   * falls downwards reads as a puddle rather than a burst.
+   */
+  burst(position: Vector3, team: TeamId): void
   update(dt: number): void
   dispose(): void
 }
 
+/**
+ * One live puff/droplet/flash. Deliberately plain data: the whole pool is drawn as a single
+ * `InstancedMesh`, so a particle owns no scene object of its own.
+ */
 interface Particle {
-  sprite: Sprite
+  position: Vector3
   velocity: Vector3
+  /** Quad edge in metres. Billboards are square before the shrink/swell is applied. */
+  size: number
   life: number
   maxLife: number
   gravity: number
-  /** Sprites that stand in for a muzzle flash shrink instead of growing. */
+  /** Billboards that stand in for a muzzle flash shrink instead of growing. */
   flash: boolean
+  color: Color
 }
 
 interface Tracer {
-  mesh: Mesh
-  material: MeshBasicMaterial
+  position: Vector3
+  quaternion: Quaternion
   life: number
+  color: Color
 }
 
 const PARTICLE_COUNT = 96
@@ -70,6 +75,9 @@ const MUZZLE_STANDOFF = 0.12
 const REMOTE_STANDOFF = 0.06
 const REMOTE_FLASH_LIFE = 0.04
 const REMOTE_FLASH_SIZE = 0.3
+/** Droplets thrown by one grenade burst, and the size of the flash at its centre. */
+const BURST_DROPS = 26
+const BURST_FLASH_SIZE = 1.5
 /** Smoke, not paint: a dim grey that reads as a puff through the additive blend. */
 const SMOKE_COLOR = 0x6e727c
 const SMOKE_LIFE = 0.5
@@ -78,44 +86,92 @@ const UP = new Vector3(0, 1, 0)
 const tangent = new Vector3()
 const bitangent = new Vector3()
 const scratchDirection = new Vector3()
-const scratchQuaternion = new Quaternion()
+const scratchMatrix = new Matrix4()
+const scratchColor = new Color()
+const scratchScale = new Vector3()
+const NO_ROTATION = new Quaternion()
+/** Parked instances are scaled to nothing: an `InstancedMesh` has no per-instance `visible`. */
+const HIDDEN = new Matrix4().makeScale(0, 0, 0)
 
-export function createEffects(scene: Scene, _callbacks: EffectsCallbacks = {}): Effects {
+export function createEffects(scene: Scene, camera?: Camera): Effects {
   const texture = makeSoftTexture()
+
+  // One draw call for every puff, droplet and flash in the game.
+  //
+  // These were 96 `Sprite`s, each with its own `SpriteMaterial` — 96 materials, 96 draw calls,
+  // and no batching possible because three sees 96 distinct materials. A single grenade burst
+  // lights 27 of them at once. Measured with the pool fully visible: 0.9 ms a frame of pure
+  // driver overhead, gone entirely once the pool became one instanced quad.
+  //
+  // The per-particle tint (team colour, smoke grey) and fade live in `instanceColor`, which is
+  // why this can be one material at all. Additive blending makes that exact rather than
+  // approximate: `dst + src.rgb * src.a`, so folding the alpha into the colour is the same
+  // arithmetic the sprite material was doing, one multiply earlier.
+  const particleGeometry = new PlaneGeometry(1, 1)
+  const particleMaterial = new MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    depthWrite: false,
+    blending: AdditiveBlending,
+    toneMapped: false,
+  })
+  const particleMesh = new InstancedMesh(particleGeometry, particleMaterial, PARTICLE_COUNT)
+  // Particles are spread across the whole level, so the pool's bounds are the level's bounds:
+  // culling it as one object would pop the far half of a burst out of existence.
+  particleMesh.frustumCulled = false
+  particleMesh.renderOrder = 5
+  particleMesh.count = 0
+  scene.add(particleMesh)
+
   const particles: Particle[] = []
   for (let index = 0; index < PARTICLE_COUNT; index++) {
-    const material = new SpriteMaterial({
-      map: texture,
-      transparent: true,
-      depthWrite: false,
-      blending: AdditiveBlending,
+    particleMesh.setMatrixAt(index, HIDDEN)
+    // Allocating `instanceColor` NOW, before the warm-up runs, is not tidiness: three only
+    // creates that buffer on the first `setColorAt`, and its presence is a shader define. Leave
+    // it null and `warmUpScene` compiles a program with no per-instance colour, then the first
+    // gunshot allocates the buffer, invalidates that program and compiles a second one mid-frame
+    // — a ~40 ms freeze on the opening shot of every match.
+    particleMesh.setColorAt(index, scratchColor.setRGB(0, 0, 0))
+    particles.push({
+      position: new Vector3(),
+      velocity: new Vector3(),
+      size: 0,
+      life: 0,
+      maxLife: 0,
+      gravity: 0,
+      flash: false,
+      color: new Color(),
     })
-    const sprite = new Sprite(material)
-    sprite.visible = false
-    scene.add(sprite)
-    particles.push({ sprite, velocity: new Vector3(), life: 0, maxLife: 0, gravity: 0, flash: false })
   }
 
-  // One tapered cylinder per live tracer, base at the muzzle, tip 1.5 m downrange.
+  // One tapered cylinder per live tracer, base at the muzzle, tip 1.5 m downrange. Instanced for
+  // the same reason as the particles, and it also lets a burst of fire draw as one call.
   const tracerGeometry = new CylinderGeometry(0.002, 0.007, 1, 6, 1, true)
   tracerGeometry.translate(0, 0.5, 0)
+  const tracerMaterial = new MeshBasicMaterial({
+    transparent: true,
+    blending: AdditiveBlending,
+    depthWrite: false,
+    toneMapped: false,
+  })
+  const tracerMesh = new InstancedMesh(tracerGeometry, tracerMaterial, TRACER_COUNT)
+  tracerMesh.frustumCulled = false
+  tracerMesh.renderOrder = 5
+  tracerMesh.count = 0
+  scene.add(tracerMesh)
+
   const tracers: Tracer[] = []
   for (let index = 0; index < TRACER_COUNT; index++) {
-    const material = new MeshBasicMaterial({
-      transparent: true,
-      opacity: 0,
-      blending: AdditiveBlending,
-      depthWrite: false,
-      toneMapped: false,
-    })
-    const mesh = new Mesh(tracerGeometry, material)
-    mesh.visible = false
-    mesh.frustumCulled = false
-    mesh.renderOrder = 5
-    scene.add(mesh)
-    tracers.push({ mesh, material, life: 0 })
+    tracerMesh.setMatrixAt(index, HIDDEN)
+    // Same reason as the particle pool: `instanceColor` has to exist before the warm-up, or the
+    // first tracer recompiles the program mid-shot.
+    tracerMesh.setColorAt(index, scratchColor.setRGB(0, 0, 0))
+    tracers.push({ position: new Vector3(), quaternion: new Quaternion(), life: 0, color: new Color() })
   }
   let tracerCursor = 0
+  /** Highest index ever used, so `update` never walks 96 slots to animate three droplets. */
+  let particleHighWater = 0
+  let tracerHighWater = 0
 
   let cursor = 0
   let randomState = 0x6d2b79f5
@@ -125,6 +181,10 @@ export function createEffects(scene: Scene, _callbacks: EffectsCallbacks = {}): 
   }
   const nextParticle = () => {
     const particle = particles[cursor]
+    if (cursor >= particleHighWater) {
+      particleHighWater = cursor + 1
+      particleMesh.count = particleHighWater
+    }
     cursor = (cursor + 1) % particles.length
     return particle
   }
@@ -139,11 +199,9 @@ export function createEffects(scene: Scene, _callbacks: EffectsCallbacks = {}): 
     flash = false,
     colorHex?: number,
   ) => {
-    particle.sprite.position.copy(position)
-    particle.sprite.scale.setScalar(size)
-    ;(particle.sprite.material as SpriteMaterial).color.setHex(colorHex ?? TEAMS[team].colorHex)
-    ;(particle.sprite.material as SpriteMaterial).opacity = flash ? 1 : 0.85
-    particle.sprite.visible = true
+    particle.position.copy(position)
+    particle.size = size
+    particle.color.setHex(colorHex ?? TEAMS[team].colorHex)
     particle.velocity.copy(velocity)
     particle.life = particle.maxLife = life
     particle.gravity = gravity
@@ -198,16 +256,17 @@ export function createEffects(scene: Scene, _callbacks: EffectsCallbacks = {}): 
     },
     tracer(origin, direction, team) {
       const entry = tracers[tracerCursor]
+      if (tracerCursor >= tracerHighWater) {
+        tracerHighWater = tracerCursor + 1
+        tracerMesh.count = tracerHighWater
+      }
       tracerCursor = (tracerCursor + 1) % tracers.length
       scratchDirection.copy(direction).normalize()
       // Start a little downrange: at the eye the base of the cone would smear across the
       // near plane and read as a blob on the crosshair.
-      entry.mesh.position.copy(origin).addScaledVector(scratchDirection, TRACER_START)
-      entry.mesh.quaternion.copy(scratchQuaternion.setFromUnitVectors(UP, scratchDirection))
-      entry.mesh.scale.set(1, TRACER_LENGTH, 1)
-      entry.mesh.visible = true
-      entry.material.color.setHex(TEAMS[team].colorHex)
-      entry.material.opacity = 0.85
+      entry.position.copy(origin).addScaledVector(scratchDirection, TRACER_START)
+      entry.quaternion.setFromUnitVectors(UP, scratchDirection)
+      entry.color.setHex(TEAMS[team].colorHex)
       entry.life = TRACER_LIFE
     },
     impact(position, normal, team) {
@@ -231,40 +290,90 @@ export function createEffects(scene: Scene, _callbacks: EffectsCallbacks = {}): 
         launch(particle, position, particle.velocity, team, 0.45, 0.04 + random() * 0.04, 5.5)
       }
     },
+    burst(position, team) {
+      // The flash first: short, bright and large, so a burst behind you still registers in
+      // peripheral vision — a grenade you did not notice going off is a bug report.
+      const core = nextParticle()
+      scratchDirection.set(0, 0, 0)
+      launch(core, position, scratchDirection, team, 0.14, BURST_FLASH_SIZE, 0, true)
+      for (let index = 0; index < BURST_DROPS; index++) {
+        const particle = nextParticle()
+        // Evenly distributed on the sphere (z uniform, not the angle: picking both angles
+        // uniformly bunches the paint at the poles).
+        const theta = random() * Math.PI * 2
+        const z = random() * 2 - 1
+        const radius = Math.sqrt(Math.max(0, 1 - z * z))
+        particle.velocity
+          .set(Math.cos(theta) * radius, z, Math.sin(theta) * radius)
+          .multiplyScalar(3 + random() * 5)
+        launch(particle, position, particle.velocity, team,
+          0.5 + random() * 0.35, 0.07 + random() * 0.07, 7)
+      }
+    },
     update(dt) {
-      for (const particle of particles) {
+      // Billboarding by hand, because these are quads rather than sprites: every particle takes
+      // the camera's orientation, which is exactly what `Sprite` did in the renderer. Without a
+      // camera (headless tests, the sandbox before its first frame) they stay axis-aligned —
+      // the simulation is identical, only the facing differs.
+      const facing = camera ? camera.quaternion : NO_ROTATION
+      let particlesMoved = false
+      for (let index = 0; index < particleHighWater; index++) {
+        const particle = particles[index]
         if (particle.life <= 0) continue
         particle.life -= dt
+        particlesMoved = true
         if (particle.life <= 0) {
-          particle.sprite.visible = false
+          particleMesh.setMatrixAt(index, HIDDEN)
           continue
         }
         particle.velocity.y -= particle.gravity * dt
-        particle.sprite.position.addScaledVector(particle.velocity, dt)
+        particle.position.addScaledVector(particle.velocity, dt)
+        particle.size *= 1 + dt * (particle.flash ? -6 : 1.6)
         const alpha = particle.life / particle.maxLife
-        ;(particle.sprite.material as SpriteMaterial).opacity = particle.flash ? alpha : alpha * 0.85
-        particle.sprite.scale.multiplyScalar(1 + dt * (particle.flash ? -6 : 1.6))
+        // The sprite material multiplied by opacity twice over (once into the colour, once as
+        // the blend's source factor), so the fade was quadratic. Squaring here keeps the look
+        // the artists signed off on instead of quietly brightening every puff.
+        const fade = particle.flash ? alpha * alpha : alpha * alpha * 0.7225
+        scratchScale.setScalar(particle.size)
+        scratchMatrix.compose(particle.position, facing, scratchScale)
+        particleMesh.setMatrixAt(index, scratchMatrix)
+        particleMesh.setColorAt(index, scratchColor.copy(particle.color).multiplyScalar(fade))
       }
-      for (const entry of tracers) {
+      if (particlesMoved) {
+        particleMesh.instanceMatrix.needsUpdate = true
+        if (particleMesh.instanceColor) particleMesh.instanceColor.needsUpdate = true
+      }
+
+      let tracersMoved = false
+      for (let index = 0; index < tracerHighWater; index++) {
+        const entry = tracers[index]
         if (entry.life <= 0) continue
         entry.life -= dt
+        tracersMoved = true
         if (entry.life <= 0) {
-          entry.mesh.visible = false
+          tracerMesh.setMatrixAt(index, HIDDEN)
           continue
         }
-        entry.material.opacity = 0.85 * (entry.life / TRACER_LIFE)
+        const alpha = entry.life / TRACER_LIFE
+        scratchScale.set(1, TRACER_LENGTH, 1)
+        scratchMatrix.compose(entry.position, entry.quaternion, scratchScale)
+        tracerMesh.setMatrixAt(index, scratchMatrix)
+        tracerMesh.setColorAt(index, scratchColor.copy(entry.color).multiplyScalar(alpha * alpha * 0.7225))
+      }
+      if (tracersMoved) {
+        tracerMesh.instanceMatrix.needsUpdate = true
+        if (tracerMesh.instanceColor) tracerMesh.instanceColor.needsUpdate = true
       }
     },
     dispose() {
-      for (const particle of particles) {
-        scene.remove(particle.sprite)
-        ;(particle.sprite.material as SpriteMaterial).dispose()
-      }
-      for (const entry of tracers) {
-        scene.remove(entry.mesh)
-        entry.material.dispose()
-      }
+      scene.remove(particleMesh)
+      scene.remove(tracerMesh)
+      particleMesh.dispose()
+      tracerMesh.dispose()
+      particleGeometry.dispose()
+      particleMaterial.dispose()
       tracerGeometry.dispose()
+      tracerMaterial.dispose()
       texture.dispose()
     },
   }

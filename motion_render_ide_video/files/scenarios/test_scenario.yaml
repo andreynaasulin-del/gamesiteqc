@@ -1,0 +1,677 @@
+# IDE Emulation — test scenario
+# ─────────────────────────────────────────────────────────────────────────────
+# Action types:
+#   send_message    — typewrite text into chat box, then submit
+#   begin_answer    — agent turn: spinner → tool calls → typewrite reply
+#   switch_tab      — activate a browser tab by id
+#   set_status      — update status bar text
+#   camera_move     — smooth move to { zoom, rx, ry, rz, duration }
+#   camera_anim     — start animation preset { name: float|swing|tilt|... }
+#   camera_reset    — smooth reset to identity { duration }
+#   camera_pan_to   — pan+zoom to fit a named container { target, margin?, zoom?, duration?, tilt? }
+#                     built-in targets: message_box | chat_log | result_window | video_result | ide_full
+#                     floating window:  window:<viewer_id>  e.g. target: window:vw_video
+#                     margin: fraction of viewport to leave as padding (default 0.12 = 12% each side)
+#                     zoom: override auto-computed zoom (skips margin calc)
+#                     tilt: false to disable subtle 3D tilt (default true)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Project context — sets file tree, header title, and status bar ────────────
+# project_name : root folder label shown in the file tree and header
+# root_path    : absolute path on disk (informational — shown in status bar tooltip)
+# files        : relative paths from project root — builds the folder tree automatically
+# selected     : which file is highlighted (active) at scenario start
+project:
+  project_name: NeuralForge
+  root_path: /projects/NeuralForge
+  selected: src/model/transformer.py
+  files:
+    - src/main.py
+    - src/model/transformer.py
+    - src/model/attention.py
+    - src/model/embeddings.py
+    - src/config/model_config.yaml
+    - src/config/training_config.yaml
+    - src/utils/data_loader.py
+    - src/utils/metrics.py
+    - tests/test_transformer.py
+    - tests/test_attention.py
+    - README.md
+    - requirements.txt
+    - pyproject.toml
+    - Makefile
+    - Dockerfile
+
+topic: Transformer model improvements   # chat topic shown in the top bar of the chat log
+
+# Initial camera zoom — applied at scenario start (vpScale * initialZoom = final scale)
+initial_zoom: 0.9
+initial_vp_scale: 0.6      # global viewport scale applied at startup (0.6 = zoomed out to fit IDE)
+camera_smoothness: 0.7     # 0 = instant, 1 = very slow (maps to 0–2s CSS transition)
+background: gradient       # initial background animation (none | gradient | neural_net | aurora | ...)
+hide_right_panel: true     # hide the right file-tree panel on init
+
+# ── Label defaults — applied to every label_show unless overridden per-label ──
+# These are the sensible defaults. Override any field directly in label_show.
+#
+# Available anim_in / anim_out effects:
+#   fade        — opacity only, no movement
+#   rise        — slides up from below              ← default animIn
+#   drop        — slides down from above
+#   slide_left  — slides in from the right
+#   slide_right — slides in from the left
+#   scale       — scales up from small (with overshoot)
+#   zoom_in     — scales down from large
+#   zoom_out    — scales up from small
+#   blur        — fades in from blurred
+#   none        — instant, no animation
+#
+label_defaults:
+  style: subcaption       # 'caption' | 'subcaption'
+  space: viewport         # 'viewport' (recording frame) | 'scene' (inside IDE, follows 3D camera)
+  anchor: center          # 'center' | 'left' | 'right'
+  anim_in: rise           # appear effect
+  anim_out: fade          # disappear effect
+  duration: 400           # transition ms
+
+# ── Audio tracks ─────────────────────────────────────────────────────────────
+# narration: spoken voice-over — plays once, stops when finished
+# soundtrack: background music — loops by default, lower volume
+#
+# Both start automatically when Play is pressed and stop when Stop is pressed.
+# Use audio_play / audio_stop actions for mid-scenario control.
+#
+# Uncomment and set real paths to enable:
+# narration:
+#   src: /.temp/audio/narration.mp3
+#   volume: 0.9
+#   loop: false
+#
+# soundtrack:
+#   src: /.temp/audio/bg_music.mp3
+#   volume: 0.3
+#   loop: true
+
+browser_tabs:
+  # Legacy result video remains a tab inside Web browsers.
+  - id: br-video
+    label: Result
+    empty_label: No content yet
+  - id: br-home
+    label: home.html
+    url: http://localhost:9187/.temp/home.html
+
+actions:
+
+  # ══════════════════════════════════════════════════════════════════════════════
+  # TITLE CARD (0–4.5s) — IDE hidden, show logo + tagline over background anim
+  # ══════════════════════════════════════════════════════════════════════════════
+
+  # 0s: hide IDE instantly — title card plays over background animation only
+  - at: 0
+    type: ide_hide
+    duration: 0              # instant — IDE was never visible yet
+
+  # 0s: play a background video that fills the viewport — no rotation/scale,
+  # aspect ratio preserved via object-fit:cover.
+  # mode: 'behind' → plays behind IDE (ambient bg, IDE renders on top)
+  # mode: 'overlay' → covers IDE (good for transitions between scenes)
+  - at: 0
+    type: bg_video_play
+    video: /.temp/recordings/message_box_1782111045951.mp4
+    mode: behind             # 'behind' (default) | 'overlay'
+    loop: true
+    muted: true
+    fade: 800                # fade-in ms
+
+  # 0.4s: wordmark fades in centered
+  - at: 400
+    type: label_show
+    id: title_logo
+    image: assets/qcai_wordmark.png
+    width: 240px
+    x: "50%"
+    y: "36%"
+    anchor: center
+    space: viewport
+    anim_in: fade
+    anim_out: fade
+    duration: 700
+
+  # 1.2s: hero tagline rises in
+  - at: 1200
+    type: label_show
+    id: title_caption
+    text: "Create *real-world* impressive apps"
+    style: caption
+    x: "50%"
+    y: "56%"
+    anchor: center
+    space: viewport
+    anim_in: rise
+    anim_out: fade
+    duration: 600
+
+  # 1.7s: subcaption rises in
+  - at: 1700
+    type: label_show
+    id: title_sub
+    text: "Build *anything*. Ship *everything*."
+    x: "50%"
+    y: "78%"
+    anchor: center
+    space: viewport
+    anim_in: rise
+    anim_out: fade
+    duration: 500
+
+  # 3.5s: hide title labels
+  - at: 3500
+    type: label_hide
+    id: title_caption
+    duration: 400
+
+  - at: 3500
+    type: label_hide
+    id: title_sub
+    duration: 400
+
+  - at: 3700
+    type: label_hide
+    id: title_logo
+    duration: 500
+
+  # 3.8s: fade out bg video before IDE appears
+  - at: 3800
+    type: bg_video_stop
+    fade: 600
+
+  # 4.3s: fade IDE back in
+  - at: 4300
+    type: ide_show
+    duration: 700
+
+  # ══════════════════════════════════════════════════════════════════════════════
+  # MAIN SCENARIO (5s+)
+  # ══════════════════════════════════════════════════════════════════════════════
+
+  # ── 5s: Start — zoom out, gentle float anim ─────────────────────────────────
+  - at: 5000
+    type: camera_move
+    zoom: 0.9
+    rx: 3
+    ry: -5
+    duration: 1000
+
+  - at: "+500"            # → 5500ms — relative: 500ms after previous
+    type: camera_anim
+    name: float
+
+  # ── 6s: Pan to message box ───────────────────────────────────────────────────
+  - at: "+500"            # → 6000ms
+    type: camera_pan_to
+    target: message_box
+    margin: 0.08
+    duration: 900
+
+  # ── 7s: User types first message ────────────────────────────────────────────
+  - at: "+1000"           # → 7000ms
+    type: send_message
+    text: Add dropout regularization to the transformer model
+
+  # ── 9s: Pan to chat log ──────────────────────────────────────────────────────
+  - at: "+2000"           # → 9000ms
+    type: camera_pan_to
+    target: chat_log
+    margin: 0.1
+    duration: 800
+
+  # ── 9.5s: Agent answers ──────────────────────────────────────────────────────
+  - at: "+500"            # → 9500ms
+    type: begin_answer
+    tool_calls:
+      - ToolVectorSearch  transformer dropout regularization
+      - ToolReadFile  src/model/transformer.py
+      - ToolTextFileEdit  src/model/transformer.py
+    answer: Done! Added nn.Dropout(p=0.1) after each attention and feed-forward block in transformer.py.
+
+  # ── 10s: Highlight the edited file in the tree ───────────────────────────────
+  - at: "+500"            # → 10000ms
+    type: select_file
+    path: src/model/transformer.py
+
+  # ── 16.5s: Overlay transition — video covers IDE briefly between steps ───────
+  # mode: overlay → z-index above IDE, acts as a wipe/transition effect
+  - at: 16500
+    type: bg_video_play
+    video: /.temp/recordings/message_box_1782111045951.mp4
+    mode: overlay            # covers IDE — transition effect
+    loop: false
+    muted: true
+    fade: 300
+
+  - at: 17500
+    type: bg_video_stop
+    fade: 500
+
+  # ── 17s: Zoom out to full IDE ────────────────────────────────────────────────
+  - at: 17000
+    type: camera_pan_to
+    target: ide_full
+    duration: 1000
+
+  # ── 17.9s: Switch central panel to Web browsers ────────────────────────────
+  - at: 17900
+    type: switch_main_tab
+    tab: "Web browsers"
+
+  # ── 18s: Pan to browser result window — auto-fit with generous margin ──────
+  - at: 18000
+    type: camera_pan_to
+    target: result_window
+    margin: 0.15            # 15% margin each side — leaves breathing room
+    duration: 900
+
+  # ── 18.3s: Clear browser before loading new video ───────────────────────────
+  # Removes current content and shows empty placeholder
+  - at: 18300
+    type: clear_browser
+    tab_id: br-video
+    label: 'Loading result…'
+
+  # ── 18.5s: Load video into the empty browser tab ────────────────────────────
+  - at: 18500
+    type: switch_video
+    tab_id: br-video
+    video: /.temp/recordings/message_box_1782111045951.mp4
+    fade: 500
+    loop: true
+    muted: true
+
+  # ── 19s: Fit IDE height to video aspect ratio — zero black bars ──────────────
+  # Reads video natural dimensions and resizes the IDE window height so the
+  # browser content area matches exactly. Scale and rotation are untouched.
+  - at: 19000
+    type: fit_to_video
+    tab_id: br-video
+
+  # ── 19.5s: Second user message ───────────────────────────────────────────────
+  - at: 19500
+    type: send_message
+    text: Update hidden size to 1024 in config
+
+  # ── 21s: Agent answers ───────────────────────────────────────────────────────
+  - at: 21000
+    type: begin_answer
+    tool_calls:
+      - ToolReadFile  src/config/model_config.yaml
+      - ToolTextFileEdit  src/config/model_config.yaml
+    answer: Updated! hidden_size is now 1024. Re-run training to apply the change.
+
+  # ── Highlight config file in tree ────────────────────────────────────────────
+  - at: "+800"
+    type: select_file
+    path: src/config/model_config.yaml
+
+  # ── 25s: Switch to next video ────────────────────────────────────────────────
+  - at: 25000
+    type: switch_video
+    tab_id: br-video
+    video: /.temp/recordings/message_box_1782124468522.mp4
+    fade: 400
+    loop: true
+    muted: true
+
+  # ── Logo corner label — persistent throughout main scenario ─────────────────
+  - at: 5200
+    type: label_show
+    id: logo
+    image: assets/qcai_wordmark.png
+    width: 180px
+    x: "3%"
+    y: "4%"
+    anchor: left
+    anim_in: fade
+    anim_out: fade
+    duration: 500
+
+  # ── Right-anchor label test — right edge should land at x=97%, not overflow ─
+  - at: 5400
+    type: label_show
+    id: version_tag
+    text: "Build faster with *AI-powered* code generation"
+    style: subcaption
+    x: "97%"
+    y: "4%"
+    anchor: right
+    bg: true
+    bg_radius: "8px"
+    bg_padding: "6px 14px"
+    anim_in: fade
+    anim_out: fade
+    duration: 500
+
+  # ── Step tags ────────────────────────────────────────────────────────────────
+  - at: 6200
+    type: label_show
+    id: tag
+    text: "Step 1 — *Enter prompt*"
+    x: "4%"
+    y: "88%"
+    anchor: left
+    anim_in: slide_left
+    anim_out: slide_right
+    duration: 350
+    bg: true
+    bg_radius: "6px"
+    bg_padding: "5px 12px"
+
+  # label_move demo — slide tag up slightly when step changes
+  - at: 8800
+    type: label_move
+    id: tag
+    y: "82%"
+    move_duration: 600
+
+  - at: 9200
+    type: label_set
+    id: tag
+    text: "Step 2 — *Agent working*"
+
+  - at: 17200
+    type: label_set
+    id: tag
+    text: "Step 3 — *Review result*"
+
+  - at: 18200
+    type: label_hide
+    id: tag
+    duration: 300
+
+  # ── Hero caption at end ───────────────────────────────────────────────────────
+  # Appears centered, then glides to top-left corner (final_position demo)
+  - at: 26000
+    type: label_show
+    id: hero
+    text: "Where *imagination* meets execution"
+    style: caption
+    x: "50%"
+    y: "42%"
+    anim_in: rise
+    anim_out: blur
+    duration: 500
+    final_position:
+      x: "4%"
+      y: "10%"
+      move_duration: 900
+
+  - at: 26600
+    type: label_show
+    id: sub
+    text: "Explore ideas like a creator,\nship results like an *engineer*"
+    x: "50%"
+    y: "25%"
+    anim_in: scale
+    anim_out: fade
+    duration: 500
+
+  - at: 30000
+    type: label_hide
+    id: hero
+    duration: 400
+
+  - at: 30200
+    type: label_hide
+    id: sub
+    duration: 400
+
+  # ── Final zoom-out sequence ───────────────────────────────────────────────────
+  - at: 27000
+    type: camera_pan_to
+    target: ide_full
+    duration: 1200
+
+  - at: 28200
+    type: camera_move
+    zoom: 0.75
+    rx: 6
+    ry: -8
+    duration: 1000
+
+  - at: 29200
+    type: camera_anim
+    name: drift
+
+  # ══════════════════════════════════════════════════════════════════════════════
+  # VIEWER CLOUD — floating media windows (video / image / sound)
+  # Demonstrates viewer_open / viewer_show / viewer_hide / viewer_set_source
+  # Files live in .temp/video_rec_temp/ (generated by Sonic as test assets)
+  # ══════════════════════════════════════════════════════════════════════════════
+
+  # ── 31s: Open video viewer — fake mode (no controls, fills window like app content) ──
+  # mode: fake  → raw <video>, no player chrome, autoplay+muted+loop forced on.
+  #              Use when the window should look like an app showing a result,
+  #              not a media player.
+  # mode: bridge → QC.media.VideoPlayer with controls, progress bar, filename.
+  #              Use when you want to show the actual bridge video player UI.
+  # mode: embedded → plain HTML5 <video> with optional native controls.
+  - at: 31000
+    type: viewer_open
+    id: vw_video
+    viewer: video
+    src: /.temp/recordings/message_box_1782111045951.mp4
+    mode: fake          # 'fake' | 'bridge' | 'embedded'
+    fit: cover          # 'contain' | 'cover' | 'fill'
+    window:
+      title: "Result — Neural Net Visualization"
+      width: 560
+      height: 340
+      # Scene-space coords: offset from IDE center (720,450 native).
+      # x: 200 places window 200px right of center; y: -300 places it 300px above center.
+      x: 200
+      y: -300
+      resizable: true
+      draggable: true
+    show: true
+    show_duration: 500
+
+  # ── 31.8s: Auto-zoom camera to fit the floating video window ────────────────
+  # target: 'window:<viewer_id>' zooms to fit any floating viewer window
+  - at: 31800
+    type: camera_pan_to
+    target: window:vw_video   # zoom to fit the floating video viewer
+    margin: 0.1               # 10% margin each side
+    tilt: false               # no 3D tilt for this one
+    duration: 800
+
+  # ── 32s: Open image viewer (concept art) ────────────────────────────────────
+  - at: 32000
+    type: viewer_open
+    id: vw_image
+    viewer: image
+    src: /.temp/video_rec_temp/demo_image.png
+    fit: contain
+    zoom: true
+    window:
+      title: "Concept Art — AI IDE"
+      width: 480
+      height: 300
+      x: -600
+      y: -280
+      resizable: true
+      draggable: true
+    show: true
+    show_duration: 500
+
+  # ── 33s: Open sound viewer (ambient music player) ───────────────────────────
+  - at: 33000
+    type: viewer_open
+    id: vw_sound
+    viewer: sound
+    src: /.temp/video_rec_temp/demo_sound.mp3
+    autoplay: true
+    volume: 0.6
+    window:
+      title: "Ambient Track — NeuralForge"
+      width: 420
+      height: 160
+      x: -100
+      y: 350
+      resizable: false
+      draggable: true
+    show: true
+    show_duration: 400
+
+  # ── 37s: Hot-swap video source (show a different recording) ─────────────────
+  - at: 37000
+    type: viewer_set_source
+    id: vw_video
+    src: /.temp/recordings/message_box_1782111045951.mp4
+    name: "Recording — Message Box Demo"
+
+  # ── 40s: Hide image viewer ───────────────────────────────────────────────────
+  - at: 40000
+    type: viewer_hide
+    id: vw_image
+    duration: 400
+
+  # ── 42s: Show image viewer again with a label ────────────────────────────────
+  - at: 42000
+    type: viewer_show
+    id: vw_image
+    duration: 400
+
+  # ── 44s: Hide all viewers ────────────────────────────────────────────────────
+  - at: 44000
+    type: viewer_hide
+    id: vw_video
+    duration: 500
+
+  - at: 44200
+    type: viewer_hide
+    id: vw_sound
+    duration: 500
+
+  - at: 44400
+    type: viewer_hide
+    id: vw_image
+    duration: 500
+
+  # ══════════════════════════════════════════════════════════════════════════════
+  # NEW ACTION DEMOS — set_background / browser_open_tab / open_file / switch_main_tab
+  # ══════════════════════════════════════════════════════════════════════════════
+
+  # ── 45s: Change background to a video file with dimming overlay ─────────────
+  # set_background accepts either `effect` (named animation) or `video` (file path).
+  # dim: 0..1 — black overlay on top of the video (1.0 = fully black, 0 = no overlay).
+  # Default when dim is omitted: no change to current dim level.
+  - at: 45000
+    type: set_background
+    video: /.temp/recordings/message_box_1782111045951.mp4
+    loop: true
+    autoplay: true
+    mute: true
+    fit_to_viewport: true     # cover full viewport (no black bars)
+    preserve_aspect: true     # object-fit:cover — no stretching
+    mode: behind              # plays behind IDE (default)
+    fade: 800                 # fade-in ms
+    dim: 0.5                  # 50% black overlay — video visible but darkened
+
+  # ── 45.5s: Reduce dimming to 20% — video becomes much brighter ───────────────
+  - at: 45500
+    type: set_dim
+    dim: 0.2
+    fade: 600
+
+  # ── 46s: Fully dim — black overlay covers video completely ───────────────────
+  - at: 46000
+    type: set_dim
+    dim: 1.0
+    fade: 400
+
+  # ── 46.3s: Show right panel (file tree) ─────────────────────────────────────
+  - at: 46300
+    type: show_right_panel
+
+  # ── 46.5s: Switch back to a named animation effect (stops bg video) ──────────
+  # Passing `effect` stops the video and starts the named animation.
+  - at: 46500
+    type: set_background
+    effect: aurora
+
+  # ── 47s: Hide right panel again ──────────────────────────────────────────────
+  - at: 47000
+    type: hide_right_panel
+
+  # ── 46s: Switch central panel to File editors ────────────────────────────────
+  - at: 46000
+    type: switch_main_tab
+    tab: "File editors"
+
+  # ── 46.5s: Open a file in the File editors tab ───────────────────────────────
+  # Also highlights the file in the folder tree automatically.
+  # switch_panel: false because we already switched above.
+  - at: 46500
+    type: open_file
+    path: src/model/attention.py
+    unsaved: true            # show unsaved dot (● instead of ×)
+    switch_panel: false      # don't switch panel again (already on File editors)
+
+  # ── 48s: Switch central panel to Web browsers ────────────────────────────────
+  - at: 48000
+    type: switch_main_tab
+    tab: "Web browsers"
+
+  # ── 48.5s: Open a new browser tab with a website ────────────────────────────
+  # switch_panel: false because we already switched above.
+  - at: 48500
+    type: browser_open_tab
+    label: "quadcode.ai"
+    url: https://quadcode.ai
+    switch_panel: false
+
+  # ── 51s: Open another browser tab with a video ───────────────────────────────
+  - at: 51000
+    type: browser_open_tab
+    label: "Demo recording"
+    video: /.temp/recordings/message_box_1782111045951.mp4
+    loop: true
+    controls: true
+    switch_panel: false      # already on Web browsers
+
+  # ── 53s: Switch back to Web browsers (already there, but shows the action) ───
+  - at: 53000
+    type: switch_main_tab
+    tab: "Web browsers"
+
+  # ── 54s: Restore background to gradient ──────────────────────────────────────
+  - at: 54000
+    type: set_background
+    effect: gradient
+
+  # ── 56s: Explicit stop — ends recording immediately (no idle wait) ────────────
+  # Place this after the last visible action. Recording stops within 200ms.
+  # Without this the scenario would wait 500ms after the last scheduled action.
+  - at: 56000
+    type: stop_record
+
+  # ── Audio control examples ────────────────────────────────────────────────
+  # These are commented out — uncomment once narration/soundtrack are set above.
+  #
+  # Fade soundtrack volume down mid-scenario (e.g. when narration starts):
+  # - at: 7000
+  #   type: audio_play
+  #   channel: soundtrack
+  #   volume: 0.1              # duck under narration
+  #
+  # Restore soundtrack volume after narration ends:
+  # - at: 16000
+  #   type: audio_play
+  #   channel: soundtrack
+  #   volume: 0.3
+  #
+  # Fade out soundtrack at the end:
+  # - at: 43000
+  #   type: audio_stop
+  #   channel: soundtrack
+  #   fade_out: 2000           # 2s fade-out

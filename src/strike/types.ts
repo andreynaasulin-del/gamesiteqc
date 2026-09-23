@@ -129,6 +129,26 @@ export interface GlassPane {
   broken: boolean
 }
 
+/**
+ * A volume of open-air ground the map declares playable — a yard, a street, a courtyard.
+ *
+ * Needed because "outdoors" and "out of bounds" look the same from the inside. The bot roam grid
+ * keeps a sample when something is above it (indoors) or when it stands on a storey above the
+ * ground floor (a roof deck); everything else is the surrounding lot, where a bot has no goals
+ * and no way back, so the brain marches it home. Ground-level outdoor space fails both tests, so
+ * without this it would be built, navigable, and never used. Authored in `map/layout.ts`.
+ */
+export interface OpenArea {
+  x0: number
+  x1: number
+  z0: number
+  z1: number
+  /** Vertical span that counts as "on the ground here", not the height of the enclosure. */
+  y0: number
+  y1: number
+  label: string
+}
+
 export interface MapData {
   name: string
   /** Root group of the loaded GLB, already added to the scene by the loader caller. */
@@ -156,6 +176,8 @@ export interface MapData {
   navMeshSource: Mesh[]
   /** Breakable glass panes (see GlassPane). Missing = none. */
   breakables?: GlassPane[]
+  /** Open-air ground that is in bounds (see OpenArea). Missing = the map is all interior. */
+  openAreas?: OpenArea[]
 }
 
 export interface SpawnPoint {
@@ -343,6 +365,28 @@ export interface ShotEvent {
   weapon?: WeaponKind
 }
 
+/**
+ * A paint grenade leaving somebody's hand (W6). Broadcast to OTHERS, exactly like a `ShotEvent`:
+ * every client runs the same bounce simulation from the same origin, velocity and fuse, so the
+ * burst goes off in the same corner on every screen. Only the thrower's copy resolves damage.
+ */
+export interface GrenadeEvent {
+  /** Unique per throw: `${playerId}:nade:${counter}`. Also the `shotId` of the hits it scores. */
+  id: string
+  /** Thrower player id */
+  by: string
+  team: TeamId
+  origin: [number, number, number]
+  /** Throw velocity in m/s (NOT a unit vector — the arc is the whole point). */
+  velocity: [number, number, number]
+  /** Sender Date.now() */
+  t: number
+  /** Deterministic seed for the splat pattern of the burst. */
+  seed: number
+  /** Fuse left when it was thrown (ms). Missing = `GRENADE.fuseMs`. */
+  fuseMs?: number
+}
+
 export interface HitEvent {
   shotId: string
   by: string
@@ -351,8 +395,18 @@ export interface HitEvent {
   normal: [number, number, number]
   /** Body part hit; missing = torso (host uses DAMAGE[part]). */
   part?: BodyPart
-  /** Weapon that scored the hit; missing = rifle (host scales DAMAGE[part] by WEAPONS[weapon].damageScale). */
-  weapon?: WeaponKind
+  /**
+   * Weapon that scored the hit; missing = rifle (host scales DAMAGE[part] by
+   * `WEAPONS[weapon].damageScale`). `'grenade'` is not a held weapon and has no `WEAPONS` row:
+   * the host prices it from `GRENADE` and `falloff` instead — see `applyHit` in net/host.ts.
+   */
+  weapon?: WeaponKind | 'grenade'
+  /**
+   * Grenades only: 1 at the centre of the burst, 0 at its edge, as measured by the thrower.
+   * The host clamps it and multiplies `GRENADE.maxDamage`, so the worst a lying client can do
+   * is claim a centre hit it did not earn — the same trust we already extend to `part`.
+   */
+  falloff?: number
 }
 
 export interface KillEvent {

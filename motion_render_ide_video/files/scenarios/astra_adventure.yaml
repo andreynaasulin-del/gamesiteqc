@@ -1,0 +1,183 @@
+# IDE Emulation — astra_adventure.yaml
+# Landing feature slide 01: "Your idea. A real project."
+# One beat, told once: prompt goes in → GPT-6 Astra works the project files →
+# the game is running in the Result tab. ~15 s, 16:9, loops on the landing.
+
+project:
+  project_name: my-adventure
+  root_path: /projects/my-adventure
+  selected: src/main.js
+  files:
+    - src/main.js
+    - src/game/Player.js
+    - src/game/FollowCamera.js
+    - src/game/Collectibles.js
+    - src/world/Valley.js
+    - src/world/Waypoint.js
+    - src/world/Sky.js
+    - assets/models/hero.glb
+    - assets/models/pine.glb
+    - assets/textures/grass.png
+    - assets/audio/valley-ambience.ogg
+    - index.html
+    - package.json
+    - README.md
+
+topic: Build a 3D adventure
+model_name: GPT-6 Astra
+lang: JavaScript
+branch: main
+
+initial_zoom: 1
+initial_vp_scale: 0.6
+camera_smoothness: 0.6
+background: neuro
+hide_right_panel: false
+
+browser_tabs:
+  - id: br-video
+    label: Result
+    empty_label: Nothing running yet
+
+# Camera rule for this clip: every pan_to keeps ≥ 8 % air on each side and
+# tilt is off — nothing may be cut at the frame edge; the landing crops nothing.
+actions:
+
+  # ── 0s: 16:9 frame, whole IDE in view, fades in (loop-friendly head) ───────
+  - at: 0
+    type: camera_viewport
+    mode: r169
+
+  - at: 0
+    type: ide_hide
+    duration: 0
+
+  # 80 ms after the viewport switch so the fit is computed against the 16:9 frame
+  - at: 80
+    type: camera_pan_to
+    target: ide_full
+    margin: 0.09
+    tilt: false
+    duration: 0
+
+  - at: 200
+    type: ide_show
+    duration: 600
+
+  # Gentle swing for the whole clip: ±5° yaw (preset ±12° × 0.4), 12.5 s period.
+  # Additive on top of every pan, so the camera keeps "breathing" while it moves.
+  - at: 200
+    type: camera_anim
+    name: swing
+    amplitude: 0.4
+
+  # ── 0.8s: move in on the message box ───────────────────────────────────────
+  - at: 800
+    type: camera_pan_to
+    target: message_box
+    margin: 0.18
+    tilt: false
+    duration: 800
+
+  # ── 1.7s: the prompt (37 chars × 40 ms ≈ 1.5 s) ────────────────────────────
+  - at: 1700
+    type: send_message
+    text: Build a 3D adventure. Make it my own.
+    type_delay: 40
+
+  # ── 3.4s: follow the conversation into the log ─────────────────────────────
+  - at: 3400
+    type: camera_pan_to
+    target: chat_log
+    margin: 0.10
+    tilt: false
+    duration: 700
+
+  - at: 3500
+    type: set_status
+    status: Astra is working…
+
+  # ── 3.6s: Astra — 4 tool calls in 1.4 s, reply lands by 5.6 s (≤ 2 s total) ─
+  - at: 3600
+    type: begin_answer
+    model: GPT-6 Astra
+    action_delay: 350
+    tool_calls:
+      - ToolTextFileEdit  src/game/Player.js — hooded hero, run & jump
+      - ToolTextFileEdit  src/world/Valley.js — cliff path, waterfall
+      - ToolGenerateResourceFileFromMetaSection  assets/models/hero.glb
+      - ToolRunUserCommand  npm run dev
+    answer: Done — your adventure is running in Result.
+
+  - at: 3950
+    type: select_file
+    path: src/game/Player.js
+
+  - at: 4300
+    type: select_file
+    path: src/world/Valley.js
+
+  - at: 4650
+    type: select_file
+    path: assets/models/hero.glb
+
+  # ── 5.0s: pull back to the whole workspace while the dev server starts ─────
+  - at: 5000
+    type: camera_pan_to
+    target: ide_full
+    margin: 0.09
+    tilt: false
+    duration: 800
+
+  - at: 5000
+    type: switch_main_tab
+    tab: "Web browsers"
+
+  - at: 5000
+    type: set_status
+    status: "npm run dev — localhost:5173"
+
+  # ── 5.6s: the game appears in Result ───────────────────────────────────────
+  - at: 5600
+    type: switch_video
+    tab_id: br-video
+    video: /public/landing/astra-gameplay.mp4
+    title: "localhost:5173"
+    fade: 600
+    # The gameplay clip is 10.1 s and the IDE fades out at 14.6 s, so it plays
+    # through exactly once. loop:false is the belt to that braces — the old
+    # 8 s clip restarted at 13.6 s and the recording ended on a replay of the
+    # game's opening seconds, which read as a glitch.
+    loop: false
+    muted: true
+    controls: false
+    fit: cover
+
+  - at: 5800
+    type: set_status
+    status: "Running · 60 FPS"
+
+  # ── 6.4s: lean into the result, hold, then the whole picture again ─────────
+  - at: 6400
+    type: camera_pan_to
+    target: result_window
+    margin: 0.12
+    tilt: false
+    duration: 1000
+
+  - at: 11400
+    type: camera_pan_to
+    target: ide_full
+    margin: 0.09
+    tilt: false
+    duration: 1200
+
+  # ── 14.6s: fade to the same dark the clip opened on (clean loop) ───────────
+  # Must land before the gameplay clip's 15.7 s end, so the last thing on
+  # screen is still the game running, never a restart or a frozen frame.
+  - at: 14600
+    type: ide_hide
+    duration: 600
+
+  - at: 15300
+    type: stop_record

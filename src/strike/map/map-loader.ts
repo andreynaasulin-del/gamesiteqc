@@ -28,6 +28,7 @@ import {
   DOWN,
   ensureBoundsTrees,
 } from './collider'
+import { applyLayout } from './layout'
 import { parseSceneGraph } from './map-parse'
 import type { MapData, ZoneInfo } from '../types'
 
@@ -46,6 +47,12 @@ export interface LoadMapOptions {
    * mesh (see `isTerrain`) gets its colour multiplied toward `GRASS_TINT`, maps left alone.
    */
   tintTerrain?: boolean
+  /**
+   * Which code-authored layout overlay to apply (see `layout.ts`). Defaults to the map's own
+   * name, so `corridors.glb` gets the `corridors` overlay wherever it is loaded from; pass
+   * `false` to load the raw export (`?layout=off` in the map viewer).
+   */
+  layout?: string | false
 }
 
 const _origin = new Vector3()
@@ -66,6 +73,28 @@ export async function loadMap(
   root.updateMatrixWorld(true)
 
   const parsed = parseSceneGraph(gltf)
+
+  // Gameplay geometry authored in code (cover, stairs, roof decks). Runs here, between the parse
+  // and the bake, so the colliders, the bounds, the navmesh source and the static batches all
+  // see it as ordinary map geometry.
+  const name = opts?.name ?? deriveName(source)
+  const layout = applyLayout(root, opts?.layout ?? deriveName(source))
+  if (layout) {
+    // A storey the overlay invented has to join the registry, or everything that walks the
+    // levels list (the bot roam grid, the debug HUD) behaves as if the floor were not there.
+    for (const y of layout.levels) {
+      parsed.levels.push({
+        id: `layout-level-${y}`,
+        label: `Layout ${y.toFixed(2)}`,
+        node: layout.group,
+        y,
+      })
+    }
+    console.info(
+      `[layout] ${name}: +${layout.blocks} blocks, -${layout.stripped} nodes`
+      + `${layout.levels.length > 0 ? `, +${layout.levels.length} level(s)` : ''}`,
+    )
+  }
 
   // Two colliders, one traversal (see collider.ts): players never pass a window, open or shut,
   // while paintballs go through an open sash and meet a closed one on its own moving BVH.
@@ -121,7 +150,7 @@ export async function loadMap(
   }
 
   return {
-    name: opts?.name ?? deriveName(source),
+    name,
     root,
     levels: parsed.levels,
     zones: parsed.zones,
@@ -135,6 +164,9 @@ export async function loadMap(
     // hand the bots a roof pitch to roam on either. Plus the strips where open door leaves come
     // to rest, so a path never runs through a panel that is solid but not in the collider.
     navMeshSource: openLeaves ? [colliders.navSource, openLeaves] : [colliders.navSource],
+    // Outdoor ground the overlay vouches for. Without it the bots treat the yard exactly like
+    // the surrounding lot and refuse to leave the building (see OpenArea).
+    openAreas: layout?.openAreas,
   }
 }
 

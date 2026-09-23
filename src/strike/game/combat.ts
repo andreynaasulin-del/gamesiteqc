@@ -1,9 +1,20 @@
 import { ARMOR, TAGGING } from '../config'
 import type { BodyPart, WeaponKind } from '../types'
 
-/** Kevlar + helmet: bullets consume armor; legs and melee bypass it. */
-export function armoredDamage(raw: number, armor: number, part: BodyPart, weapon: WeaponKind) {
-  const absorbed = weapon === 'knife' || part === 'leg' ? 0 : Math.min(Math.max(0, armor), Math.round(raw * ARMOR.absorption))
+/**
+ * Kevlar + helmet: bullets consume armor; legs and melee bypass it.
+ *
+ * A paint grenade is neither — it is a wave of paint, not a ball, so the vest does absorb it
+ * (and is spent doing so) whatever it lands on, legs included: there is no "part" to a blast.
+ */
+export function armoredDamage(
+  raw: number,
+  armor: number,
+  part: BodyPart,
+  weapon: WeaponKind | 'grenade',
+) {
+  const bypasses = weapon === 'knife' || (part === 'leg' && weapon !== 'grenade')
+  const absorbed = bypasses ? 0 : Math.min(Math.max(0, armor), Math.round(raw * ARMOR.absorption))
   return { amount: raw - absorbed, armor: Math.max(0, armor - absorbed), absorbed }
 }
 

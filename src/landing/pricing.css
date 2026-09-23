@@ -1,0 +1,757 @@
+/* ==========================================================================
+   PRICING — THE RATE CARD.
+
+   What was here before: three cards, each with a name, two badges, a
+   credits well, a price, a button, a six-row model ladder with a chip per
+   row, and a perks strip. Three times. Eighteen checkmarks, sixteen chips
+   saying "Included", five pills, a legend with icons in rounded squares.
+   It was the pricing page every product has shipped since 2022, and a
+   reader recognises the template before reading a single number.
+
+   What is here now: one table. Plans are columns. Model families are rows,
+   named once, on the left. The section heading sits in the corner cell,
+   where a printed rate card carries its title. A cell is a dot, a figure or
+   a dash. There are no boxes inside boxes: hairlines separate rows, one
+   faint band marks the recommended column, and type does the rest.
+
+   Grid geometry: column 1 is the label column, columns 2–4 are plans; row 1
+   is the head, rows 2–7 the six model families. app.js writes the cell
+   coordinates as --c / --r inline; `.rate__plan` and `#plan-list` are
+   display:contents so the cells take part in this grid directly.
+   ========================================================================== */
+
+.rate {
+  --rate-line: var(--line);
+  --rate-row: 46px;
+  --rate-gutter: clamp(18px, 1.8vw, 28px);
+  /* Must match HEAD_ROWS in app.js. Seven: caption, name, credits, price,
+     billing, the hold, button. */
+  --head-rows: 7;
+  display: grid;
+  grid-template-columns: minmax(280px, 1.15fr) repeat(3, minmax(0, 1fr));
+  grid-auto-rows: auto;
+  column-gap: 0;
+}
+.rate__body,
+.rate__plan {
+  display: contents;
+}
+
+/* ---- Corner: the section heading, set as the table's title ------------- */
+/* Spans the six head rows (see --head-rows), so the label column's first
+   rule lines up with the plans' first rule. */
+.rate__corner {
+  grid-column: 1;
+  grid-row: 1 / span var(--head-rows);
+  align-self: end;
+  padding: 0 var(--rate-gutter) 26px 0;
+}
+.rate__corner h2 {
+  margin-top: 12px;
+  max-width: 9ch;
+}
+.rate__lede {
+  margin-top: 16px;
+  max-width: 40ch;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* ---- The hold: a clock on the two struck prices ------------------------ */
+/* One head row (row 6 of 7), spanning exactly the plan columns whose price
+   is struck — app.js writes `--offer-col` / `--offer-span` from the same
+   `planAnchor` the struck prices come from, so the strip cannot drift out
+   of sync with the discount.
+
+   It lives here because the corner cell did not work: bottom-aligned
+   across the head, the clock sat in the empty band beside the buttons,
+   ~200px under the prices, and PO's verdict was "вообще не видно его
+   абсолютно". Correct reasoning, dead placement. Between the billing line
+   and the buttons it is inside the price stack — the eye cannot read $29
+   and reach "Go Pro" without crossing it.
+
+   The SPAN carries the meaning. It stops at the edge of the monthly
+   column, so the table states which prices are held the same way it
+   states everything else: by position. That is what let the explanatory
+   note go — one line instead of four.
+
+   Drawn like `.rate__gate`: one peach hairline and type, no pill, no
+   panel. A bordered badge would be the only rounded box in a block whose
+   whole argument is that it is a typeset table — an ad stapled to a spec
+   sheet. Same rgba(255,149,105,.42) rule, because it is the same kind of
+   statement: this line is the offer. */
+.offer {
+  grid-column: var(--offer-col, 3) / span var(--offer-span, 2);
+  grid-row: 6;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+  margin: 14px var(--rate-gutter) 0;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 149, 105, 0.42);
+}
+.offer__label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--peach);
+}
+.offer__label .i {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+/* Tabular figures, or the row of digits jiggles once a second — the one
+   thing guaranteed to pull the eye off a price. White and much smaller
+   than the $29 above it: the clock is the reason to decide now, not
+   another number in the comparison. Two loud oranges stacked (label +
+   clock) would out-shout the figure they are selling. */
+.offer__clock {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+/* The last half hour is the only genuinely urgent part of a six-hour
+   window, so it is the only part that gets the accent. A clock that is
+   loud for all six hours has nothing left to say at the end of them. */
+.offer--soon .offer__clock {
+  color: var(--peach);
+}
+
+/* ---- Head of a plan column --------------------------------------------- */
+/* The head is display:contents; its six children are grid items in rows
+   1–6 of the shared grid, one per line of the head. So when the yearly
+   billing note runs to three lines at 960px and the others to two, the
+   prices above it still sit on one line across all three columns — the
+   grid row simply gets taller for everyone. `--c` is inherited from the
+   head's inline style. The band and rule for the recommended column are
+   painted per child (see below), since the head has no box of its own. */
+.rate__head {
+  display: contents;
+}
+/* Every line of the head sits on ONE axis — the column's centre. Caption,
+   name, credits, price, billing note and button all measure to the same
+   centre, so the three columns read across as three stacks rather than
+   three left-aligned blocks with a centred price floating in the middle of
+   them. (Centring only the figure was the half-measure that made the rest
+   look crooked.) */
+.rate__head > * {
+  grid-column: var(--c);
+  padding-inline: var(--rate-gutter);
+  min-width: 0;
+  text-align: center;
+}
+.rate__caption {
+  grid-row: 1;
+  position: relative;
+  align-self: end;
+  padding-top: 22px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #8f8e90;
+}
+.rate__name {
+  grid-row: 2;
+  margin-top: 10px;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+.rate__credits {
+  grid-row: 3;
+  margin-top: 8px;
+  font-size: 15px;
+  color: var(--muted);
+}
+.rate__credits strong {
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+/* The figure. Currency and unit hang off it small, the struck regular rate
+   sits out to its right.
+
+   COLOUR — the figure is WHITE, and the only coloured thing in the group is
+   the dollar sign. It was coral-red (#dd344d) for one round and the note
+   that killed it was "красный как будто отталкивает", which the numbers
+   back: on this screen's background red measures 3.87:1 — the worst
+   contrast of every option tried, and barely above the 3:1 floor for large
+   text — while separating from the coral CTA sitting right under it by only
+   1.47:1. A price that is both the hardest thing to read AND the same
+   colour as the button is not an accent, it is a smear. White measures
+   17.4:1 on the same background and 3.05:1 against that CTA: the two loudest
+   elements in the column stop competing and split the work — the number is
+   read, the button is clicked.
+
+   Green was the proposed alternative and is refused on brand, not on taste.
+   It sits ~144° from the accent — near its complement, and the only hue on
+   a page whose entire palette is one coral gradient over neutral greys (see
+   tokens.css, which throws out three palettes for exactly this reason). The
+   one thing green would be semantically right about — money saved — is
+   handled by `.rate__save` below, in peach, where it costs no new hue.
+
+   CENTRING — a three-column grid, not `justify-content: center`. The centred
+   flex row put the whole group on the axis INCLUDING the struck price, whose
+   width differs per column ($58 / $360 / nothing), so the figures landed
+   22-44px apart across three columns that are supposed to be read across.
+   `1fr auto 1fr` centres the amount on its own and parks the struck price in
+   the right-hand track, out of the calculation. */
+.rate__price {
+  grid-row: 4;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: baseline;
+  margin-top: 18px;
+  line-height: 1;
+  color: var(--text);
+}
+.rate__amount {
+  grid-column: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+.rate__currency {
+  font-size: 22px;
+  font-weight: 600;
+  align-self: flex-start;
+  margin-top: 6px;
+  color: var(--peach);
+}
+.rate__price strong {
+  font-size: 56px;
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.rate__per {
+  margin-left: 6px;
+  font-size: 15px;
+  color: var(--muted);
+}
+/* The struck regular rate. Only the Pro columns carry one, so it can
+   afford to be seen: near-full text colour, the strike in the accent. The
+   "saves $168" line under the yearly price is the same argument in words. */
+.rate__was {
+  grid-column: 3;
+  justify-self: start;
+  margin-left: 12px;
+  font-size: 18px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: #c9c8cd;
+  text-decoration-color: var(--peach);
+  text-decoration-thickness: 2px;
+}
+.rate__billing {
+  grid-row: 5;
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #8f8e90;
+}
+/* The one figure in the billing line worth reading. Peach, not green: a
+   saving is the one place green would be semantically right, and it is
+   still not worth adding a second hue to this page for three words. It
+   also gives the yearly column its own hook now that the accent band has
+   moved to Pro — otherwise the cheaper-per-month term has nothing pulling
+   the eye to it at all. */
+.rate__save {
+  color: var(--peach);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+/* A grid item is blockified, so the inline-flex pill would stretch to the
+   column: `justify-self` keeps it its own width. Centred, on the same axis
+   as the price above it — three buttons of three different label lengths
+   ("Start monthly" / "Go Pro" / "Go yearly") hang off a shared centre
+   instead of a shared left edge, which is the only way three unequal pills
+   look deliberate. The bottom margin is the head's bottom padding — there
+   is no head box to carry it. */
+.rate__cta {
+  grid-row: 7;
+  justify-self: center;
+  margin: 18px var(--rate-gutter) 24px;
+}
+
+/* ---- Rows -------------------------------------------------------------- */
+.rate__label,
+.rate__cell {
+  display: flex;
+  align-items: center;
+  min-height: var(--rate-row);
+  border-top: 1px solid var(--rate-line);
+  transition: background-color 160ms ease;
+}
+.rate__label {
+  grid-column: 1;
+  grid-row: var(--r);
+  gap: 14px;
+  padding-right: var(--rate-gutter);
+}
+.rate__role {
+  flex: 0 0 5.5ch;
+  font-size: 13px;
+  color: #8f8e90;
+}
+.rate__model {
+  font-size: 15px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Cells centre on the same axis as the price and the button above them, so
+   a column is one vertical line of marks from its name down to its last
+   row. Left-aligned cells put every check hard against the gutter, which
+   reads as a ragged left edge three times over instead of a table.
+
+   `1fr auto 1fr`, not a centred flex row, for the same reason `.rate__price`
+   uses it: every cell here is ONE mark — a tick, a lock chip, or a figure —
+   and that mark sits in the middle track regardless of which one it is, so
+   the whole column reads as straight down every row. (A check mark used to
+   sit beside its own ceiling, "✓ 1080p" on the Seedance row — see the
+   `access.limit` branch in `rateCellMarkup` for why the tick was dropped
+   there rather than aligned; a cell is one mark now, never two.) */
+.rate__cell {
+  grid-column: var(--c);
+  grid-row: var(--r);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding-inline: var(--rate-gutter);
+  font-size: 14px;
+  color: var(--text);
+}
+.rate__check,
+.rate__unlock,
+.rate__cap {
+  grid-column: 2;
+}
+/* Last row closes the table with the same hairline it opened with. */
+.rate__label--last,
+.rate__plan > .rate__cell:last-child {
+  border-bottom: 1px solid var(--rate-line);
+}
+/* An included row is a check mark in the accent: bigger and more legible
+   than a dot at a glance, and it reads as "yes" without a legend. Stroke
+   only — no disc or box around it, this is still a mark in a table. */
+.rate__check {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  color: var(--peach);
+  stroke-width: 2.6;
+}
+.rate__cap {
+  font-variant-numeric: tabular-nums;
+}
+.rate__upto {
+  color: #8f8e90;
+}
+/* A locked cell names the tier that opens it. Accent colour, because it
+   is the one thing in a locked row that is an invitation rather than a
+   refusal — and because it points straight at the accent rule on the
+   recommended column two cells to the right. */
+/* Behind the wall. The locked cells are the only cells in the table with
+   a fill of their own — a step darker than the page — so the entry column
+   visibly ends where the gate is drawn and the rest of it reads as the
+   other side of a wall. Dark, not hatched, not striped: a shade is a
+   fact, a pattern is a decoration. */
+.rate__cell--off {
+  color: #6a696d;
+  background: rgba(0, 0, 0, 0.16);
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.04);
+}
+.rate__unlock {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--peach);
+  opacity: 0.85;
+}
+.rate__lock {
+  width: 12px;
+  height: 12px;
+  color: inherit;
+}
+
+/* ---- The gate ------------------------------------------------------------ */
+/* One row, drawn across the whole ledger: everything above it is what the
+   entry tier buys, everything below is what the next tier opens. The rule
+   on top of it is the one hairline in the table that is not grey — a
+   faint peach, full width — because this line is the whole offer. The
+   label column carries the words; the plan columns carry the rule only,
+   so the recommended column's band runs through it unbroken. */
+.rate__gate {
+  grid-row: var(--r);
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  min-height: 34px;
+  padding-bottom: 8px;
+  border-top: 1px solid rgba(255, 149, 105, 0.42);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--peach);
+}
+.rate__gate--label {
+  grid-column: 1;
+  padding-right: var(--rate-gutter);
+  font-weight: 700;
+}
+.rate__gate-note {
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #8f8e90;
+}
+.rate__gate--cell {
+  grid-column: var(--c);
+  padding-inline: var(--rate-gutter);
+}
+/* Words only on a phone, where each stacked card has to say it itself. */
+.rate__gate--cell > span {
+  display: none;
+}
+
+/* ---- The recommended column ------------------------------------------- */
+/* A faint band, top to bottom, and a two-pixel rule in the brand gradient
+   on its head. Not a border all the way round, not a glow, not a badge —
+   the way a rate card underlines the tariff it wants you to take. */
+/* One element, spanning every row of its column (app.js writes the span),
+   painted behind the cells. The cells themselves stay transparent, so the
+   row hover still reads through and nothing has to know which row it is
+   in to be part of the band. */
+.rate__band {
+  grid-column: var(--c);
+  grid-row: 1 / span var(--rows);
+  position: relative;
+  z-index: -1;
+  /* Warm, not white: the band should read as the accent's shadow, and it
+     fades out towards the foot so the column is lit from its head. */
+  /* flat low-alpha peach went brown on ink; a saturated coral light from
+     the top edge reads as a lit column instead */
+  background:
+    radial-gradient(90% 40% at 50% 0%, rgba(255, 77, 94, 0.16), transparent 75%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.015));
+  pointer-events: none;
+}
+.rate__band::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: var(--accent);
+}
+.rate__plan--featured .rate__caption {
+  color: var(--peach);
+}
+
+/* ---- Row hover: label and all three cells light together --------------- */
+/* app.js puts `.is-row` on every [data-r] node of the hovered row. */
+@media (hover: hover) and (pointer: fine) {
+  .rate .is-row {
+    background: #ffffff08;
+  }
+  .rate .rate__plan--featured > .is-row {
+    background: #ffffff0d;
+  }
+  .rate .is-row .rate__unlock {
+    opacity: 1;
+  }
+}
+
+/* ---- Foot ---------------------------------------------------------------- */
+/* One line under the table: what every plan has on the left, the legal
+   line on the right. Flex, not the table's grid — the two halves are
+   sentences and should sit where their length puts them. */
+.rate__foot {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 40px;
+  margin-top: 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #8f8e90;
+}
+.rate__foot p {
+  color: inherit;
+}
+.rate__foot strong {
+  color: var(--muted);
+  font-weight: 600;
+}
+.rate__foot a {
+  color: var(--text);
+  border-bottom: 1px solid var(--line-hover);
+  transition: border-color 180ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .rate__foot a:hover {
+    border-color: var(--peach);
+  }
+}
+
+/* ---- One screen -------------------------------------------------------- */
+/* The block's height is the head row plus six rows plus the foot. The head
+   is the only part with any give in it: the price figure and the paddings
+   answer to the screen height so the table always closes above the fold on
+   a laptop, and stays full size on a monitor. */
+@media (min-width: 901px) and (min-height: 620px) {
+  /* This block gets the tightest gutters on the page, and it has earned
+     them: it is the only section whose content is a table with a fixed
+     number of rows. Everywhere else the furniture can give (a screenshot
+     crops, a heading drops 4px) — here seven rows are seven rows, so the
+     only thing left to compress is the air around them.
+     Measured before the hold went in: the section came to exactly 789px on
+     a 789px viewport. Zero slack. Anything added to the corner cell — and
+     the corner is what decides the head's height — went straight past the
+     fold and clipped the fine print. The shared `--pad-y` (51px a side at
+     that height) is where the 47px the clock costs comes from; the ceiling
+     is untouched, so a tall monitor still gets the full 92px. */
+  .pricing {
+    --pad-y: clamp(24px, 3.3svh, 92px);
+  }
+  .rate {
+    --rate-row: clamp(38px, 5.6svh, 48px);
+  }
+  .rate__gate {
+    min-height: clamp(26px, 4.2svh, 34px);
+  }
+  .rate__caption {
+    padding-top: clamp(14px, 2.4svh, 22px);
+  }
+  .rate__price {
+    margin-top: clamp(10px, 2svh, 18px);
+  }
+  .rate__price strong {
+    font-size: clamp(40px, 6.6svh, 56px);
+  }
+  .rate__cta {
+    margin-block: clamp(12px, 2svh, 18px) clamp(16px, 2.8svh, 24px);
+  }
+  .rate__lede {
+    margin-top: clamp(10px, 1.8svh, 16px);
+  }
+  .rate__corner {
+    padding-bottom: clamp(12px, 2.2svh, 26px);
+  }
+  /* The hold is now a head row, so its height is a row of the table and
+     comes straight off the one-screen fit. It gives at the same rate as
+     the rest of the head. */
+  .offer {
+    margin-top: clamp(9px, 1.7svh, 14px);
+    padding-top: clamp(7px, 1.3svh, 10px);
+  }
+  .offer__clock {
+    font-size: clamp(17px, 2.7svh, 21px);
+  }
+}
+
+/* ---- Narrow desktop: the label column gives up its role column --------- */
+@media (max-width: 1180px) and (min-width: 901px) {
+  .rate {
+    --rate-gutter: 16px;
+    grid-template-columns: minmax(200px, 1fr) repeat(3, minmax(0, 1fr));
+  }
+  .rate__role {
+    display: none;
+  }
+  .rate__model {
+    font-size: 14px;
+  }
+  .rate__price strong {
+    font-size: 44px;
+  }
+  /* Below ~1180px the struck rate no longer fits beside the figure: its
+     track is sized by content, so `$360` grows track 3 past its 1fr share
+     and shoves the figure 3-14px off the axis — column by column, by a
+     different amount each time, which is the exact defect this grid was
+     built to remove. So the anchor drops onto its own line and centres
+     under the figure it argues with. The row simply gets taller for all
+     three columns, and the figures stay dead centre. */
+  .rate__price {
+    row-gap: 6px;
+  }
+  .rate__was {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: center;
+    margin-left: 0;
+  }
+  .rate__name {
+    font-size: 20px;
+  }
+  .rate__corner h2 {
+    max-width: none;
+    font-size: clamp(26px, 3vw, 34px);
+  }
+  .rate__lede {
+    font-size: 15px;
+  }
+  .rate__cell {
+    padding-inline: var(--rate-gutter);
+  }
+  .rate__unlock {
+    font-size: 12px;
+  }
+}
+
+/* ---- Phone / narrow: plans stack as cards, each carrying its labels ---- */
+@media (max-width: 900px) {
+  .rate,
+  .rate__body {
+    display: block;
+  }
+  .rate__corner {
+    padding: 0 0 28px;
+  }
+  .rate__corner h2 {
+    max-width: none;
+  }
+  /* No grid to sit in: `.rate` is a block here, so the strip falls back to
+     DOM order — straight after the intro, above the first card. Flush left
+     with everything else in the intro, and allowed to wrap, because 414px
+     minus the label leaves no room for the clock on the same line. */
+  .offer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 6px 10px;
+    margin: 0 0 4px;
+    padding-top: 12px;
+  }
+  /* The span did the naming on desktop. There are no columns here, so the
+     sentence has to be said out loud — and the first card under it is the
+     monthly one, which is precisely the plan the hold does NOT cover. */
+  .offer__scope {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+    font-size: 13px;
+    color: #8f8e90;
+  }
+  .rate__label {
+    display: none;
+  }
+  .rate__plan {
+    display: block;
+    margin-top: 16px;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: var(--fill);
+    overflow: hidden;
+  }
+  .rate__plan--featured {
+    border-color: #ff95693a;
+  }
+  /* The band becomes the card's top rule: the spanning element has no
+     grid to span, so it is a 2px strip and nothing else. */
+  .rate__band {
+    display: block;
+    height: 2px;
+    background: var(--accent);
+  }
+  .rate__band::before {
+    display: none;
+  }
+  .rate__head {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px 22px 20px;
+  }
+  /* A stacked card is a single column, so there is nothing to align
+     across and centring has no argument left: one text block reads from
+     its left edge. Everything the desktop head centres goes back to flush
+     left here — including the button, which is a card's own action rather
+     than one of three being compared. */
+  .rate__head > * {
+    padding-inline: 0;
+    text-align: left;
+  }
+  .rate__caption {
+    align-self: auto;
+    padding-top: 0;
+  }
+  /* A stacked card is one column, so there is nothing to align figures
+     ACROSS and the centring grid has no job — left it in and the empty
+     `1fr` track indented the price 52px from the name above it. Back to a
+     plain row that starts where every other line in the card starts. */
+  .rate__price {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+  .rate__price strong {
+    font-size: 44px;
+  }
+  .rate__cta {
+    margin: 16px 0 0;
+  }
+  /* Back to a flex row: the desktop `1fr auto 1fr` exists to put ticks on
+     a shared axis, and a card has no neighbour to share one with. Here the
+     row is label-on-the-left, value-on-the-right. */
+  .rate__cell {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding-inline: 22px;
+    min-height: 44px;
+  }
+  .rate__cell::before {
+    content: attr(data-label);
+    margin-right: auto;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .rate__cell--off::before {
+    color: #77767a;
+  }
+  .rate__plan > .rate__cell:last-child {
+    border-bottom: 0;
+  }
+  /* The gate speaks inside each card here: the label column is gone. */
+  .rate__gate--cell {
+    padding-inline: 22px;
+    min-height: 38px;
+    padding-bottom: 6px;
+    background: #ffffff04;
+  }
+  .rate__gate--cell > span {
+    display: inline;
+  }
+  /* On a card where nothing is locked the line is not a wall, so it drops
+     the accent and reads as what it is: a sub-heading. */
+  .rate__gate--open {
+    color: #8f8e90;
+    border-top-color: var(--rate-line);
+  }
+  .rate__foot {
+    flex-direction: column;
+    margin-top: 22px;
+  }
+}

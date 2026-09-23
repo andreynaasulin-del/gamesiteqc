@@ -9,7 +9,7 @@
  * that is how the automated playtests drive the player without a real mouse.
  */
 import { MathUtils, Vector3 } from 'three'
-import { PLAYER, WEAPON } from '../config'
+import { GRENADE, PLAYER, WEAPON } from '../config'
 import { taggingScale } from './combat'
 import type { Audio, AudioListenerPose } from '../engine/audio'
 import type { Input } from '../engine/input'
@@ -20,6 +20,7 @@ import { createViewModel, type ViewModel } from '../player/viewmodel'
 import { computeHitShapes, createHitShapes } from '../player/hitshapes'
 import type {
   CharacterController,
+  GrenadeEvent,
   HitEvent,
   Hittable,
   MoveInput,
@@ -29,6 +30,7 @@ import type {
   TeamId,
   WeaponKind,
 } from '../types'
+import { throwVelocity } from '../weapons/grenades'
 import { createMarker, weaponSpec, WEAPON_BY_SLOT, type Marker } from '../weapons/marker'
 import { createMelee, type Melee } from '../weapons/melee'
 import {
@@ -50,6 +52,11 @@ export interface LocalPlayerOptions {
   now: () => number
   /** Spawn the projectile locally and tell everyone else about the shot. */
   onShot: (shot: ShotEvent) => void
+  /**
+   * G was pressed and the pouch was not empty: simulate the grenade locally (this is the copy
+   * that resolves damage) and broadcast it. Same shape of contract as `onShot`.
+   */
+  onGrenade?: (event: GrenadeEvent) => void
   /** The controller left the world — ask the host to put us back. */
   onFell: () => void
   /**
@@ -75,6 +82,8 @@ export interface LocalPlayerDebug {
   look(dx: number, dy: number): void
   setFire(on: boolean): void
   reload(): void
+  /** Throw a paint grenade, as G would: obeys the pouch and the cooldown. */
+  throwGrenade(): void
   clear(): void
 }
 
@@ -91,6 +100,8 @@ export interface LocalPlayer {
   readonly weapon: WeaponKind
   /** 0..1 crosshair bloom from recoil. */
   readonly spread: number
+  /** Paint grenades left this life (the HUD's pouch read-out). */
+  readonly grenades: number
   /** Camera eye + look direction, for positional audio. */
   readonly listener: AudioListenerPose
   setSession(session: MapSession): void
@@ -126,6 +137,8 @@ const _eye = new Vector3()
 const _look = new Vector3()
 const _spawn = new Vector3()
 const _muzzle = new Vector3()
+const _throwOrigin = new Vector3()
+const _throwVelocity = new Vector3()
 const _smear = new Vector3()
 const _smearPoint = new Vector3()
 const _up = new Vector3(0, 1, 0)
@@ -152,6 +165,11 @@ export function createLocalPlayer(opts: LocalPlayerOptions): LocalPlayer {
   const melee: Melee = createMelee({ ownerId: entity.id, team: entity.team, now: opts.now })
   /** Swings are numbered on their own so a swing id can never collide with a shot id. */
   let swingCounter = 0
+  /** The pouch: refilled on every respawn, never resupplied mid-life. */
+  let grenadesLeft = GRENADE.carried
+  let grenadeCounter = 0
+  let lastThrowAt = Number.NEGATIVE_INFINITY
+  let pendingThrow = false
   entity.weapon = marker.weapon
 
   const move: MoveInput = { forward: 0, right: 0, jump: false, crouch: false, walk: false }
@@ -205,6 +223,43 @@ export function createLocalPlayer(opts: LocalPlayerOptions): LocalPlayer {
     opts.onWeapon?.(kind)
   }
 
+  /**
+   * Throw a paint grenade. Called from `frameUpdate` only, after `_eye`/`_look` are up to date
+   * for this frame — the arc has to start where the camera is NOW, not where it was.
+   *
+   * The whole throw is one `GrenadeEvent`: the game orchestrator simulates it locally (with
+   * damage resolution, since we are the thrower) and sends the identical object to everyone
+   * else. Nothing about the flight is re-derived anywhere, so nothing can disagree.
+   */
+  function tryThrowGrenade(): void {
+    const now = opts.now()
+    if (dead || spectating) return
+    if (grenadesLeft <= 0) {
+      // Same feedback as an empty hopper: the press is acknowledged, the throw is not.
+      audio.play('dryFire')
+      return
+    }
+    if (now - lastThrowAt < GRENADE.cooldownMs) return
+    grenadesLeft--
+    lastThrowAt = now
+    _throwOrigin.copy(_eye).addScaledVector(_look, GRENADE.throwOffset)
+    throwVelocity(_look, _throwVelocity, controller.state.velocity)
+    // The knife's overhand swing doubles as the throw motion: a dedicated animation is a
+    // model change, and the gesture reads correctly as it is.
+    viewModel.swing()
+    audio.play('knifeSwing', undefined, undefined, 0.7)
+    opts.onGrenade?.({
+      id: `${entity.id}:nade:${++grenadeCounter}`,
+      by: entity.id,
+      team: entity.team,
+      origin: [_throwOrigin.x, _throwOrigin.y, _throwOrigin.z],
+      velocity: [_throwVelocity.x, _throwVelocity.y, _throwVelocity.z],
+      t: Date.now(),
+      seed: (Math.random() * 0xffffffff) >>> 0,
+      fuseMs: GRENADE.fuseMs,
+    })
+  }
+
   function makeController(next: MapSession): CharacterController {
     return createCharacterController(next.map.collider, {
       onFellOut: () => opts.onFell(),
@@ -237,6 +292,9 @@ export function createLocalPlayer(opts: LocalPlayerOptions): LocalPlayer {
     },
     get spread() {
       return spread
+    },
+    get grenades() {
+      return grenadesLeft
     },
     listener,
 
@@ -365,6 +423,12 @@ export function createLocalPlayer(opts: LocalPlayerOptions): LocalPlayer {
       const slot = pendingSlot || (controlsLive() ? input.weaponSlot : 0)
       pendingSlot = 0
       if (slot >= 1 && slot <= WEAPON_BY_SLOT.length && !dead) selectWeapon(WEAPON_BY_SLOT[slot - 1])
+
+      // G. Read before `input.update()` clears the edge, and never while dead — a corpse
+      // dropping a live grenade is a funny bug exactly once.
+      const throwing = pendingThrow || (controlsLive() && input.grenade)
+      pendingThrow = false
+      if (throwing && !dead) tryThrowGrenade()
 
       const firing = !dead && (overrideFire ?? (controlsLive() ? input.fire : false))
       const reloading = (controlsLive() && input.reload) || overrideReload
@@ -522,6 +586,11 @@ export function createLocalPlayer(opts: LocalPlayerOptions): LocalPlayer {
       marker.reset()
       melee.reset()
       spread = 0
+      // A fresh pouch with the fresh hopper: grenades are per life, and holding one back
+      // across a death would reward dying.
+      grenadesLeft = GRENADE.carried
+      lastThrowAt = Number.NEGATIVE_INFINITY
+      pendingThrow = false
     },
 
     debug: {
@@ -550,6 +619,9 @@ export function createLocalPlayer(opts: LocalPlayerOptions): LocalPlayer {
       },
       reload() {
         overrideReload = true
+      },
+      throwGrenade() {
+        pendingThrow = true
       },
       clear() {
         overrideMove = false

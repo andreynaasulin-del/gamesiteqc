@@ -660,7 +660,7 @@ export function createPauseMenu(opts: PauseMenuOptions): PauseMenu {
       el('h1', { class: 'ps-title', html: 'Paint <em>Strike</em>' }),
       el('p', {
         class: 'ps-tagline',
-        html: '<b>WASD</b> move · <b>SHIFT</b> walk · <b>SPACE</b> jump · <b>CTRL</b> crouch · <b>R</b> reload · <b>E</b> doors · <b>TAB</b> scores · <b>ESC</b> menu',
+        html: '<b>WASD</b> move · <b>SHIFT</b> walk · <b>SPACE</b> jump · <b>CTRL</b> crouch · <b>R</b> reload · <b>G</b> paint grenade · <b>E</b> doors · <b>TAB</b> scores · <b>ESC</b> menu',
       }),
       el('div', { class: 'ps-actions' }, [resume, invite]),
       teamField,
@@ -704,7 +704,19 @@ export function createPauseMenu(opts: PauseMenuOptions): PauseMenu {
 
   let open = false
   let audioOn = opts.audioOn()
-  sound.textContent = `Sound: ${audioOn ? 'on' : 'off'}`
+
+  /**
+   * Sound is not this menu's state to remember — the game turns it on at the player's first
+   * gesture, so the row has to be re-read every time the card appears. It used to be written
+   * once here and then only by the 500 ms poller, which meant the menu opened claiming
+   * "Sound: off" over a match that was already making noise.
+   */
+  const renderSound = () => {
+    audioOn = opts.audioOn()
+    sound.textContent = `Sound: ${audioOn ? 'on' : 'off'}`
+    sound.setAttribute('aria-pressed', String(audioOn))
+  }
+  renderSound()
   let toastTimer = 0
   /** The very first open is the "click to start" screen; every one after it is a pause. */
   let played = false
@@ -745,6 +757,7 @@ export function createPauseMenu(opts: PauseMenuOptions): PauseMenu {
       renderMaps()
       renderBots()
       renderTeams()
+      renderSound()
       screen.style.display = ''
     },
     close() {
@@ -772,9 +785,7 @@ export function createPauseMenu(opts: PauseMenuOptions): PauseMenu {
     if (!open) return
     renderBots()
     renderTeams()
-    audioOn = opts.audioOn()
-    sound.textContent = `Sound: ${audioOn ? 'on' : 'off'}`
-    sound.setAttribute('aria-pressed', String(audioOn))
+    renderSound()
   }, 500)
 
   resume.addEventListener('click', () => {

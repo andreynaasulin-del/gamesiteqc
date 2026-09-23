@@ -1,16 +1,18 @@
 import { GameCard } from "./hero-game.js";
 import { games, gameAsset } from "./games.js";
 import { icon, hydrateIcons } from "./icons.js";
+import { initializeOffer } from "./offer.js";
+import { initMotion } from "./motion.js";
+import { initShowreel } from "./showreel.js";
 import {
   plans,
-  anchorPrice,
+  planAnchor,
   formatCredits,
   yearlySavings,
   monthlyEquivalent,
   MODEL_CATALOG,
   UNLOCK_LABEL,
-  ACCESS_PANEL,
-  PLAN_DISCOUNT,
+  everyPlan,
   PLANS_URL,
 } from "./plans.js";
 
@@ -64,10 +66,11 @@ const projects = [
     url: "https://quadcode.ai/#capabilities",
   },
 ];
+// No portraits: each agent is its role mark + name. `hue` tints the tile.
 const agents = [
-  { name: "Cody", role: "Code & development", image: "cody.jpg" },
-  { name: "Lumi", role: "Design & visuals", image: "lumi.jpg" },
-  { name: "Sonic", role: "Motion & sound", image: "sonic.jpg" },
+  { name: "Cody", role: "Code & development", glyph: "code", hue: "peach" },
+  { name: "Lumi", role: "Design & visuals", glyph: "palette", hue: "coral" },
+  { name: "Sonic", role: "Motion & sound", glyph: "waveform", hue: "steel" },
 ];
 const featureData = [
   {
@@ -134,103 +137,260 @@ function featureVisual(type) {
     return `<div class="project-window"><div class="window-bar"><span class="window-dots" aria-hidden="true">●●●</span><span>quadcode.ai · your workspace</span><span>${icon("expand")}</span></div><video class="project-window__video" data-feature-video src="${asset("quadcode-ide.mp4")}" poster="${asset("quadcode-ide.webp")}" width="1280" height="720" muted loop playsinline preload="metadata" aria-label="Quadcode desktop interface: a prompt is typed, GPT-6 Astra edits the project files, and the running game appears in the Result tab"></video></div><div class="project-prompt"><span>Example prompt</span><p>Build a 3D adventure. Make it my own.</p><footer><span>Code · Visuals · Sound</span>${icon("arrow-up", "i send-symbol")}</footer></div>`;
   }
   if (type === "team") {
-    return `<div class="team-composition"><div class="team-label">One brief. Your own creative team.</div><div class="agent-portraits">${agents.map((agent) => `<div class="portrait"><img src="${asset(agent.image)}" alt="${agent.name}, Quadcode ${agent.role.toLowerCase()} agent" width="200" height="250" loading="lazy"><div class="portrait-caption"><strong>${agent.name}</strong><span>${escapeHtml(agent.role)}</span></div></div>`).join("")}</div><div class="team-prompt">Your game. Everyone on the same page.</div></div>`;
+    return `<div class="team-composition"><div class="team-label">One brief. Your own creative team.</div><ul class="agent-roles">${agents.map((agent) => `<li class="agent-role agent-role--${agent.hue}"><span class="agent-role__mark">${icon(agent.glyph)}</span><strong>${agent.name}</strong><span>${escapeHtml(agent.role)}</span></li>`).join("")}</ul><div class="team-prompt">Your game. Everyone on the same page.</div></div>`;
   }
   return `<img src="${asset("goth-room.webp")}" alt="Gothic room built with Quadcode: stained glass, volumetric lighting and candles" width="1280" height="720" loading="lazy"><div class="world-caption"><span class="eyebrow">Built with Quadcode</span><strong>A world worth exploring.</strong><p>Gothic Room · Real-time 3D environment</p></div>`;
 }
 
-// ---- Pricing cards ---------------------------------------------------------
-// Card anatomy, top to bottom, in the order a buyer actually reads:
-//   name → one-line pitch → CREDITS (the thing compared, biggest type, in its
-//   own well) → price with the struck anchor → CTA → "save $X" (yearly only,
-//   computed) → MODEL LADDER (every model family with a state: included,
-//   capped, or locked with the tier that opens it) → short checklist → billing.
-// The CTA sits above the lists on purpose: the button is visible before the
-// reader has committed to scanning six rows of models.
-// The featured tier gets a gradient hairline and a lighter fill, never extra
-// height — a taller middle card knocks the row off its baseline and reads as
-// a layout bug rather than a recommendation.
-// One row of the ladder reads as a table line: ROLE · model · [ceiling] · state.
-//   full    → ✓  name            [1080p]  Included
-//   capped  → ✓  name            [720p]   Up to 720p   (the ceiling IS the state)
-//   locked  → ✕  name (dimmed)            From Pro     (peach outline: a pointer)
-function modelRowMarkup(entry, access) {
+// ---- Pricing: the rate card ------------------------------------------------
+// One table, typeset. Plans are columns, model families are rows, and each
+// fact appears exactly once: the six model names live in the left-hand
+// column, not repeated inside three cards; the discount is one sentence in
+// the heading, not three "50% OFF" pills; the shared perks are one line
+// under the table. What remains in a plan's column is only what differs —
+// which is the whole reason a buyer is comparing.
+//
+// Markup is column-major (one .rate__plan per plan) so a phone can stack the
+// plans as cards, but each cell carries its grid coordinates so on desktop
+// the same nodes lay out row-major inside the shared `.rate` grid. Column 1
+// is the label column.
+//
+// The head is not one grid row but seven — caption, name, credits, price,
+// billing, the hold, button — so that the three columns align line by line
+// no matter how a caption or a billing note wraps at a given width. (A
+// single head row bottom-aligns the buttons and lets everything above them
+// drift.) Row 6 is the offer strip: it spans only the discounted columns,
+// but it is still a ROW, so adding it cost the alignment nothing — the row
+// just gets taller for all three.
+const HEAD_ROWS = 7;
+const ROW_OFFSET = HEAD_ROWS + 1;
+const COL_OFFSET = 2;
+
+// THE GATE. This block is a paywall, and a paywall has a line in it: above
+// the line, what the entry tier buys; below it, what only the next tier
+// opens. The line is drawn once, as its own row of the ledger — a printed
+// rate card would set "Pro" as a sub-heading and list the rest under it.
+// Its position is derived from the entry tier's first locked family, so
+// re-gating a model in plans.js moves the line without touching markup.
+const ENTRY_PLAN = plans.reduce((low, plan) =>
+  monthlyEquivalent(plan) < monthlyEquivalent(low) ? plan : low,
+);
+const GATE_INDEX = MODEL_CATALOG.findIndex((entry) => ENTRY_PLAN.models[entry.id] == null);
+// The gate row is switched off: the "From Pro" cells already draw the line
+// column by column, and a second, full-width "PRO · opens the rest" row
+// said the same thing once more and cost a row of height. Flip to
+// `GATE_INDEX > 0` to bring it back — all the plumbing below still works.
+const SHOW_GATE = false;
+const HAS_GATE = SHOW_GATE && GATE_INDEX > 0;
+const GATE_LABEL = UNLOCK_LABEL.replace(/^from\s+/i, "");
+// Grid row for catalog index i: rows above the gate are unchanged, rows at
+// or below it shift down one to make room for the gate row.
+const rowFor = (index) => index + ROW_OFFSET + (HAS_GATE && index >= GATE_INDEX ? 1 : 0);
+const GATE_ROW = GATE_INDEX + ROW_OFFSET;
+
+// A cell is one of three things, none of them a chip:
+//   full    → a check mark — or, when the row also carries a ceiling
+//             ("1080p"), the figure ALONE and no mark. A tick next to a
+//             number claims two things at once ("included" AND "here is
+//             how much"), and on this table's one such row — Seedance
+//             2.0 on the Pro columns — the two read as fighting for the
+//             same 18px: the tick sits sideways against the baseline of
+//             the digits beside it, which is the only crooked mark in a
+//             table that is otherwise all straight lines. The figure
+//             already says "included, and this is the ceiling" on its
+//             own — same grammar "up to 720p" already uses one state
+//             down, just without "up to" because here there ISN'T one.
+//   capped  → "up to 720p" — the ceiling IS the state, and "up to" says so
+//   locked  → the tier that opens it, in the accent: the cell names the
+//             price of entry instead of shrugging with a dash. That is the
+//             paywall doing its job — every locked cell is a pointer to the
+//             column on its right.
+// NO ARIA TABLE ROLES IN HERE, DELIBERATELY. This markup used to carry the
+// cell, columnheader and rowheader roles, which is invalid: each of them
+// requires a row role inside a table role on an ancestor, and this grid has
+// neither — the DOM is column-major (one element per plan holding that
+// plan's whole column) and `display: contents` removes the wrapper boxes
+// anyway. A cell with no owning row is dropped from the accessibility tree
+// by every engine, so the roles bought nothing and failed validation.
+// (tests/landing-plans.js greps for those role attributes, so name them in
+// prose here, not as markup.)
+// What replaces them is cheaper and actually works: every cell's sr-only
+// text is a COMPLETE sentence — plan, feature, verdict — so it reads
+// correctly wherever a screen reader lands, with no row/column context to
+// reconstruct.
+function rateCellMarkup(entry, access, column, row, plan) {
   const locked = access == null;
   const capped = !locked && access.state === "capped";
-  const limit = !locked && access.limit && !capped ? `<span class="plan-chip plan-chip--limit">${escapeHtml(access.limit)}</span>` : "";
-  const state = locked ? UNLOCK_LABEL : capped ? `Up to ${access.limit}` : "Included";
-  const stateClass = locked ? " plan-chip--locked" : capped ? " plan-chip--capped" : " plan-chip--on";
-  return `<li class="plan-model${locked ? " plan-model--locked" : ""}">
-    ${icon(locked ? "x" : "check", "i plan-model__mark")}
-    <span class="plan-model__role">${escapeHtml(entry.role)}</span>
-    <span class="plan-model__name">${escapeHtml(entry.name)}</span>
-    <span class="plan-model__chips">${limit}<span class="plan-chip${stateClass}">${escapeHtml(state)}</span></span>
-  </li>`;
+  const placement = `style="--c:${column};--r:${row}" data-r="${row}"`;
+  const label = `${entry.role} · ${entry.name}`;
+  let glyph;
+  let verdict;
+  if (locked) {
+    glyph = `<span class="rate__unlock">${icon("lock", "i rate__lock")}${escapeHtml(UNLOCK_LABEL)}</span>`;
+    verdict = `not included, ${UNLOCK_LABEL.toLowerCase()}`;
+  } else if (capped) {
+    glyph = `<span class="rate__cap"><span class="rate__upto">up to</span> ${escapeHtml(access.limit)}</span>`;
+    verdict = `included, up to ${access.limit}`;
+  } else if (access.limit) {
+    glyph = `<span class="rate__cap">${escapeHtml(access.limit)}</span>`;
+    verdict = `included, ${access.limit}`;
+  } else {
+    glyph = icon("check", "i rate__check");
+    verdict = "included";
+  }
+  const sr = `${plan.name} — ${label}: ${verdict}.`;
+  return `<div class="rate__cell${locked ? " rate__cell--off" : ""}" ${placement} data-label="${escapeHtml(label)}">${glyph}<span class="sr-only">${escapeHtml(sr)}</span></div>`;
 }
 
-// Price line. Everything is normalised to a month so the three cards share
-// one unit: a yearly plan shows its per-month figure big and the actual
-// charge small — "$15 / month · $180 billed once" — because "$180" against
-// "$29" is not a comparison anyone can make in their head.
-function priceMarkup(plan) {
-  const perMonth = monthlyEquivalent(plan);
-  const wasPerMonth = anchorPrice(plan.price) / (plan.per === "year" ? 12 : 1);
-  const billed =
-    plan.per === "year"
-      ? `<span class="plan-price__billed">$${plan.price} billed once a year</span>`
-      : `<span class="plan-price__billed">billed monthly</span>`;
-  return `<p class="plan-price">
-    <s aria-label="Regular price">$${wasPerMonth}</s>
-    <strong>$${perMonth}</strong>
-    <span class="plan-price__per">/ month</span>
-    ${billed}
-  </p>`;
+// The gate row inside a plan column. Empty on desktop — the label column
+// carries the words — but it has to exist so the recommended column's band
+// runs unbroken through the line. On a phone each stacked card prints its
+// own version: the entry tier says what is below the line is not on this
+// plan, the others say the line is where their extra value starts.
+function rateGateCellMarkup(plan, column) {
+  const opens = MODEL_CATALOG.slice(GATE_INDEX).every((entry) => plan.models[entry.id] != null);
+  const text = opens ? `${GATE_LABEL} models — included` : `${GATE_LABEL} models — not on ${escapeHtml(plan.name)}`;
+  return `<div class="rate__gate rate__gate--cell${opens ? " rate__gate--open" : ""}" style="--c:${column};--r:${GATE_ROW}" aria-hidden="true"><span>${text}</span></div>`;
 }
 
-function planCardMarkup(plan) {
-  const discount = `${Math.round(PLAN_DISCOUNT * 100)}% off`;
+// Head of a column. Reading order, top to bottom: what the tier is for
+// (caption, plain text), its name, the credits (the figure being compared),
+// the price per month with the regular rate struck beside it, the billing
+// line, and the button — inline-width, so three different labels sit as
+// three buttons rather than three identical bars.
+function rateHeadMarkup(plan, column) {
+  // The headline figure is what the plan is actually billed AT, in its own
+  // unit — $9/month, $29/month, $180/year. It used to be $180 divided by
+  // twelve ("$15/month") on the yearly column: that number is the
+  // per-month *comparison* figure (see monthlyEquivalent, still used for
+  // that maths elsewhere), not a price anyone is charged, and printing it
+  // as THE price read as "Pro yearly costs $15 a month".
+  const price = plan.price;
+  const perUnit = plan.per === "year" ? "year" : "month";
+  // Struck regular rate, in the same unit as the price beside it — only on
+  // plans that are actually on offer. Monthly is sold at list, so its price
+  // stands alone.
+  const anchor = planAnchor(plan);
+  const was = anchor == null ? "" : `<s class="rate__was" aria-label="Regular price">$${anchor}</s>`;
   const savings = yearlySavings(plan);
-  const lockedCount = MODEL_CATALOG.filter((entry) => plan.models[entry.id] == null).length;
-  const panel = lockedCount ? ACCESS_PANEL.partial : ACCESS_PANEL.full;
-  const tierClass = plan.featured ? " plan-card--featured" : plan.per === "year" ? " plan-card--yearly" : "";
-  return `<article class="plan-card${tierClass}" data-plan="${plan.id}" data-reveal>
-    <header class="plan-card__head">
-      <h3>${escapeHtml(plan.name)}</h3>
-      <span class="plan-badges">
-        <span class="plan-badge plan-badge--discount">${discount}</span>
-        ${plan.badge ? `<span class="plan-badge">${escapeHtml(plan.badge)}</span>` : ""}
-      </span>
-    </header>
-    <p class="plan-pitch">${escapeHtml(plan.pitch)}</p>
-    <div class="plan-credits">
-      <p class="plan-credits__figure">${icon("sparkles", "i plan-credits__icon")}<strong>${formatCredits(plan.credits)}</strong><span>${escapeHtml(plan.unit)}</span></p>
-      <ul class="plan-credits__facts">
-        <li>${icon("check")}Fixed amount · refilled every month · one pool for everything</li>
-      </ul>
-    </div>
-    ${priceMarkup(plan)}
-    <div class="plan-action">
-      <a class="button${plan.featured ? "" : " secondary"} plan-cta" href="${PLANS_URL}">${escapeHtml(plan.cta)} ${icon("arrow-right")}</a>
-      ${
-        savings
-          ? `<p class="plan-savings plan-savings--win">Save <strong>$${savings}</strong> vs 12 × Monthly Pro</p>`
-          : `<p class="plan-savings">${escapeHtml(plan.billing)}</p>`
-      }
-    </div>
-    <section class="plan-models${lockedCount ? "" : " plan-models--full"}" aria-label="Models included in ${escapeHtml(plan.name)}">
-      <header class="plan-models__head">
-        <span class="plan-models__mark">${icon(lockedCount ? "lock" : "lock-open")}</span>
-        <div>
-          <h4>${escapeHtml(panel.title)}</h4>
-          <p>${escapeHtml(panel.note)}</p>
-        </div>
-      </header>
-      <ul>${MODEL_CATALOG.map((entry) => modelRowMarkup(entry, plan.models[entry.id])).join("")}</ul>
-    </section>
-    <ul class="plan-perks">${plan.features
-      .map((feature) => `<li>${escapeHtml(feature)}</li>`)
-      .join("")}</ul>
-  </article>`;
+  // "$180" is not repeated here — it is already the headline figure above.
+  // The saving is the yearly column's one hook, so the figure is lifted out
+  // of the sentence into the accent rather than left as grey body text.
+  // The sentence itself comes from plans.js on EVERY column; the yearly one
+  // only splices the saving into it. It used to be hardcoded here for
+  // `per === "year"`, which left that plan's own `billing` string in
+  // plans.js permanently unread — edit it and nothing on the page moved.
+  // The period is re-attached after the splice so all three columns end
+  // with one, the yearly one included (it did not before).
+  // `savings` is a number and the base is escaped, so this is safe to
+  // interpolate as markup.
+  // "against twelve months of Pro" was the same claim in nine words and it
+  // wrapped to a second line at every desktop width — so the billing row
+  // was two lines tall in all three columns to serve one of them, on a
+  // table that has to fit one screen. "vs. monthly Pro" fits on one line at
+  // 316px and names the reference plan, which is read from `comparedTo`
+  // rather than typed, so it cannot drift from the plan the saving is
+  // actually computed against.
+  const base = escapeHtml(plan.billing).replace(/\.\s*$/, "");
+  const reference = plans.find((candidate) => candidate.id === plan.comparedTo);
+  const billing = savings
+    ? `${base} — <strong class="rate__save">saves $${savings}</strong> vs. monthly ${escapeHtml(reference?.name ?? "Pro")}.`
+    : `${base}.`;
+  return `<header class="rate__head" style="--c:${column}">
+    <p class="rate__caption">${plan.badge ? escapeHtml(plan.badge) : escapeHtml(plan.pitch)}</p>
+    <h3 class="rate__name">${escapeHtml(plan.name)}</h3>
+    <p class="rate__credits"><strong>${formatCredits(plan.credits)}</strong> credits a month</p>
+    <p class="rate__price">
+      <span class="rate__amount"><span class="rate__currency">$</span><strong>${price}</strong><span class="rate__per">/ ${perUnit}</span></span>
+      ${was}
+    </p>
+    <p class="rate__billing">${billing}</p>
+    <a class="button small${plan.featured ? "" : " secondary"} rate__cta" href="${PLANS_URL}">${escapeHtml(plan.cta)} ${icon("arrow-right")}</a>
+  </header>`;
+}
+
+function ratePlanMarkup(plan, index) {
+  const column = index + COL_OFFSET;
+  const cells = MODEL_CATALOG.map((entry, i) => {
+    const cell = rateCellMarkup(entry, plan.models[entry.id], column, rowFor(i), plan);
+    return HAS_GATE && i === GATE_INDEX ? rateGateCellMarkup(plan, column) + cell : cell;
+  }).join("");
+  // The recommended column's band: one element spanning every row.
+  const band = plan.featured
+    ? `<i class="rate__band" style="--rows:${rowFor(MODEL_CATALOG.length - 1)}" aria-hidden="true"></i>`
+    : "";
+  return `<div class="rate__plan${plan.featured ? " rate__plan--featured" : ""}" data-plan="${plan.id}" style="--c:${column}">${band}${rateHeadMarkup(plan, column)}${cells}</div>`;
+}
+
+// The label column is rendered once. On a phone it is hidden and every cell
+// carries its own label (data-label → ::before). The gate line sits in this
+// column too: "Pro" with a rule, the way a ledger sets a sub-heading.
+function rateLabelsMarkup() {
+  const last = MODEL_CATALOG.length - 1;
+  return MODEL_CATALOG.map((entry, i) => {
+    const row = rowFor(i);
+    // aria-hidden, because every cell's sr-only sentence already names its
+    // own feature ("Pro — Video · Seedance 2.0: included"). Left readable it
+    // would announce all seven model names once before the grid and then
+    // again inside each of the twenty-one cells.
+    const label = `<div class="rate__label${i === last ? " rate__label--last" : ""}" style="--r:${row}" data-r="${row}" aria-hidden="true"><span class="rate__role">${escapeHtml(entry.role)}</span><span class="rate__model">${escapeHtml(entry.name)}</span></div>`;
+    if (!HAS_GATE || i !== GATE_INDEX) return label;
+    const gate = `<div class="rate__gate rate__gate--label" style="--r:${GATE_ROW}"><span>${escapeHtml(GATE_LABEL)}</span><span class="rate__gate-note">opens the rest</span></div>`;
+    return gate + label;
+  }).join("");
+}
+
+function rateMarkup() {
+  return rateLabelsMarkup() + plans.map(ratePlanMarkup).join("");
+}
+
+// THE HOLD'S SPAN. The offer strip is only honest if it covers exactly the
+// columns whose price is struck, so its grid placement is derived from the
+// same `planAnchor` that prints those struck prices — re-price a tier in
+// plans.js and the strip follows. Hardcoding "columns 3 to 4" would leave
+// a timer sitting over a plan sold at list the first time the order or the
+// discount changes, which is the kind of lie a reader catches instantly.
+// If the discounted plans are ever NOT adjacent, a single strip cannot
+// describe them: it falls back to spanning every plan column, where it
+// says "this table has an offer on it" and the struck prices say which.
+function placeOffer() {
+  const rate = $(".rate");
+  const offer = $("[data-offer]");
+  if (!rate || !offer) return;
+  const columns = plans
+    .map((plan, index) => (planAnchor(plan) == null ? null : index + COL_OFFSET))
+    .filter((column) => column != null);
+  // Nothing on offer: no clock. The alternative is a countdown on full
+  // price, which is the whole genre of fake urgency this thing avoids.
+  if (!columns.length) {
+    offer.remove();
+    return;
+  }
+  const first = Math.min(...columns);
+  const adjacent = Math.max(...columns) - first + 1 === columns.length;
+  rate.style.setProperty("--offer-col", adjacent ? first : COL_OFFSET);
+  rate.style.setProperty("--offer-span", adjacent ? columns.length : plans.length);
+}
+
+// Row hover across a grid of siblings: CSS cannot select "the other cells
+// in my row", so the hovered row index is mirrored to the grid root and a
+// [data-r] match lights the whole line — label included.
+function initializeRateHover() {
+  const rate = $(".rate");
+  if (!rate || !matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+  let lit = [];
+  const clear = () => {
+    lit.forEach((el) => el.classList.remove("is-row"));
+    lit = [];
+  };
+  rate.addEventListener("pointerover", (event) => {
+    const cell = event.target.closest("[data-r]");
+    if (!cell || (lit[0] && lit[0].dataset.r === cell.dataset.r)) return;
+    clear();
+    lit = [...rate.querySelectorAll(`[data-r="${cell.dataset.r}"]`)];
+    lit.forEach((el) => el.classList.add("is-row"));
+  });
+  rate.addEventListener("pointerleave", clear);
 }
 
 function renderContent() {
@@ -240,7 +400,9 @@ function renderContent() {
         `<article class="feature"><div class="container feature-inner"><div class="feature-copy" data-reveal><span class="feature-number">0${index + 1} / CREATE WITHOUT THE CHAOS</span><h3>${feature.title}</h3><p>${escapeHtml(feature.copy)}</p>${tags(feature.tags)}</div><div class="feature-visual visual-${feature.visual}" data-reveal>${featureVisual(feature.visual)}</div></div></article>`,
     )
     .join("");
-  $("#plan-list").innerHTML = plans.map(planCardMarkup).join("");
+  $("#plan-list").innerHTML = rateMarkup();
+  $("#rate-every-plan").innerHTML =
+    `<strong>Every plan:</strong> ${everyPlan().map(escapeHtml).join(" · ")}.`;
   $("#faq-list").innerHTML = faqData
     .map(
       ([question, answer], index) =>
@@ -303,14 +465,22 @@ class Carousel {
 const pad = (n) => String(n).padStart(2, "0");
 
 function controlsMarkup(controls = []) {
-  return `<ul class="hero-game__controls">${controls
+  return `<div class="hero-game__controls-wrap" aria-label="Desktop controls"><p class="hero-game__controls-label">Controls</p><ul class="hero-game__controls">${controls
     .map(
       (row) =>
         `<li>${row.keys.map((key) => `<kbd>${escapeHtml(key)}</kbd>`).join("")}<span>${escapeHtml(row.label)}</span></li>`,
     )
-    .join("")}</ul>`;
+    .join("")}</ul></div>`;
 }
 
+// 1880×1042 is the POSTER BOX's aspect (the card at 2× density), not a
+// promise about the file: the image is `object-fit: cover` inside a
+// CSS-sized box, so a taller export is simply cropped. Declaring the box
+// here keeps the reserved space right whatever the export measures — but an
+// export that is not 16:9-ish is shipping pixels `cover` throws away, so
+// keep new posters at this ratio.
+// The first card is the LCP candidate and must not be lazy; the other two
+// are off to the sides and must not compete with it.
 function posterMarkup(game, index) {
   return `<img class="hero-game__poster-img" src="${gameAsset(game.poster)}" alt="${escapeHtml(game.posterAlt ?? "")}" width="1880" height="1042" ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy"'}>`;
 }
@@ -322,7 +492,7 @@ function gameCardMarkup(game, index, total) {
     <div class="hero-game__mount" data-game-mount></div>
     <div class="hero-game__poster" data-game-poster>${posterMarkup(game, index)}</div>
     <div class="hero-game__chip"><span>${pad(index + 1)}</span>${escapeHtml(game.category)}</div>
-    <button class="hero-game__exit" type="button" data-game-exit aria-label="Exit ${escapeHtml(game.title)}">${game.id === "strike" ? "" : "<kbd>Esc</kbd>"}Exit ${icon("x")}</button>
+    <button class="hero-game__exit" type="button" data-game-exit aria-label="Exit ${escapeHtml(game.title)}">${game.escExits === false ? "" : "<kbd>Esc</kbd>"}Exit ${icon("x")}</button>
     <!-- Reading order is the point of this structure. Play used to be the
          copy block's second child, bottom-aligned against a column that
          ended in two rows of keyboard chips — so the page's second most
@@ -336,6 +506,7 @@ function gameCardMarkup(game, index, total) {
         <p>${escapeHtml(game.description)}</p>
         ${action}
         <span class="hero-game__status" data-game-status aria-live="polite"></span>
+        <span class="hero-game__device-note">Tap Play to open full screen</span>
       </div>
       ${controlsMarkup(game.controls)}
     </div>
@@ -641,7 +812,12 @@ function initializeReveal() {
     { rootMargin: "0px 0px -12% 0px", threshold: 0 },
   );
 
-  $$("main > section, footer").forEach((section) => {
+  // `body > footer`, not `footer`. A bare tag selector also matched every
+  // NESTED footer on the page — `.rate__foot` inside the pricing section and
+  // the one the prompt card renders — so those got `.section-fade` on top of
+  // the `.sr` they had already earned as `[data-reveal]`, and two different
+  // reveal transitions fought over the same element.
+  $$("main > section, body > footer").forEach((section) => {
     if (section.classList.contains("hero")) return;
     if (!aboveFold(section)) {
       section.classList.add("section-fade");
@@ -663,7 +839,7 @@ function initializeReveal() {
 // warm reload shows no shimmer at all.
 function initializeSkeletons() {
   const containers = $$(
-    ".hero-game__poster, .gallery-viewport, .gallery-thumb, .project-window, .app-tile, .portrait, .tool-tile, .footer-brand, #project-dialog .dialog-media",
+    ".hero-game__poster, .gallery-viewport, .gallery-thumb, .project-window, .app-tile, .tool-tile, .footer-brand, #project-dialog .dialog-media",
   );
   containers.forEach((box) => {
     const img = box.querySelector("img");
@@ -839,10 +1015,15 @@ renderContent();
 hydrateIcons();
 initializeDialog();
 initializeHero();
-initializeGallery();
+// Old static image gallery replaced by the video showreel (showreel.js).
+initShowreel();
 initializeNavigation();
 initializeReveal();
+initMotion();
 initializeSkeletons();
 initializeFaq();
 initializeFeatureVideo();
 initializeHeaderAutoHide();
+initializeRateHover();
+placeOffer();
+initializeOffer();

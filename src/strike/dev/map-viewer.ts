@@ -82,7 +82,11 @@ export async function start(): Promise<void> {
   const loaders = createLoaders(engine.renderer)
 
   const t0 = performance.now()
-  const map = await loadMap(mapUrl, loaders, { batchStatic })
+  // `?layout=off` loads the raw export, to A/B the code-authored layout overlay against it.
+  const map = await loadMap(mapUrl, loaders, {
+    batchStatic,
+    layout: params.get('layout') === 'off' ? false : undefined,
+  })
   const loadMs = performance.now() - t0
   engine.scene.add(map.root)
 
@@ -332,7 +336,7 @@ export async function start(): Promise<void> {
 
   engine.onRender((_alpha, dt) => {
     camera.rotation.set(pitch, yaw, 0)
-    environment.update(camera.position)
+    environment.update(camera.position, dt)
     doorOverlay.update(doors)
 
     if (visible.g) glassOverlay.update()

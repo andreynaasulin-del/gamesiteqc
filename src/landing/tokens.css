@@ -9,9 +9,13 @@
   /* Not black. A page-wide black backdrop flattens every card on it and
      makes the seam between two sections read as a cut. The base is deep
      graphite; the page then walks through the tints below. */
-  --bg: #18181a;
-  --surface: #1c1c1e;
-  --raised: #272729;
+  /* v3: neutral greys (#1c1c1e/#272729) were the "dirty" part — grey cards
+     on a dark page read as cheap. Surfaces now carry the ink's hue. */
+  /* v4: flat ink like the references; surfaces are neutral-cool and
+     separated by a 1px inset ring, not by tint. */
+  --bg: #0e0f12;
+  --surface: #17181c;
+  --raised: #1f2126;
   /* ------------------------------------------------------------------
      SECTION TINTS. Twelve stops applied as ONE continuous gradient (see
      atmosphere.css, which owns the layer they are painted on) rather than
@@ -87,20 +91,23 @@
      8-bit channel — two adjacent screens differed by about as much as a
      JPEG artefact. At ±10 warm / ±11 cool the rooms are distinguishable
      when you scroll past them and still unnameable when you stop. */
-  --t-00: #171314; /* hero            G19 warm, held back (aurora on top) */
-  --t-01: #131823; /* capabilities 01 G24 steel */
-  --t-02: #191d27; /* capabilities 02 G29 steel */
-  --t-03: #1f222b; /* capabilities 03 G34 steel, lifting */
-  --t-04: #202530; /* workspace       G37 steel, the coolest daylight */
-  --t-05: #302629; /* explore         G38 rose, the warmest and airiest */
-  --t-06: #1f242f; /* workflow        G36 steel */
-  --t-07: #2e2226; /* CTA             G34 rose, deepest warm */
-  --t-08: #281e21; /* community       G30 rose */
-  --t-09: #151a25; /* pricing         G26 steel */
-  --t-10: #121620; /* FAQ             G22 steel, settling */
-  --t-11: #1c1215; /* footer          G18 rose, back to the hero's key */
+  /* One ink, hue ~230, barely moving. The old ramp swung between grey-steel
+     and grey-rose up to G38 and read as dirty grey. Colour now comes only
+     from the glows in atmosphere.css; the base just has to be deep. */
+  --t-00: #09080e; /* hero */
+  --t-01: #0a0911; /* capabilities 01 */
+  --t-02: #0b0a13; /* capabilities 02 */
+  --t-03: #0b0a14; /* capabilities 03 */
+  --t-04: #0a0a13; /* workspace */
+  --t-05: #0d0912; /* explore */
+  --t-06: #0a0a13; /* workflow */
+  --t-07: #0f0912; /* CTA */
+  --t-08: #0d0911; /* community */
+  --t-09: #0a0a12; /* pricing */
+  --t-10: #09090f; /* FAQ */
+  --t-11: #08070c; /* footer */
   --text: #fff;
-  --muted: #b6b5b6;
+  --muted: #b4b3c2;
   --peach: #ff9569;
   --coral: #dd344d;
   --accent: linear-gradient(110deg, #ff9569, #ff9569 25%, #ed6b64 80%, #dd344d);

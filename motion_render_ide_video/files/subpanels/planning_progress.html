@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style id="__qc-fouc-guard">body{visibility:hidden!important}</style>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--qc-color-bg-primary, #0d0d14);
+      color: var(--qc-color-text-primary, #ccc);
+      font-family: var(--qc-var-font-primary, system-ui, sans-serif);
+      font-size: 12px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .root { padding: 10px 8px; display: flex; flex-direction: column; gap: 12px; }
+
+    /* ── Section header ── */
+    .section-title {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--qc-color-text-info, #666);
+      padding: 0 2px 4px;
+      border-bottom: 1px solid var(--qc-color-bg-secondary, rgba(255,255,255,0.06));
+      margin-bottom: 6px;
+    }
+
+    /* ── Milestone card ── */
+    .milestone {
+      background: var(--qc-color-bg-secondary, rgba(255,255,255,0.04));
+      border-radius: 6px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .milestone__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .milestone__name {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--qc-color-text-light, #e8e8e8);
+      flex: 1;
+    }
+    .milestone__pct {
+      font-size: 10px;
+      color: var(--qc-color-text-secondary, #888);
+    }
+
+    /* ── Progress bar ── */
+    .pbar { height: 3px; border-radius: 2px; background: var(--qc-color-bg-secondary2, rgba(255,255,255,0.08)); overflow: hidden; }
+    .pbar__fill { height: 100%; border-radius: 2px; background: var(--qc-color-primary, #5b8def); transition: width 0.4s ease; }
+    .pbar__fill--done   { background: var(--qc-color-text-success, #4caf82); }
+    .pbar__fill--warn   { background: var(--qc-color-secondary, #e8a44a); }
+    .pbar__fill--active { background: var(--qc-color-primary, #5b8def); }
+
+    /* ── Task list ── */
+    .task-list { display: flex; flex-direction: column; gap: 3px; margin-top: 2px; }
+    .task {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 4px;
+      border-radius: 4px;
+      cursor: default;
+    }
+    .task:hover { background: var(--qc-color-bg-secondary2, rgba(255,255,255,0.05)); }
+    .task__check {
+      width: 12px; height: 12px; min-width: 12px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 8px;
+    }
+    .task__check--done    { background: var(--qc-color-text-success, #4caf82); color: #000; }
+    .task__check--active  { background: var(--qc-color-primary, #5b8def); color: #fff; }
+    .task__check--todo    { background: var(--qc-color-bg-secondary2, rgba(255,255,255,0.1)); color: transparent; }
+    .task__check--blocked { background: var(--qc-color-secondary, #e8a44a); color: #000; }
+    .task__label { flex: 1; font-size: 11px; color: var(--qc-color-text-primary, #ccc); line-height: 1.3; }
+    .task__label--done { text-decoration: line-through; color: var(--qc-color-text-info, #555); }
+
+    /* ── Badge ── */
+    .badge {
+      font-size: 9px; padding: 1px 5px; border-radius: 3px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap;
+    }
+    .badge--done    { background: rgba(76,175,130,0.15); color: var(--qc-color-text-success, #4caf82); }
+    .badge--active  { background: rgba(91,141,239,0.15); color: var(--qc-color-primary, #5b8def); }
+    .badge--todo    { background: rgba(255,255,255,0.06); color: var(--qc-color-text-info, #666); }
+    .badge--warn    { background: rgba(232,164,74,0.15); color: var(--qc-color-secondary, #e8a44a); }
+
+    /* ── Sprint summary ── */
+    .sprint-bar {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+    }
+    .sprint-bar__label { font-size: 10px; color: var(--qc-color-text-info, #666); margin-right: 4px; }
+    .sprint-seg {
+      height: 14px; border-radius: 2px; flex: 1;
+      background: var(--qc-color-bg-secondary2, rgba(255,255,255,0.06));
+      font-size: 9px; display: flex; align-items: center; justify-content: center;
+      color: var(--qc-color-text-info, #666);
+    }
+    .sprint-seg--done   { background: rgba(76,175,130,0.25);  color: var(--qc-color-text-success, #4caf82); }
+    .sprint-seg--active { background: rgba(91,141,239,0.25);  color: var(--qc-color-primary, #6aabff); }
+    .sprint-seg--todo   { background: rgba(255,255,255,0.04); color: var(--qc-color-text-dark, #444); }
+  </style>
+</head>
+<body>
+<div class="root" id="root"></div>
+
+<script>
+  var PLAN = {
+    sprints: [
+      { label: 'S1', state: 'done' },
+      { label: 'S2', state: 'done' },
+      { label: 'S3', state: 'active' },
+      { label: 'S4', state: 'todo' },
+      { label: 'S5', state: 'todo' },
+      { label: 'S6', state: 'todo' },
+    ],
+    milestones: [
+      {
+        name: 'Core Engine',
+        pct: 100,
+        state: 'done',
+        tasks: [
+          { label: 'ECS architecture',     state: 'done' },
+          { label: 'Physics integration',  state: 'done' },
+          { label: 'Renderer pipeline',    state: 'done' },
+          { label: 'Asset loader',         state: 'done' },
+        ],
+      },
+      {
+        name: 'World & Level Design',
+        pct: 72,
+        state: 'active',
+        tasks: [
+          { label: 'Tile map system',      state: 'done' },
+          { label: 'Biome generator',      state: 'done' },
+          { label: 'Dungeon procedural',   state: 'active' },
+          { label: 'Environment props',    state: 'active' },
+          { label: 'Lighting pass',        state: 'todo' },
+        ],
+      },
+      {
+        name: 'Player Systems',
+        pct: 55,
+        state: 'active',
+        tasks: [
+          { label: 'Movement controller', state: 'done' },
+          { label: 'Combat system',       state: 'done' },
+          { label: 'Inventory / loot',    state: 'active' },
+          { label: 'Skill tree',          state: 'todo' },
+          { label: 'Quest tracker',       state: 'todo' },
+        ],
+      },
+      {
+        name: 'AI & NPCs',
+        pct: 28,
+        state: 'active',
+        tasks: [
+          { label: 'Pathfinding (A*)',     state: 'done' },
+          { label: 'Behavior trees',       state: 'active' },
+          { label: 'Dialog system',        state: 'todo' },
+          { label: 'Faction logic',        state: 'todo' },
+        ],
+      },
+      {
+        name: 'Audio & VFX',
+        pct: 10,
+        state: 'todo',
+        tasks: [
+          { label: 'Spatial audio',        state: 'todo' },
+          { label: 'Footstep system',      state: 'todo' },
+          { label: 'Particle effects',     state: 'active' },
+          { label: 'Post-process stack',   state: 'todo' },
+        ],
+      },
+      {
+        name: 'Polish & Release',
+        pct: 0,
+        state: 'todo',
+        tasks: [
+          { label: 'Performance pass',     state: 'todo' },
+          { label: 'Save / load system',   state: 'todo' },
+          { label: 'Achievements',         state: 'todo' },
+          { label: 'Platform QA',          state: 'todo' },
+        ],
+      },
+    ],
+  };
+
+  var CHECK = { done: '✓', active: '▶', todo: '', blocked: '!' };
+  var BADGE_LABEL = { done: 'done', active: 'in progress', todo: 'todo', warn: 'blocked' };
+  var PBAR_CLASS  = { done: 'pbar__fill--done', active: 'pbar__fill--active', todo: '' };
+
+  function buildSprintBar(sprints) {
+    var wrap = document.createElement('div');
+    var lbl = document.createElement('span');
+    lbl.className = 'sprint-bar__label';
+    lbl.textContent = 'Sprints';
+    wrap.className = 'sprint-bar';
+    wrap.appendChild(lbl);
+    sprints.forEach(function(s) {
+      var seg = document.createElement('div');
+      seg.className = 'sprint-seg sprint-seg--' + s.state;
+      seg.textContent = s.label;
+      wrap.appendChild(seg);
+    });
+    return wrap;
+  }
+
+  function buildMilestone(m) {
+    var card = document.createElement('div');
+    card.className = 'milestone';
+
+    // Header row
+    var hdr = document.createElement('div');
+    hdr.className = 'milestone__header';
+    var name = document.createElement('span');
+    name.className = 'milestone__name';
+    name.textContent = m.name;
+    var badge = document.createElement('span');
+    badge.className = 'badge badge--' + (m.state === 'todo' ? 'todo' : m.state === 'done' ? 'done' : 'active');
+    badge.textContent = BADGE_LABEL[m.state] || m.state;
+    var pct = document.createElement('span');
+    pct.className = 'milestone__pct';
+    pct.textContent = m.pct + '%';
+    hdr.appendChild(name);
+    hdr.appendChild(badge);
+    hdr.appendChild(pct);
+    card.appendChild(hdr);
+
+    // Progress bar
+    var bar = document.createElement('div');
+    bar.className = 'pbar';
+    var fill = document.createElement('div');
+    fill.className = 'pbar__fill ' + (PBAR_CLASS[m.state] || '');
+    fill.style.width = m.pct + '%';
+    bar.appendChild(fill);
+    card.appendChild(bar);
+
+    // Tasks
+    var list = document.createElement('div');
+    list.className = 'task-list';
+    m.tasks.forEach(function(t) {
+      var row = document.createElement('div');
+      row.className = 'task';
+      var chk = document.createElement('div');
+      chk.className = 'task__check task__check--' + t.state;
+      chk.textContent = CHECK[t.state] || '';
+      var lbl = document.createElement('span');
+      lbl.className = 'task__label' + (t.state === 'done' ? ' task__label--done' : '');
+      lbl.textContent = t.label;
+      row.appendChild(chk);
+      row.appendChild(lbl);
+      list.appendChild(row);
+    });
+    card.appendChild(list);
+    return card;
+  }
+
+  function render() {
+    var root = document.getElementById('root');
+    root.innerHTML = '';
+
+    // Sprint overview
+    var sprintSection = document.createElement('div');
+    var sprintTitle = document.createElement('div');
+    sprintTitle.className = 'section-title';
+    sprintTitle.textContent = 'Sprint Overview';
+    sprintSection.appendChild(sprintTitle);
+    sprintSection.appendChild(buildSprintBar(PLAN.sprints));
+    root.appendChild(sprintSection);
+
+    // Milestones
+    var mSection = document.createElement('div');
+    var mTitle = document.createElement('div');
+    mTitle.className = 'section-title';
+    mTitle.textContent = 'Milestones';
+    mSection.appendChild(mTitle);
+    PLAN.milestones.forEach(function(m) {
+      mSection.appendChild(buildMilestone(m));
+    });
+    root.appendChild(mSection);
+  }
+
+  async function init() {
+    if (window.QC || await new Promise(r => {
+      var d = Date.now() + 1500, t = setInterval(() => { (window.QC || Date.now() > d) && (clearInterval(t), r(window.QC)); }, 20);
+    })) {
+      await QC.ready();
+      await QC.style.applyMainCss();
+    }
+    document.getElementById('__qc-fouc-guard')?.remove();
+    render();
+  }
+
+  init();
+</script>
+</body>
+</html>

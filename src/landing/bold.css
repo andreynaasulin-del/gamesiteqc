@@ -1,0 +1,434 @@
+/* ==========================================================================
+   BOLD — v4 visual layer (reference: higgsfield.ai, quadcode.ai).
+
+   Loaded LAST. It does not restyle components one by one; it changes the
+   grammar of the whole page:
+     1. flat ink behind everything (atmosphere.css),
+     2. type is the loudest thing on screen: huge, heavy, uppercase, two-tone,
+     3. one accent, used SOLID and big, never as a faint wash,
+     4. surfaces = neutral panel + 1px inset ring (no brown/grey gradients),
+     5. motion is part of the look (motion.js adds the classes used here).
+   ========================================================================== */
+
+:root {
+  --ink: #0e0f12;
+  --panel: #16171b;
+  --panel-2: #1d1f24;
+  --ring: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --ring-hot: inset 0 0 0 1px rgba(255, 149, 105, 0.55);
+  --hot: #ff5a3c; /* solid brand hit — between peach and coral, max chroma */
+  --hot-2: #ff9569;
+  --display: clamp(52px, 8.4vw, 148px);
+  --h2: clamp(44px, 6.2vw, 104px);
+  --r-card: 20px;
+}
+
+/* ---- 2. TYPE ------------------------------------------------------------ */
+h2 {
+  font-size: var(--h2);
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.035em;
+}
+.section-heading h2,
+h2.center {
+  max-width: 14ch;
+  margin-inline: auto;
+}
+/* Second line / last words of a heading glow in the brand colour. */
+h2 .accent,
+h2 em {
+  font-style: normal;
+  background: linear-gradient(100deg, var(--hot-2) 0%, var(--hot) 55%, #e8305a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  letter-spacing: 0.22em;
+  color: var(--hot-2);
+}
+.eyebrow::before {
+  content: "";
+  width: 22px;
+  height: 2px;
+  background: currentColor;
+}
+.feature h3 {
+  font-size: clamp(38px, 4.4vw, 72px);
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+.feature-number {
+  color: var(--hot-2) !important;
+  letter-spacing: 0.22em !important;
+}
+
+/* ---- HERO: the headline IS the hero ------------------------------------ */
+.hero h1 {
+  font-size: var(--display);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.045em;
+}
+.hero-ticker__viewport {
+  padding-block: 0.06em 0.1em;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+.hero-ticker__track {
+  animation-duration: 38s;
+}
+.hero-ticker__group b {
+  background: linear-gradient(100deg, var(--hot-2) 0%, var(--hot) 50%, #e8305a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+/* separator: a solid brand star instead of a small diamond */
+.hero-ticker__group > span::after {
+  width: 0.42em;
+  height: 0.42em;
+  margin: 0 0.5em;
+  border-radius: 0;
+  rotate: 0deg;
+  background: var(--hot);
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+  animation: bold-spin 6s linear infinite;
+}
+@keyframes bold-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+.hero-card {
+  border-radius: var(--r-card) !important;
+}
+.hero-card[data-position="center"] {
+  box-shadow:
+    0 0 0 1px rgba(255, 120, 80, 0.35),
+    0 30px 60px -30px rgba(0, 0, 0, 0.9);
+}
+
+/* ---- 3. ACCENT: solid, confident buttons -------------------------------- */
+.button {
+  background: linear-gradient(180deg, #ff8a5c, var(--hot));
+  color: #140805;
+  font-weight: 700;
+  border-radius: 14px;
+  box-shadow:
+    0 4px 0 #b3301c,
+    0 18px 40px -14px rgba(255, 90, 60, 0.8);
+  transition:
+    transform 140ms var(--ease-out-quint),
+    box-shadow 140ms var(--ease-out-quint),
+    filter 180ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .button:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.06);
+    box-shadow:
+      0 6px 0 #b3301c,
+      0 26px 50px -14px rgba(255, 90, 60, 0.9);
+  }
+}
+.button:active {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 #b3301c,
+    0 10px 24px -14px rgba(255, 90, 60, 0.8);
+}
+.button.secondary,
+.button.dark,
+.button.outline {
+  background: var(--panel-2);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: var(--ring), 0 3px 0 #07080a;
+}
+@media (hover: hover) and (pointer: fine) {
+  .button.secondary:hover,
+  .button.dark:hover,
+  .button.outline:hover {
+    background: #262930;
+    box-shadow: var(--ring-hot), 0 5px 0 #07080a;
+  }
+}
+
+/* ---- 4. SURFACES: kill every brown/grey gradient panel ----------------- */
+.frame,
+.feature-visual,
+.workspace-card,
+.step-art,
+.community-card,
+.visual-team,
+.feature-visual.visual-project,
+.rate {
+  background: var(--panel) !important;
+  border-color: transparent !important;
+  box-shadow: var(--ring);
+  border-radius: var(--r-card);
+}
+/* The rate card became a panel here, so it needs its own inner padding —
+   without it the corner title and the row labels ran into the rounded edge
+   and read as clipped. */
+@media (min-width: 901px) {
+  .rate {
+    padding: clamp(28px, 3vw, 44px) clamp(24px, 2.6vw, 40px) clamp(20px, 2vw, 28px);
+  }
+  .rate__corner h2 {
+    font-size: clamp(40px, 4.2vw, 68px);
+    line-height: 0.92;
+    max-width: 8ch;
+  }
+  .rate__corner .eyebrow {
+    font-size: 12px;
+  }
+  .rate__lede {
+    max-width: 34ch;
+    color: #a9a8ad;
+  }
+  .rate__role {
+    flex-basis: 6ch;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+}
+@media (max-width: 900px) {
+  .rate {
+    background: none !important;
+    box-shadow: none;
+    padding: 0;
+  }
+}
+.integration-art,
+.app-art {
+  background: var(--panel-2) !important;
+}
+.project-prompt {
+  background: rgba(29, 31, 36, 0.92) !important;
+}
+
+/* The CTA is the one loud banner on the page: SOLID brand, black type. */
+.cta-panel {
+  background:
+    radial-gradient(120% 140% at 100% 0%, #ffb27a 0%, transparent 45%),
+    linear-gradient(120deg, #ff6a3d 0%, #ff4a4a 55%, #e02d5c 100%) !important;
+  border: 0 !important;
+  box-shadow: none;
+  overflow: hidden;
+  padding-block: clamp(70px, 9vw, 130px);
+}
+.cta-panel h2 {
+  font-size: clamp(44px, 6.6vw, 112px);
+  max-width: 17ch;
+  color: #120605;
+}
+.cta-panel h2 .accent {
+  background: none;
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+}
+.cta-panel .eyebrow,
+.cta-panel > p:not(.eyebrow) {
+  color: rgba(18, 6, 5, 0.78);
+}
+.cta-panel .button {
+  background: #0e0f12;
+  color: #fff;
+  box-shadow:
+    0 4px 0 #000,
+    0 18px 40px -14px rgba(0, 0, 0, 0.6);
+}
+/* giant outlined word drifting behind the CTA copy */
+.cta-panel::after {
+  content: "PLAY · BUILD · SHIP · PLAY · BUILD · SHIP ·";
+  position: absolute;
+  z-index: -1;
+  left: 0;
+  bottom: -0.18em;
+  white-space: nowrap;
+  font-size: clamp(120px, 18vw, 300px);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 2px rgba(18, 6, 5, 0.18);
+  animation: bold-drift 30s linear infinite;
+}
+@keyframes bold-drift {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* ---- KINETIC BAND (markup in index.html, between sections) ------------- */
+/* tapes are 110vw; clip (not hidden) so sticky children keep working */
+main {
+  overflow-x: clip;
+}
+.kinetic {
+  position: relative;
+  overflow: hidden;
+  padding-block: clamp(24px, 3vw, 40px);
+  rotate: -2.2deg;
+  /* wider than the viewport so rotated corners never show a gap */
+  width: 110vw;
+  margin-inline: -5vw;
+  margin-block: clamp(40px, 6vw, 90px);
+  z-index: 2;
+  background: var(--hot);
+  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.9);
+}
+/* second tape crosses under the first — an X of two tapes */
+.kinetic--ghost {
+  rotate: 2.6deg;
+  z-index: 1;
+  margin-top: calc(-1 * clamp(60px, 6vw, 96px));
+  background: #1b1d22;
+  box-shadow: var(--ring);
+}
+.kinetic__track {
+  display: flex;
+  width: max-content;
+  animation: bold-drift 22s linear infinite;
+}
+.kinetic--ghost .kinetic__track {
+  animation-direction: reverse;
+  animation-duration: 28s;
+}
+.kinetic__track span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  padding-right: 0.45em;
+  font-size: clamp(36px, 5.4vw, 88px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #120605;
+}
+.kinetic--ghost .kinetic__track span {
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.35);
+}
+.kinetic__track span::after {
+  content: "";
+  width: 0.5em;
+  height: 0.5em;
+  background: currentColor;
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+}
+.kinetic--ghost .kinetic__track span::after {
+  background: var(--hot);
+}
+
+/* ---- 5. MOTION hooks (classes toggled by motion.js) --------------------- */
+/* Headings rise out of a mask word by word. */
+.split-word {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-bottom: 0.06em;
+  margin-bottom: -0.06em;
+}
+.split-word > span {
+  display: inline-block;
+  transform: translate3d(0, 105%, 0) rotate(4deg);
+  transform-origin: 0 100%;
+  transition: transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--i, 0) * 55ms);
+}
+.is-split.is-in .split-word > span {
+  transform: none;
+}
+/* the old fade-up would double the motion on split headings */
+h2.is-split.sr {
+  opacity: 1;
+  transform: none;
+}
+
+/* Media blocks wipe open and settle from a slight zoom. */
+.wipe {
+  clip-path: inset(12% 6% 12% 6% round var(--r-card));
+  transform: scale(1.04);
+  transition:
+    clip-path 1100ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 1400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.wipe.is-in {
+  clip-path: inset(0 0 0 0 round var(--r-card));
+  transform: none;
+}
+
+/* Pointer spotlight + tilt on cards (motion.js writes --mx/--my/--rx/--ry). */
+/* Spotlight only — the 3D tilt was removed (PO: cheap). */
+.spot {
+  position: relative;
+}
+.spot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 300ms ease;
+  background: radial-gradient(
+    420px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 140, 90, 0.16),
+    transparent 60%
+  );
+  box-shadow: var(--ring-hot);
+}
+.spot:hover::before {
+  opacity: 1;
+}
+
+/* Scroll progress bar in brand colour. */
+.scroll-progress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 3px;
+  z-index: 100;
+  transform-origin: 0 50%;
+  transform: scaleX(var(--p, 0));
+  background: linear-gradient(90deg, var(--hot-2), var(--hot), #e8305a);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-ticker__group > span::after,
+  .cta-panel::after,
+  .kinetic__track {
+    animation: none;
+  }
+  .split-word > span,
+  .wipe {
+    transform: none !important;
+    clip-path: none !important;
+    transition: none;
+  }
+  .spot {
+    transform: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .kinetic {
+    rotate: -3deg;
+  }
+  .cta-panel::after {
+    font-size: 110px;
+  }
+}

@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<!-- This is page to be shown in Quadcode.ai ide workspace - SKILL COMPLIANCE REQUIRED
+Any edits must follow skill with alias dev_create_meta_ui_to_work_with_project_data_using_html_js -->
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style id="__qc-fouc-guard">body{visibility:hidden!important}</style>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--qc-color-bg-primary);
+      color: var(--qc-color-text-primary);
+      font-family: var(--qc-var-font-primary, 'Suisse Intl', system-ui, sans-serif);
+      font-size: 13px;
+      overflow: hidden;
+    }
+
+    /* ── Page wrapper: center the panel both axes ── */
+    .page-wrap {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 24px;
+    }
+
+    /* ── The chat input panel — centered, max-width, with side margins ── */
+    .chat-panel {
+      width: calc(100% - 48px);
+      max-width: 760px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      border-radius: calc(var(--qc-var-border-radius4, 6) * 1px);
+      overflow: hidden;
+      background: var(--qc-color-bg-secondary, rgba(255,255,255,0.04));
+      box-shadow: 0 2px 16px rgba(0,0,0,0.25);
+    }
+
+    /* ── Top bar: avatar+name+chevron | spacer | icon btns ── */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      height: 44px;
+      padding: 0 12px;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .agent-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .agent-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: var(--qc-color-primary, #3b82f6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .agent-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .agent-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--qc-color-text-primary);
+    }
+
+    .chevron {
+      width: 12px;
+      height: 12px;
+      opacity: 0.45;
+      flex-shrink: 0;
+    }
+
+    .top-bar-spacer { flex: 1; }
+
+    /* icon button — ghost, 28×28 */
+    .ibtn {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.5;
+      transition: opacity 0.15s, background 0.12s;
+      color: var(--qc-color-text-primary);
+      flex-shrink: 0;
+    }
+    .ibtn:hover { opacity: 1; background: rgba(128,128,128,0.12); }
+    .ibtn .icon {
+      width: 16px; height: 16px; display: block;
+      background-color: currentColor;
+      -webkit-mask-size: contain; mask-size: contain;
+      -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+      -webkit-mask-position: center; mask-position: center;
+      -webkit-mask-image: var(--icon); mask-image: var(--icon);
+    }
+
+    /* ── Textarea area ── */
+    .textarea-wrap {
+      position: relative;
+      padding: 0 12px;
+      flex-shrink: 0;
+    }
+
+    .message-box {
+      width: 100%;
+      min-height: 56px;
+      resize: none;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--qc-color-text-primary);
+      font-family: inherit;
+      font-size: 13px;
+      line-height: 1.55;
+      padding: 4px 36px 4px 0;
+      overflow-y: hidden;
+      display: block;
+    }
+    .message-box::placeholder {
+      color: var(--qc-color-text-secondary, #888);
+      opacity: 0.65;
+    }
+
+    /* mic icon — right side of textarea, aligned with first text line */
+    .mic-btn {
+      position: absolute;
+      right: 16px;
+      top: 6px;   /* paddingTop(4) + (lineHeight(20) - btnHeight(24))/2 ≈ 6px */
+      transform: none;
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.4;
+      transition: opacity 0.15s;
+      color: var(--qc-color-text-primary);
+      border-radius: 4px;
+    }
+    .mic-btn:hover { opacity: 0.8; }
+    .mic-btn .icon {
+      width: 16px; height: 16px; display: block;
+      background-color: currentColor;
+      -webkit-mask-size: contain; mask-size: contain;
+      -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+      -webkit-mask-position: center; mask-position: center;
+      -webkit-mask-image: var(--icon); mask-image: var(--icon);
+    }
+
+    /* ── Bottom button row ── */
+    .bottom-bar {
+      display: flex;
+      align-items: center;
+      height: 44px;
+      padding: 0 10px;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    /* attach / rewind */
+    .bottom-bar .ibtn { opacity: 0.45; }
+
+    .bar-spacer { flex: 1; }
+
+    /* ── Media model pseudo-combos (image / sound / video) ── */
+    .media-combo {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      height: 28px;
+      padding: 0 6px;
+      border-radius: 5px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      opacity: 0.6;
+      transition: opacity 0.15s, background 0.12s;
+      color: var(--qc-color-text-primary);
+      flex-shrink: 0;
+    }
+    .media-combo:hover { opacity: 1; background: rgba(128,128,128,0.1); }
+    .media-combo .icon {
+      width: 14px; height: 14px; display: block;
+      background-color: currentColor;
+      -webkit-mask-size: contain; mask-size: contain;
+      -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+      -webkit-mask-position: center; mask-position: center;
+      -webkit-mask-image: var(--icon); mask-image: var(--icon);
+    }
+    .media-combo .caret {
+      width: 10px; height: 10px; display: block;
+      background-color: currentColor;
+      -webkit-mask-size: contain; mask-size: contain;
+      -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+      -webkit-mask-position: center; mask-position: center;
+      -webkit-mask-image: url('/_ide/images/icons/coolicons/Arrow/Caret_Up_MD.png');
+      mask-image: url('/_ide/images/icons/coolicons/Arrow/Caret_Up_MD.png');
+      opacity: 0.5;
+    }
+
+    /* ── LLM model pseudo-combo ── */
+    .llm-combo {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 28px;
+      padding: 0 8px;
+      border-radius: 5px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      opacity: 0.85;
+      transition: opacity 0.15s, background 0.12s;
+      color: var(--qc-color-text-primary);
+      flex-shrink: 0;
+      max-width: 200px;
+    }
+    .llm-combo:hover { opacity: 1; background: rgba(128,128,128,0.1); }
+
+    .llm-logo-img {
+      width: 14px;
+      height: 14px;
+      object-fit: contain;
+      flex-shrink: 0;
+      opacity: 0.8;
+    }
+
+    .llm-name {
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .llm-caret {
+      width: 10px; height: 10px; display: block;
+      background-color: currentColor;
+      -webkit-mask-size: contain; mask-size: contain;
+      -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+      -webkit-mask-position: center; mask-position: center;
+      -webkit-mask-image: url('/_ide/images/icons/coolicons/Arrow/Caret_Up_MD.png');
+      mask-image: url('/_ide/images/icons/coolicons/Arrow/Caret_Up_MD.png');
+      opacity: 0.5;
+      flex-shrink: 0;
+    }
+
+    /* ── Round send buttons ── */
+    .send-btn {
+      width: 26px;
+      height: 26px;
+      border: none;
+      cursor: pointer;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.15s, transform 0.1s;
+      flex-shrink: 0;
+    }
+    .send-btn:hover { opacity: 0.85; }
+    .send-btn:active { transform: scale(0.93); }
+    .send-btn .icon {
+      width: 14px; height: 14px; display: block;
+      background-color: #000;
+      -webkit-mask-size: contain; mask-size: contain;
+      -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+      -webkit-mask-position: center; mask-position: center;
+      -webkit-mask-image: var(--icon); mask-image: var(--icon);
+    }
+
+    /* green — agent exploration */
+    .send-agent { background: #3dba6e; }
+    /* blue — build/hammer */
+    .send-build  { background: #3b82f6; }
+
+    /* ── Page wrap needs perspective for 3D ── */
+    .page-wrap { perspective: 1200px; }
+
+    /* ── chat-panel 3D transform ── */
+    .chat-panel {
+      transform-style: preserve-3d;
+      transform-origin: center center;
+      transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      will-change: transform;
+    }
+
+    /* ── Demo controls (top-right of page) ── */
+    .demo-controls {
+      position: fixed;
+      top: 10px;
+      right: 12px;
+      display: flex;
+      gap: 6px;
+      z-index: 100;
+      align-items: flex-start;
+    }
+
+    /* ── Custom text popover ── */
+    .custom-text-wrap {
+      position: relative;
+    }
+    .custom-text-popover {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      width: 340px;
+      background: rgba(13,13,21,0.97);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      backdrop-filter: blur(10px);
+      z-index: 200;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .custom-text-popover.open { display: flex; }
+    .custom-text-popover textarea {
+      width: 100%;
+      height: 90px;
+      resize: vertical;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 5px;
+      color: var(--qc-color-text-primary, #ccc);
+      font-family: inherit;
+      font-size: 11px;
+      line-height: 1.5;
+      padding: 6px 8px;
+      outline: none;
+    }
+    .custom-text-popover textarea:focus {
+      border-color: rgba(86,168,245,0.5);
+    }
+    .custom-text-popover-row {
+      display: flex;
+      gap: 5px;
+      justify-content: flex-end;
+    }
+    .custom-text-popover-hint {
+      font-size: 10px;
+      opacity: 0.4;
+      flex: 1;
+      align-self: center;
+    }
+    .demo-btn {
+      height: 26px;
+      padding: 0 12px;
+      border: none;
+      border-radius: 5px;
+      font-size: 11px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .demo-btn.primary { background: var(--qc-color-primary, #3b82f6); color: #fff; }
+    .demo-btn.secondary { background: rgba(128,128,128,0.18); color: var(--qc-color-text-primary); }
+    .demo-btn:hover { opacity: 0.8; }
+    .demo-btn:disabled { opacity: 0.4; cursor: default; }
+    .demo-btn.record { background: #e53e3e; color: #fff; }
+    .demo-btn.record.recording { background: #c53030; }
+    .rec-dot {
+      display: inline-block;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #fff;
+      margin-right: 4px;
+      vertical-align: middle;
+      animation: recPulse 1s ease-in-out infinite;
+    }
+    @keyframes recPulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    /* ── 3D controls panel (top, 2-row) ── */
+    .ctrl3d {
+      position: fixed;
+      top: 10px;
+      left: 12px;
+      right: 262px; /* leave room for Fit to video + Play + Record buttons */
+      max-width: 860px; /* don't overstretch on wide screens */
+      z-index: 100;
+      background: rgba(13,13,21,0.88);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px;
+      padding: 7px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      backdrop-filter: blur(8px);
+      font-size: 11px;
+      color: var(--qc-color-text-primary, #868a91);
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    /* row 1: title + sliders + collapse */
+    .ctrl3d-sliders-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    /* row 2: anim buttons + reset */
+    .ctrl3d-btns-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .ctrl3d-title {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      opacity: 0.45;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    .ctrl3d-divider {
+      width: 1px;
+      height: 16px;
+      background: rgba(255,255,255,0.08);
+      flex-shrink: 0;
+    }
+
+    .ctrl3d-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex: 1;
+      min-width: 60px;
+    }
+
+    .ctrl3d-label {
+      font-size: 10px;
+      opacity: 0.6;
+      flex-shrink: 0;
+    }
+
+    .ctrl3d-slider {
+      flex: 1;
+      min-width: 30px;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 3px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.12);
+      outline: none;
+      cursor: pointer;
+    }
+    .ctrl3d-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: var(--qc-color-primary, #56a8f5);
+      cursor: pointer;
+      box-shadow: 0 0 4px rgba(86,168,245,0.5);
+    }
+
+    .ctrl3d-val {
+      width: 28px;
+      font-size: 10px;
+      text-align: right;
+      opacity: 0.5;
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+
+    .anim-btn {
+      height: 20px;
+      padding: 0 7px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 4px;
+      background: rgba(255,255,255,0.04);
+      color: var(--qc-color-text-primary, #868a91);
+      font-size: 10px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .anim-btn:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.2); }
+    .anim-btn.active { border-color: var(--qc-color-primary, #56a8f5); color: var(--qc-color-primary, #56a8f5); }
+
+    .ctrl3d-reset {
+      height: 20px;
+      padding: 0 7px;
+      border: none;
+      border-radius: 4px;
+      background: rgba(128,128,128,0.14);
+      color: var(--qc-color-text-primary, #868a91);
+      font-size: 10px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.12s;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+    .ctrl3d-reset:hover { background: rgba(128,128,128,0.25); }
+
+    .ctrl3d-collapse {
+      width: 18px;
+      height: 18px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.35;
+      transition: opacity 0.15s;
+      color: var(--qc-color-text-primary, #868a91);
+      flex-shrink: 0;
+      padding: 0;
+      border-radius: 3px;
+    }
+    .ctrl3d-collapse:hover { opacity: 0.8; background: rgba(128,128,128,0.12); }
+    .ctrl3d-collapse svg { display: block; transition: transform 0.2s; }
+    .ctrl3d.collapsed .ctrl3d-collapse svg { transform: rotate(180deg); }
+
+    /* collapsed state */
+    .ctrl3d.collapsed {
+      right: auto;
+    }
+    .ctrl3d.collapsed .ctrl3d-row,
+    .ctrl3d.collapsed .ctrl3d-divider,
+    .ctrl3d.collapsed .ctrl3d-btns-row { display: none; }
+
+    /* ── Bottom panels wrapper ── */
+    .bottom-panels {
+      position: fixed;
+      bottom: 14px;
+      left: 0;
+      right: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      z-index: 100;
+      pointer-events: none;
+    }
+    .bottom-panels > * { pointer-events: all; }
+
+    /* ── Shared bottom panel style ── */
+    .btm-panel {
+      background: rgba(13,13,21,0.88);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px;
+      backdrop-filter: blur(8px);
+      padding: 7px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--qc-color-text-primary, #868a91);
+      white-space: nowrap;
+    }
+
+    .btm-panel-title {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      opacity: 0.45;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    .btm-divider {
+      width: 1px;
+      height: 16px;
+      background: rgba(255,255,255,0.08);
+      flex-shrink: 0;
+    }
+
+    /* ── Viewport panel ── */
+    .vp-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 26px;
+      padding: 0 10px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 5px;
+      background: rgba(255,255,255,0.04);
+      color: var(--qc-color-text-primary, #868a91);
+      font-size: 10px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
+      flex-shrink: 0;
+    }
+    .vp-btn:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.2); }
+    .vp-btn.active { border-color: var(--qc-color-primary, #56a8f5); color: var(--qc-color-primary, #56a8f5); }
+
+    .vp-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .vp-icon svg { display: block; }
+
+    .vp-label { font-size: 10px; }
+    .vp-ratio { font-size: 9px; opacity: 0.5; }
+
+    /* ── Viewport scale slider ── */
+    .vp-scale-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+    .vp-scale-label {
+      font-size: 10px;
+      opacity: 0.6;
+      flex-shrink: 0;
+    }
+    /* Clip wrapper — forces the slider to stay within a fixed width */
+    .vp-scale-slider-wrap {
+      width: 48px;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .vp-scale-slider {
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 3px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.12);
+      outline: none;
+      cursor: pointer;
+      display: block;
+    }
+    .vp-scale-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: var(--qc-color-primary, #56a8f5);
+      cursor: pointer;
+      box-shadow: 0 0 3px rgba(86,168,245,0.5);
+    }
+    .vp-scale-val {
+      font-size: 10px;
+      opacity: 0.5;
+      font-variant-numeric: tabular-nums;
+      width: 30px;
+      flex-shrink: 0;
+    }
+
+    /* ── Viewport capture zone — always present, no decoration, used for recording rect ── */
+    #vpCapture {
+      position: fixed;
+      pointer-events: none;
+      z-index: 48;
+      display: none;
+    }
+    #vpCapture.visible { display: block; }
+
+    /* ── Viewport decorative overlay — border, shadow, corners — separate layer ── */
+    #vpDecor {
+      position: fixed;
+      pointer-events: none;
+      z-index: 50;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.45);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 3px;
+      display: none;
+    }
+    #vpDecor.visible { display: block; }
+    /* corner marks */
+    #vpDecor::before, #vpDecor::after {
+      content: '';
+      position: absolute;
+      width: 12px; height: 12px;
+      border-color: rgba(255,255,255,0.6);
+      border-style: solid;
+    }
+    #vpDecor::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+    #vpDecor::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+    /* ── Recording mode — hide decorations but keep capture div intact ── */
+    body.is-recording #vpDecor {
+      display: none !important;
+    }
+    body.is-recording .ctrl3d,
+    body.is-recording .bottom-panels {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    /* Hide demo controls during recording EXCEPT the record/stop button */
+    body.is-recording .demo-controls .demo-btn:not(#btnRecord) {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    /* ── Bg anim panel ── */
+    .bg-btn {
+      height: 22px;
+      padding: 0 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 4px;
+      background: rgba(255,255,255,0.04);
+      color: var(--qc-color-text-primary, #868a91);
+      font-size: 10px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .bg-btn:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.2); }
+    .bg-btn.active { border-color: var(--qc-color-primary, #56a8f5); color: var(--qc-color-primary, #56a8f5); }
+  </style>
+</head>
+<body>
+
+<!-- Demo controls -->
+<div class="demo-controls">
+  <button class="demo-btn secondary" id="btnClear">Clear</button>
+  <button class="demo-btn secondary" id="btnLong">↕ Long text</button>
+  <div class="custom-text-wrap">
+    <button class="demo-btn secondary" id="btnCustomText">✎ Text</button>
+    <div class="custom-text-popover" id="customTextPopover">
+      <textarea id="customTextInput" placeholder="Enter custom prompt text…" spellcheck="false"></textarea>
+      <div class="custom-text-popover-row">
+        <span class="custom-text-popover-hint">Used by ▶ Demo and ⏺ Record</span>
+        <button class="demo-btn secondary" id="btnCustomTextClear">Clear</button>
+        <button class="demo-btn primary" id="btnCustomTextSet">Set & Close</button>
+      </div>
+    </div>
+  </div>
+  <button class="demo-btn primary" id="btnType">▶ Demo</button>
+  <button class="demo-btn record" id="btnRecord">⏺ Record</button>
+</div>
+
+<!-- 3D controls panel -->
+<div class="ctrl3d">
+  <!-- Row 1: title + sliders + collapse -->
+  <div class="ctrl3d-sliders-row">
+    <div class="ctrl3d-title">3D</div>
+
+    <div class="ctrl3d-row">
+      <span class="ctrl3d-label">Zoom</span>
+      <input class="ctrl3d-slider" type="range" id="s3dZoom" min="0.3" max="2.0" step="0.01" value="1.0">
+      <span class="ctrl3d-val" id="v3dZoom">1.0×</span>
+    </div>
+    <div class="ctrl3d-divider"></div>
+    <div class="ctrl3d-row">
+      <span class="ctrl3d-label">Rot X</span>
+      <input class="ctrl3d-slider" type="range" id="s3dRX" min="-60" max="60" step="1" value="0">
+      <span class="ctrl3d-val" id="v3dRX">0°</span>
+    </div>
+    <div class="ctrl3d-divider"></div>
+    <div class="ctrl3d-row">
+      <span class="ctrl3d-label">Rot Y</span>
+      <input class="ctrl3d-slider" type="range" id="s3dRY" min="-60" max="60" step="1" value="0">
+      <span class="ctrl3d-val" id="v3dRY">0°</span>
+    </div>
+    <div class="ctrl3d-divider"></div>
+    <div class="ctrl3d-row">
+      <span class="ctrl3d-label">Rot Z</span>
+      <input class="ctrl3d-slider" type="range" id="s3dRZ" min="-45" max="45" step="1" value="0">
+      <span class="ctrl3d-val" id="v3dRZ">0°</span>
+    </div>
+
+    <button class="ctrl3d-collapse" id="btn3dCollapse" title="Collapse">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6">
+        <polyline points="7,3 4,6 1,3"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Row 2: animation presets + reset -->
+  <div class="ctrl3d-btns-row">
+    <button class="anim-btn" id="anim3dFloat">Float</button>
+    <button class="anim-btn" id="anim3dSpin">Swing</button>
+    <button class="anim-btn" id="anim3dTilt">Tilt</button>
+    <button class="anim-btn" id="anim3dZoom">Breathe</button>
+    <button class="anim-btn" id="anim3dDrift">Drift</button>
+    <button class="anim-btn" id="anim3dWobble">Wobble</button>
+    <button class="anim-btn" id="anim3dPendulum">Pendulum</button>
+    <button class="ctrl3d-reset" id="btn3dReset">↺ Reset</button>
+  </div>
+</div>
+
+<!-- Viewport capture zone (no decoration — used for recording rect measurement) -->
+<div id="vpCapture"></div>
+<!-- Viewport decorative overlay (border, shadow, corners — hidden during recording) -->
+<div id="vpDecor"></div>
+
+<!-- Bottom control panels -->
+<div class="bottom-panels">
+
+  <!-- 1. Viewport selection -->
+  <div class="btm-panel">
+    <span class="btm-panel-title">Viewport</span>
+    <div class="btm-divider"></div>
+
+    <button class="vp-btn" id="vpFree" title="Free (no constraint)">
+      <span class="vp-label">Free</span>
+    </button>
+
+    <button class="vp-btn active" id="vpDesktop" title="Desktop 16:10">
+      <span class="vp-icon">
+        <svg width="16" height="10" viewBox="0 0 16 10" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7">
+          <rect x="0.6" y="0.6" width="14.8" height="8.8" rx="1.2"/>
+          <line x1="4" y1="9.4" x2="12" y2="9.4"/>
+          <line x1="8" y1="9.4" x2="8" y2="10"/>
+        </svg>
+      </span>
+      <span class="vp-label">Desktop</span>
+      <span class="vp-ratio">16:10</span>
+    </button>
+
+    <button class="vp-btn" id="vpR169" title="16:9 widescreen">
+      <span class="vp-icon">
+        <svg width="16" height="9" viewBox="0 0 16 9" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7">
+          <rect x="0.6" y="0.6" width="14.8" height="7.8" rx="1.2"/>
+        </svg>
+      </span>
+      <span class="vp-ratio">16:9</span>
+    </button>
+
+    <button class="vp-btn" id="vpR916" title="9:16 portrait">
+      <span class="vp-icon">
+        <svg width="9" height="16" viewBox="0 0 9 16" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7">
+          <rect x="0.6" y="0.6" width="7.8" height="14.8" rx="1.2"/>
+        </svg>
+      </span>
+      <span class="vp-ratio">9:16</span>
+    </button>
+
+    <button class="vp-btn" id="vpMobile" title="Mobile 10:16">
+      <span class="vp-icon">
+        <svg width="10" height="16" viewBox="0 0 10 16" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7">
+          <rect x="0.6" y="0.6" width="8.8" height="14.8" rx="1.5"/>
+          <circle cx="5" cy="13.5" r="0.8" fill="currentColor" stroke="none"/>
+        </svg>
+      </span>
+      <span class="vp-label">Mobile</span>
+      <span class="vp-ratio">10:16</span>
+    </button>
+
+    <div class="btm-divider"></div>
+
+    <div class="vp-scale-row">
+      <span class="vp-scale-label">Scale</span>
+      <div class="vp-scale-slider-wrap">
+        <input class="vp-scale-slider" type="range" id="vpScaleSlider" min="0.3" max="1.5" step="0.05" value="1.0">
+      </div>
+      <span class="vp-scale-val" id="vpScaleVal">1.0×</span>
+    </div>
+  </div>
+
+  <!-- 2. Background animations -->
+  <div class="btm-panel">
+    <span class="btm-panel-title">Background</span>
+    <div class="btm-divider"></div>
+    <button class="bg-btn active" data-bg="none">None</button>
+    <button class="bg-btn" data-bg="neuro">Neuro Noise</button>
+    <button class="bg-btn" data-bg="neural">Neural Net</button>
+    <button class="bg-btn" data-bg="gradient">Gradient</button>
+    <button class="bg-btn" data-bg="aurora">North Lights</button>
+    <button class="bg-btn" data-bg="grid">Grid</button>
+    <button class="bg-btn" data-bg="nebula">Nebula</button>
+    <button class="bg-btn" data-bg="rain">God Rays</button>
+    <button class="bg-btn" data-bg="stars">Stars</button>
+    <button class="bg-btn" data-bg="waves">Waves</button>
+
+    <button class="bg-btn" data-bg="scanlines">Scanlines</button>
+    <button class="bg-btn" data-bg="vortex">Vortex</button>
+  </div>
+
+</div>
+
+<!-- Page: center + anchor to bottom -->
+<div class="page-wrap">
+  <div class="chat-panel">
+
+    <!-- Top bar -->
+    <div class="top-bar">
+      <div class="agent-row" title="Switch agent">
+        <div class="agent-avatar" id="agentAvatar">
+          <img src="/_ide/images/avatars/cody_circle.png"
+               onerror="this.style.display='none';this.parentNode.textContent='Co'" alt="Cody">
+        </div>
+        <span class="agent-name" id="agentName">Cody</span>
+        <svg class="chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8">
+          <polyline points="2,4 6,8 10,4"/>
+        </svg>
+      </div>
+
+      <div class="top-bar-spacer"></div>
+
+      <button class="ibtn" title="Brain">
+        <span class="icon" style="--icon: url('/_ide/images/icons/phosphor/brain.png')"></span>
+      </button>
+      <button class="ibtn" title="Skills catalog">
+        <span class="icon" style="--icon: url('/_ide/images/icons/phosphor/shapes.png')"></span>
+      </button>
+    </div>
+
+    <!-- Textarea -->
+    <div class="textarea-wrap">
+      <textarea
+        class="message-box"
+        id="messageBox"
+        placeholder="Type your request here… Shift + ↵ to send"
+        rows="3"
+        spellcheck="false"
+      ></textarea>
+      <button class="mic-btn" title="Voice input">
+        <span class="icon" style="--icon: url('/_ide/images/icons/phosphor/microphone.png')"></span>
+      </button>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="bottom-bar">
+      <!-- Left: attach + rewind -->
+      <button class="ibtn" title="Attach file">
+        <span class="icon" style="--icon: url('/_ide/images/icons/coolicons/Edit/Add_Plus.png')"></span>
+      </button>
+      <button class="ibtn" title="Remove last message">
+        <span class="icon" style="--icon: url('/_ide/images/icons/coolicons/Media/Rewind.png')"></span>
+      </button>
+
+      <div class="bar-spacer"></div>
+
+      <!-- Media model combos -->
+      <div class="media-combo" title="Image model">
+        <span class="icon" style="--icon: url('/_ide/images/icons/phosphor/image.png')"></span>
+        <span class="caret"></span>
+      </div>
+      <div class="media-combo" title="Sound model">
+        <span class="icon" style="--icon: url('/_ide/images/icons/phosphor/waveform.png')"></span>
+        <span class="caret"></span>
+      </div>
+      <div class="media-combo" title="Video model">
+        <span class="icon" style="--icon: url('/_ide/images/icons/phosphor/video-camera.png')"></span>
+        <span class="caret"></span>
+      </div>
+
+      <!-- LLM model combo -->
+      <div class="llm-combo" id="llmCombo" title="Select LLM model">
+        <img class="llm-logo-img" src="/_ide/images/icons/logos/anthropic.png" alt="Anthropic" onerror="this.style.display='none'">
+        <span class="llm-name" id="llmName">claude-sonnet</span>
+        <span class="llm-caret"></span>
+      </div>
+
+      <!-- Send buttons (round) -->
+      <button class="send-btn send-agent" id="sendAgentBtn" title="Send to agent — Exploration mode (Shift+Enter)">
+        <span class="icon" style="--icon: url('/_ide/images/icons/phosphor/head-circuit.png')"></span>
+      </button>
+      <button class="send-btn send-build" title="Build mode — agent with file write access (Cmd+Shift+Enter)">
+        <span class="icon" style="--icon: url('/_ide/images/icons/phosphor/hammer3.png')"></span>
+      </button>
+    </div>
+
+  </div><!-- /chat-panel -->
+</div><!-- /page-wrap -->
+
+<script>
+async function init() {
+  if (window.QC || await new Promise(r => {
+    var d = Date.now() + 2000, t = setInterval(() => {
+      (window.QC || Date.now() > d) && (clearInterval(t), r(window.QC));
+    }, 20);
+  })) {
+    await QC.ready();
+    await QC.style.applyMainCss();
+    try {
+      const agents = await QC.ui.getAgentsJson();
+      const cody = agents.find(a => a.name === 'Cody') || agents[0];
+      if (cody) applyAgent(cody);
+    } catch(e) {}
+  }
+  document.getElementById('__qc-fouc-guard')?.remove();
+  setupUI();
+}
+
+function applyAgent(a) {
+  const nameEl = document.getElementById('agentName');
+  const avatarEl = document.getElementById('agentAvatar');
+  if (nameEl) nameEl.textContent = a.name || 'Cody';
+  if (avatarEl && a.avatar) {
+    avatarEl.innerHTML = `<img src="${a.avatar}" alt="${a.name}" onerror="this.style.display='none'">`;
+  }
+}
+
+// ── Custom prompt text ────────────────────────────────────
+let _customPrompt = null;  // null = use built-in PROMPTS rotation
+
+function setupCustomText() {
+  const btn      = document.getElementById('btnCustomText');
+  const popover  = document.getElementById('customTextPopover');
+  const input    = document.getElementById('customTextInput');
+  const btnSet   = document.getElementById('btnCustomTextSet');
+  const btnClearC = document.getElementById('btnCustomTextClear');
+  if (!btn || !popover) return;
+
+  // Toggle popover
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    popover.classList.toggle('open');
+    if (popover.classList.contains('open')) input.focus();
+  });
+
+  // Close on outside click
+  document.addEventListener('click', (e) => {
+    if (!popover.contains(e.target) && e.target !== btn) {
+      popover.classList.remove('open');
+    }
+  });
+
+  // Set & Close
+  btnSet.addEventListener('click', () => {
+    const val = input.value.trim();
+    _customPrompt = val || null;
+    btn.textContent = _customPrompt ? '✎ Custom' : '✎ Text';
+    btn.style.borderColor = _customPrompt ? 'rgba(86,168,245,0.6)' : '';
+    btn.style.color = _customPrompt ? 'var(--qc-color-primary, #56a8f5)' : '';
+    popover.classList.remove('open');
+  });
+
+  // Clear custom text
+  btnClearC.addEventListener('click', () => {
+    input.value = '';
+    _customPrompt = null;
+    btn.textContent = '✎ Text';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+  });
+
+  // Ctrl+Enter inside textarea = Set & Close
+  input.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      btnSet.click();
+    }
+    if (e.key === 'Escape') popover.classList.remove('open');
+  });
+}
+
+function setupUI() {
+  const box = document.getElementById('messageBox');
+  if (!box) return;
+  box.addEventListener('input', () => {
+    // Grow only — never set 'auto' (causes reflow jump)
+    const needed = Math.max(box.scrollHeight, 56);
+    if (needed > parseInt(box.style.height || '0')) {
+      box.style.height = needed + 'px';
+    }
+  });
+  document.getElementById('btnType')?.addEventListener('click', () => runDemo());
+  document.getElementById('btnLong')?.addEventListener('click', () => runDemo(LONG_PROMPT));
+  setup3dControls();
+  setupRecordBtn();
+  setupCustomText();
+  document.getElementById('btnClear')?.addEventListener('click', () => {
+    box.value = ''; box.style.height = '56px'; box.focus();
+  });
+  box.focus();
+}
+
+const PROMPTS = [
+  "Refactor the authentication module to use JWT tokens and add proper error handling for expired sessions.",
+  "Create a new React component for the user profile page with avatar upload support.",
+  "Write unit tests for the payment processing service covering all edge cases.",
+];
+
+const LONG_PROMPT = "Implement a full authentication system with JWT tokens, refresh token rotation, role-based access control, session management, and proper error handling for expired sessions. Include unit tests for all edge cases and add rate limiting to prevent brute force attacks. Also add OAuth2 support for Google and GitHub login providers. Then refactor the user profile service to support multi-tenancy, add an audit log for all sensitive operations, integrate with the existing notification pipeline to send email and push alerts on suspicious login attempts, and document the entire API surface with OpenAPI 3.1 annotations.";
+
+function measureTextHeight(box, text) {
+  // Clone the textarea off-screen, fill with full text, measure scrollHeight
+  const clone = box.cloneNode();
+  clone.style.cssText = window.getComputedStyle(box).cssText;
+  clone.style.position = 'fixed';
+  clone.style.top = '-9999px';
+  clone.style.left = '-9999px';
+  clone.style.height = 'auto';
+  clone.style.minHeight = '0';
+  clone.style.visibility = 'hidden';
+  clone.value = text;
+  document.body.appendChild(clone);
+  const h = Math.max(clone.scrollHeight, 56);
+  document.body.removeChild(clone);
+  return h;
+}
+
+let _running = false;
+let _lastPrompt = null;
+
+async function runDemo(prompt) {
+  if (_running) return;
+  _running = true;
+  const box = document.getElementById('messageBox');
+  const btn = document.getElementById('btnType');
+  const btnLong = document.getElementById('btnLong');
+  btn.disabled = true; btnLong.disabled = true;
+  btn.textContent = '⏸ Running…';
+
+  prompt = prompt || _customPrompt || PROMPTS[Math.floor(Math.random() * PROMPTS.length)];
+  _lastPrompt = prompt;
+
+  // Pre-calc final height — set it BEFORE typing starts, no jump
+  const finalH = measureTextHeight(box, prompt);
+  box.value = '';
+  box.style.height = finalH + 'px';
+  await sleep(300);
+
+  for (const ch of prompt) {
+    box.value += ch;
+    await sleep(16 + Math.random() * 24);
+  }
+
+  await sleep(700);
+  const sb = document.getElementById('sendAgentBtn');
+  if (sb) {
+    sb.style.transform = 'scale(1.18)';
+    await sleep(140);
+    sb.style.transform = '';
+  }
+
+  await sleep(400);
+  btn.textContent = '▶ Demo'; btn.disabled = false; btnLong.disabled = false;
+  _running = false;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── Record button ─────────────────────────────────────────
+let _recording = false;
+let _bridge = null;  // cached bridge — open QWebChannel once, reuse
+
+async function getBridge() {
+  if (_bridge) return _bridge;
+  return new Promise((res, rej) => {
+    if (typeof QWebChannel === 'undefined' || !window.qt) return rej(new Error('QWebChannel not available'));
+    new QWebChannel(qt.webChannelTransport, ch => {
+      _bridge = ch.objects.qcBridge;
+      res(_bridge);
+    });
+  });
+}
+
+function setupRecordBtn() {
+  const btn = document.getElementById('btnRecord');
+  if (!btn) return;
+
+  // Register done callback once — fires when file is written to disk
+  if (window.QC) {
+    QC.ui.onBrowserRecordingDone((filename) => {
+      console.log('[Record] saved:', filename);
+      setRecordState(false);
+      // Brief flash to confirm save
+      btn.textContent = '✓ Saved';
+      setTimeout(() => { btn.innerHTML = '⏺ Record'; }, 1800);
+    });
+
+    // Recording starts asynchronously now — the blocking sidecar launch runs
+    // off the UI thread so the IDE never freezes on Record.  Begin the demo
+    // only once the sidecar is actually live, so no frames are lost.
+    QC.ui.onBrowserRecordingStarted((filename, ok) => {
+      if (!ok) {
+        console.warn('[Record] sidecar failed to start');
+        setRecordState(false);
+        btn.textContent = '✗ Failed';
+        setTimeout(() => { btn.innerHTML = '⏺ Record'; }, 1500);
+        return;
+      }
+      console.log('[Record] sidecar started:', filename);
+      setRecordState(true);
+      // Clear box and re-enter last prompt AFTER recording has started
+      const box = document.getElementById('messageBox');
+      const prompt = _lastPrompt || _customPrompt || PROMPTS[Math.floor(Math.random() * PROMPTS.length)];
+      // Pre-measure final height BEFORE clearing — avoids the 56px→finalH jump
+      const finalH = measureTextHeight(box, prompt);
+      box.value = '';
+      box.style.height = finalH + 'px';  // set final height immediately, no jump
+      sleep(400).then(() => runDemo(prompt));
+    });
+  }
+
+  btn.addEventListener('click', async () => {
+    if (!window.QC) {
+      alert('QC bridge not available — open this page inside the IDE.');
+      return;
+    }
+    if (_recording) {
+      // Transcode (raw .mov → normalized mp4) runs in the sidecar after stop.
+      // Show 'converting…' until onBrowserRecordingDone fires; that callback
+      // restores the idle '⏺ Record' button when the file is on disk.
+      setConvertingState();
+      await QC.ui.stopBrowserRecording();
+    } else {
+      // Measure capture rect synchronously RIGHT NOW — before any DOM changes or async gaps
+      // Use #vpCapture (no decoration, always visible when viewport is active)
+      const captureDiv = document.getElementById('vpCapture');
+      const captureEl = (captureDiv && captureDiv.classList.contains('visible')) ? captureDiv : document.querySelector('.chat-panel');
+      const cssRect = captureEl.getBoundingClientRect();
+      // Pass pre-measured CSS rect to QC.ui — it calls uiGetBrowserWidgetOrigin internally
+      // and converts to screen coords without opening a second QWebChannel.
+      const filename = '.temp/recordings/message_box_' + Date.now() + '.mp4';
+      const captureRect = { cssLeft: cssRect.left, cssTop: cssRect.top, cssW: cssRect.width, cssH: cssRect.height };
+      console.log('[Record] cssRect=', JSON.stringify({left:cssRect.left,top:cssRect.top,w:cssRect.width,h:cssRect.height}));
+      // startBrowserRecording only DISPATCHES the launch and returns at once so
+      // the IDE UI never blocks.  The real start/fail outcome — and the demo
+      // playback — is handled in the onBrowserRecordingStarted callback above.
+      const ok = await QC.ui.startBrowserRecording(filename, { fps: 25, quality: 'high', crf: 1, capture: captureRect });
+      if (ok) {
+        // Sidecar launch + encoder warm-up runs off the UI thread; the real
+        // 'started' outcome (and demo playback) arrives via onBrowserRecordingStarted.
+        btn.innerHTML = 'preparing…';
+      } else {
+        btn.textContent = '✗ Failed';
+        setTimeout(() => { btn.innerHTML = '⏺ Record'; }, 1500);
+      }
+    }
+  });
+}
+
+function setRecordState(active) {
+  _recording = active;
+  const btn = document.getElementById('btnRecord');
+  if (!btn) return;
+  if (active) {
+    btn.classList.add('recording');
+    btn.innerHTML = '<span class="rec-dot"></span>Stop';
+    // Hide all UI chrome — frame decorations, panels — so they don't appear in video
+    document.body.classList.add('is-recording');
+  } else {
+    btn.classList.remove('recording');
+    btn.innerHTML = '⏺ Record';
+    // Restore UI chrome
+    document.body.classList.remove('is-recording');
+  }
+}
+
+// Post-stop "converting" state: recording has ended (so a second click can't
+// re-trigger stop) but the sidecar is still transcoding the raw capture into
+// the final mp4. onBrowserRecordingDone restores the idle button afterwards.
+function setConvertingState() {
+  _recording = false;
+  const btn = document.getElementById('btnRecord');
+  // Restore UI chrome immediately — capture is over, no need to keep it hidden.
+  document.body.classList.remove('is-recording');
+  if (!btn) return;
+  btn.classList.remove('recording');
+  btn.innerHTML = 'converting…';
+}
+
+// ── 3D Controls ──────────────────────────────────────────
+const _3d = { zoom: 1, rx: 0, ry: 0, rz: 0 };
+let _animRaf = null;
+let _activeAnim = null;
+
+function apply3d() {
+  const panel = document.querySelector('.chat-panel');
+  if (!panel) return;
+  // Compose viewport scale (user-controlled) with 3D zoom
+  const vpScale = (typeof _vpScale !== 'undefined') ? _vpScale : 1;
+  const totalScale = vpScale * _3d.zoom;
+  panel.style.transform =
+    `scale(${totalScale}) rotateX(${_3d.rx}deg) rotateY(${_3d.ry}deg) rotateZ(${_3d.rz}deg)`;
+}
+
+function setup3dControls() {
+  const sliders = [
+    { id: 's3dZoom', val: 'v3dZoom', key: 'zoom', fmt: v => (+v).toFixed(2) + '×' },
+    { id: 's3dRX',   val: 'v3dRX',   key: 'rx',   fmt: v => Math.round(v) + '°' },
+    { id: 's3dRY',   val: 'v3dRY',   key: 'ry',   fmt: v => Math.round(v) + '°' },
+    { id: 's3dRZ',   val: 'v3dRZ',   key: 'rz',   fmt: v => Math.round(v) + '°' },
+  ];
+
+  sliders.forEach(({ id, val, key, fmt }) => {
+    const slider = document.getElementById(id);
+    const label  = document.getElementById(val);
+    if (!slider) return;
+    slider.addEventListener('input', () => {
+      stopAnim();
+      _3d[key] = parseFloat(slider.value);
+      label.textContent = fmt(slider.value);
+      apply3d();
+    });
+  });
+
+  // Reset
+  document.getElementById('btn3dReset')?.addEventListener('click', () => {
+    stopAnim();
+    _3d.zoom = 1; _3d.rx = 0; _3d.ry = 0; _3d.rz = 0;
+    document.getElementById('s3dZoom').value = 1;
+    document.getElementById('s3dRX').value   = 0;
+    document.getElementById('s3dRY').value   = 0;
+    document.getElementById('s3dRZ').value   = 0;
+    document.getElementById('v3dZoom').textContent = '1.00×';
+    document.getElementById('v3dRX').textContent   = '0°';
+    document.getElementById('v3dRY').textContent   = '0°';
+    document.getElementById('v3dRZ').textContent   = '0°';
+    const panel = document.querySelector('.chat-panel');
+    if (panel) panel.style.transition = 'transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94)';
+    apply3d();
+  });
+
+  // Collapse toggle
+  document.getElementById('btn3dCollapse')?.addEventListener('click', () => {
+    document.querySelector('.ctrl3d').classList.toggle('collapsed');
+  });
+
+  // Animation presets
+  document.getElementById('anim3dFloat')?.addEventListener('click',    () => toggleAnim('float',    animFloat));
+  document.getElementById('anim3dSpin')?.addEventListener('click',     () => toggleAnim('spin',     animSpin));
+  document.getElementById('anim3dTilt')?.addEventListener('click',     () => toggleAnim('tilt',     animTilt));
+  document.getElementById('anim3dZoom')?.addEventListener('click',     () => toggleAnim('zoom',     animZoomPulse));
+  document.getElementById('anim3dDrift')?.addEventListener('click',    () => toggleAnim('drift',    animDrift));
+  document.getElementById('anim3dWobble')?.addEventListener('click',   () => toggleAnim('wobble',   animWobble));
+  document.getElementById('anim3dPendulum')?.addEventListener('click', () => toggleAnim('pendulum', animPendulum));
+}
+
+function toggleAnim(name, fn) {
+  if (_activeAnim === name) { stopAnim(); return; }
+  stopAnim();
+  _activeAnim = name;
+  document.querySelectorAll('.anim-btn').forEach(b => b.classList.remove('active'));
+  const idMap = { float:'Float', spin:'Spin', tilt:'Tilt', zoom:'Zoom', drift:'Drift', wobble:'Wobble', pendulum:'Pendulum' };
+  document.getElementById('anim3d' + (idMap[name] || name.charAt(0).toUpperCase() + name.slice(1)))?.classList.add('active');
+  const panel = document.querySelector('.chat-panel');
+  if (panel) panel.style.transition = 'none'; // let RAF drive it
+  const start = performance.now();
+  function tick(now) {
+    fn(now - start);
+    _animRaf = requestAnimationFrame(tick);
+  }
+  _animRaf = requestAnimationFrame(tick);
+}
+
+function stopAnim() {
+  if (_animRaf) { cancelAnimationFrame(_animRaf); _animRaf = null; }
+  _activeAnim = null;
+  document.querySelectorAll('.anim-btn').forEach(b => b.classList.remove('active'));
+  const panel = document.querySelector('.chat-panel');
+  if (panel) panel.style.transition = 'transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94)';
+}
+
+function syncSliders() {
+  document.getElementById('s3dZoom').value = _3d.zoom;
+  document.getElementById('s3dRX').value   = _3d.rx;
+  document.getElementById('s3dRY').value   = _3d.ry;
+  document.getElementById('s3dRZ').value   = _3d.rz;
+  document.getElementById('v3dZoom').textContent = _3d.zoom.toFixed(2) + '×';
+  document.getElementById('v3dRX').textContent   = Math.round(_3d.rx) + '°';
+  document.getElementById('v3dRY').textContent   = Math.round(_3d.ry) + '°';
+  document.getElementById('v3dRZ').textContent   = Math.round(_3d.rz) + '°';
+}
+
+// Float: very gentle bob — returns to 0 each cycle
+function animFloat(t) {
+  _3d.zoom = 1.0 + Math.sin(t / 2000) * 0.03;
+  _3d.rx   = Math.sin(t / 2600) * 3;
+  _3d.ry   = Math.sin(t / 3400) * 2;
+  _3d.rz   = 0;
+  syncSliders(); apply3d();
+}
+
+// Spin Y: slow gentle swing left/right, returns to 0
+function animSpin(t) {
+  _3d.zoom = 1;
+  _3d.rx   = 0;
+  _3d.ry   = Math.sin(t / 2000) * 12;
+  _3d.rz   = 0;
+  syncSliders(); apply3d();
+}
+
+// Tilt: subtle X/Y oscillation, returns to 0
+function animTilt(t) {
+  _3d.zoom = 1.0;
+  _3d.rx   = Math.sin(t / 2000) * 6;
+  _3d.ry   = Math.cos(t / 2600) * 8;
+  _3d.rz   = Math.sin(t / 3800) * 2;
+  syncSliders(); apply3d();
+}
+
+// Zoom pulse: gentle breathe, returns to 1.0
+function animZoomPulse(t) {
+  _3d.zoom = 1.0 + Math.sin(t / 1600) * 0.08;
+  _3d.rx   = Math.sin(t / 3000) * 2;
+  _3d.ry   = 0;
+  _3d.rz   = 0;
+  syncSliders(); apply3d();
+}
+
+// Drift: slow lazy figure-8 in X/Y, very subtle
+function animDrift(t) {
+  _3d.zoom = 1.0 + Math.sin(t / 4000) * 0.02;
+  _3d.rx   = Math.sin(t / 3000) * 4;
+  _3d.ry   = Math.sin(t / 2000) * 5;
+  _3d.rz   = Math.sin(t / 5000) * 1.5;
+  syncSliders(); apply3d();
+}
+
+// Wobble: quick jitter that settles — looping micro-shake
+function animWobble(t) {
+  const decay = 0.5 + 0.5 * Math.abs(Math.sin(t / 1800)); // rhythmic intensity
+  _3d.zoom = 1.0;
+  _3d.rx   = Math.sin(t / 180) * 3 * decay;
+  _3d.ry   = Math.cos(t / 220) * 4 * decay;
+  _3d.rz   = Math.sin(t / 260) * 1.5 * decay;
+  syncSliders(); apply3d();
+}
+
+// Pendulum: single-axis swing like a hanging card
+function animPendulum(t) {
+  _3d.zoom = 1.0;
+  _3d.rx   = 0;
+  _3d.ry   = Math.sin(t / 1400) * 10 * Math.exp(-0.0001 * (t % 6000));
+  // reset envelope every 6s
+  _3d.rz   = Math.sin(t / 1400) * 2;
+  syncSliders(); apply3d();
+}
+
+init();
+</script>
+
+<!-- threejs-toys: load as ES module, expose to window for bg_animations.js -->
+<script type="module">
+  import * as ThreejsToys from 'https://unpkg.com/threejs-toys@0.0.8/build/threejs-toys.module.cdn.min.js';
+  window.ThreejsToys = ThreejsToys;
+</script>
+<script src="bg_animations.js"></script>
+<script>
+// ── Viewport selection — camera frame overlay, panel untouched ───
+const VP_RATIOS = {
+  desktop: 16/10,  // 16:10 landscape
+  r169:    16/9,   // 16:9 landscape
+  r916:    9/16,   // 9:16 portrait
+  mobile:  10/16,  // 10:16 portrait
+};
+
+// Default scale per mode (applied when switching, user can override via slider)
+const VP_DEFAULT_SCALE = { free: 1.0, desktop: 1.0, r169: 1.0, r916: 0.6, mobile: 0.6 };
+
+let _vpMode  = 'free';
+let _vpScale = 1.0;
+
+function setVpScale(v) {
+  _vpScale = v;
+  const slider = document.getElementById('vpScaleSlider');
+  const label  = document.getElementById('vpScaleVal');
+  if (slider) slider.value = v;
+  if (label)  label.textContent = v.toFixed(2) + '×';
+  apply3d();
+}
+
+function applyViewport(mode) {
+  _vpMode = mode;
+  const capture = document.getElementById('vpCapture');
+  const decor   = document.getElementById('vpDecor');
+  if (!capture || !decor) return;
+
+  document.querySelectorAll('.vp-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('vp' + mode.charAt(0).toUpperCase() + mode.slice(1))?.classList.add('active');
+
+  // Auto-apply default scale for this mode
+  setVpScale(VP_DEFAULT_SCALE[mode] ?? 1.0);
+
+  if (mode === 'free') {
+    capture.classList.remove('visible');
+    decor.classList.remove('visible');
+    return;
+  }
+
+  // Compute frame rect — avoid overlapping top (3D panel ~75px) and bottom (control panels ~120px)
+  const ratio = VP_RATIOS[mode];
+  const winW = window.innerWidth;
+  const winH = window.innerHeight;
+  const marginTop    = 80;   // clear 3D controls panel
+  const marginBottom = 125;  // clear viewport + bg panels
+  const marginSide   = 40;
+
+  const availW = winW - marginSide * 2;
+  const availH = winH - marginTop - marginBottom;
+
+  let fw, fh;
+  if (availW / availH > ratio) {
+    fh = availH; fw = fh * ratio;
+  } else {
+    fw = availW; fh = fw / ratio;
+  }
+
+  const fx = (winW - fw) / 2;
+  const fy = marginTop + (availH - fh) / 2;
+
+  // Apply same position/size to both layers
+  [capture, decor].forEach(el => {
+    el.style.left   = fx + 'px';
+    el.style.top    = fy + 'px';
+    el.style.width  = fw + 'px';
+    el.style.height = fh + 'px';
+    el.classList.add('visible');
+  });
+
+  apply3d();
+}
+
+function setupViewportPanel() {
+  document.getElementById('vpFree')?.addEventListener('click',    () => applyViewport('free'));
+  document.getElementById('vpDesktop')?.addEventListener('click', () => applyViewport('desktop'));
+  document.getElementById('vpR169')?.addEventListener('click',    () => applyViewport('r169'));
+  document.getElementById('vpR916')?.addEventListener('click',    () => applyViewport('r916'));
+  document.getElementById('vpMobile')?.addEventListener('click',  () => applyViewport('mobile'));
+  window.addEventListener('resize', () => { if (_vpMode !== 'free') applyViewport(_vpMode); });
+
+  // Default to desktop viewport on load
+  applyViewport('desktop');
+
+  // Scale slider — user can override the default scale at any time
+  const scaleSlider = document.getElementById('vpScaleSlider');
+  const scaleVal    = document.getElementById('vpScaleVal');
+  scaleSlider?.addEventListener('input', () => {
+    _vpScale = parseFloat(scaleSlider.value);
+    scaleVal.textContent = _vpScale.toFixed(2) + '×';
+    apply3d();
+  });
+}
+
+// ── Background animations panel ───────────────────────────
+function setupBgPanel() {
+  const pageWrap = document.querySelector('.page-wrap');
+  BgAnimations.init(pageWrap);
+
+  document.querySelectorAll('.bg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const name = btn.dataset.bg;
+      const isSame = BgAnimations.current() === name || (name === 'none' && !BgAnimations.current());
+      document.querySelectorAll('.bg-btn').forEach(b => b.classList.remove('active'));
+      if (isSame && name !== 'none') {
+        BgAnimations.stop();
+        document.querySelector('.bg-btn[data-bg="none"]').classList.add('active');
+      } else {
+        btn.classList.add('active');
+        if (name === 'none') BgAnimations.stop();
+        else BgAnimations.apply(name, pageWrap);
+      }
+    });
+  });
+
+  // default: none active
+  document.querySelector('.bg-btn[data-bg="none"]').classList.add('active');
+}
+
+// init after DOM ready (called after QC init)
+document.addEventListener('DOMContentLoaded', () => {
+  setupViewportPanel();
+  setupBgPanel();
+});
+// also call directly in case DOMContentLoaded already fired
+if (document.readyState !== 'loading') {
+  setupViewportPanel();
+  setupBgPanel();
+}
+</script>
+</body>
+</html>

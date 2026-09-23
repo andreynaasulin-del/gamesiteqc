@@ -1,0 +1,99 @@
+# IDE Emulation — terminal_scenario.yaml
+# Showcases the fake_console.js terminal emulator:
+#   1) SHELL mode  — a realistic typed terminal session (git / cmake / run)
+#   2) CLAUDE mode — emulates the Claude Code CLI TUI (prompts, tools, done)
+# Actions used: switch_left_tab, console_demo, console_mode, terminal_type
+
+project:
+  project_name: DungeonCraft
+  root_path: /projects/DungeonCraft
+  selected: game/world/DungeonGen.cpp
+  files:
+    - engine/core/ecs.cpp
+    - engine/renderer/render_pipeline.cpp
+    - game/world/DungeonGen.cpp
+    - game/world/BiomeGen.cpp
+    - assets/config/game_config.yaml
+    - README.md
+
+topic: DungeonCraft — terminal in action
+
+initial_zoom: 0.92
+initial_vp_scale: 0.6
+camera_smoothness: 0.7
+background: gradient
+hide_right_panel: false
+
+actions:
+
+  # ── 0s: gentle intro float ───────────────────────────────────────────────────
+  - at: 0
+    type: camera_move
+    zoom: 0.9
+    rx: 2
+    ry: -3
+    duration: 700
+
+  - at: "+300"
+    type: camera_anim
+    name: float
+
+  # ── 1s: reveal the Console tab in the left panel ─────────────────────────────
+  - at: 1000
+    type: switch_left_tab
+    tab: "Console"
+
+  # ── 1.4s: pan in so the terminal is front and center ─────────────────────────
+  - at: 1400
+    type: camera_pan_to
+    target: chat_log
+    margin: 0.04
+    duration: 800
+
+  # ── 2s: play the realistic SHELL demo (types git/cmake/run/commit) ───────────
+  - at: 2000
+    type: console_demo
+    demo: shell
+
+  # ── 12s: a couple of extra manual shell commands (terminal_type) ─────────────
+  - at: 12000
+    type: terminal_type
+    command: "git log --oneline -3"
+    output: |
+      4f3a9c1 tune dungeon density
+      a1b7e22 add biome generator
+      90c4d51 initial dungeon gen
+    out_kind: out
+
+  - at: 14500
+    type: terminal_type
+    command: "ls game/world"
+    output: "BiomeGen.cpp   DungeonGen.cpp   DungeonGen.h   World.cpp"
+    out_kind: info
+
+  # ── 17s: switch the SAME terminal into Claude Code mode + play its demo ───────
+  - at: 17000
+    type: console_demo
+    demo: claude
+
+  # ── 18s: pull back a touch so the welcome box + tool log are framed ──────────
+  - at: 18000
+    type: camera_pan_to
+    target: ide_full
+    duration: 900
+
+  # ── 30s: drift out to a calm finish ──────────────────────────────────────────
+  - at: 30000
+    type: camera_move
+    zoom: 0.8
+    rx: 4
+    ry: -6
+    duration: 1000
+
+  - at: "+500"
+    type: camera_anim
+    name: drift
+
+  # ── 32s: end ──────────────────────────────────────────────────────────────────
+  - at: 32000
+    type: stop_record

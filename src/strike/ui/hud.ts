@@ -2,7 +2,7 @@
  * In-match HUD. Every element is driven by explicit method calls — the HUD never reads game
  * state itself, so it stays cheap and testable (see `dev/ui-showcase.ts`).
  */
-import { ARMOR, MATCH, PLAYER, TEAMS, WEAPONS } from '../config'
+import { ARMOR, GRENADE, MATCH, PLAYER, TEAMS, WEAPONS } from '../config'
 import type { BodyPart, MatchPhase, TeamId, WeaponKind } from '../types'
 import { appRoot, clamp, el, formatClock, svg } from './dom'
 
@@ -29,6 +29,12 @@ export interface Hud {
   setPointerReleased(free: boolean, text?: string): void
   /** Rounds left in the magazine; `Infinity` (the knife) shows as a dash. */
   setHopper(count: number, reloading?: boolean): void
+  /**
+   * Paint grenades left this life. Reads as "G ×2" under the magazine and greys out at zero —
+   * a thrown grenade is the one resource in the game that never comes back mid-life, so it has
+   * to be readable without opening anything.
+   */
+  setGrenades(count: number): void
   /** Which slot is in hand: lights its dot and renames the widget. */
   setWeapon(kind: WeaponKind): void
   setScores(a: number, b: number, msLeft: number): void
@@ -137,10 +143,19 @@ export function createHud(mount: HTMLElement = appRoot()): Hud {
   const ammoCount = el('b', { text: String(WEAPONS.rifle.ammo) })
   const ammoSuffix = el('span', { text: '/ ∞' })
   const reloadFill = el('i')
+  // The pouch, under the magazine: the key that throws it is part of the read-out, because a
+  // grenade nobody knows they are carrying may as well not be in the build.
+  const grenadeCount = el('b', { text: String(GRENADE.carried) })
+  const grenades = el('div', { class: 'ps-nades', 'aria-label': 'Paint grenades' }, [
+    grenadeSvg(),
+    grenadeCount,
+    el('span', { text: 'G' }),
+  ])
   const ammo = el('div', { class: 'ps-ammo' }, [
     el('div', { class: 'ps-weapon' }, [weaponName, slots]),
     el('div', { class: 'ps-ammo-num' }, [ammoCount, ammoSuffix]),
     el('div', { class: 'ps-reload' }, [reloadFill]),
+    grenades,
   ])
 
   const feed = el('div', { class: 'ps-feed' })
@@ -274,6 +289,11 @@ export function createHud(mount: HTMLElement = appRoot()): Hud {
         if (reloading) startReloadLine()
       }
     },
+    setGrenades(count) {
+      const left = Math.max(0, Math.round(count))
+      grenadeCount.textContent = `×${left}`
+      grenades.classList.toggle('is-empty', left <= 0)
+    },
     setWeapon(kind) {
       const spec = WEAPONS[kind]
       weaponName.textContent = spec.label
@@ -403,6 +423,7 @@ export function createHud(mount: HTMLElement = appRoot()): Hud {
   }
 
   hud.setHp(PLAYER.maxHp)
+  hud.setGrenades(GRENADE.carried)
   hud.setScores(0, 0, MATCH.durationMs)
   hud.setSpread(0)
   hud.setWeapon('rifle')
@@ -427,6 +448,27 @@ function injectStyles(): void {
   const style = document.createElement('style')
   style.id = STYLE_ID
   style.textContent = `
+.ps-nades {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  color: #fafafa;
+  font: 600 13px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  opacity: 0.92;
+  transition: opacity 160ms ease-out, color 160ms ease-out;
+}
+.ps-nades b { font-weight: 700; letter-spacing: 0.02em; }
+/* The key cap, same treatment as the slot dots so the widget reads as one control. */
+.ps-nades span {
+  padding: 1px 4px;
+  border: 1px solid rgba(250, 250, 250, 0.35);
+  border-radius: 3px;
+  font-size: 10px;
+  opacity: 0.75;
+}
+.ps-nades.is-empty { color: #8a8a8a; opacity: 0.55; }
+.ps-nade-icon { display: block; }
 .ps-paint {
   position: absolute;
   inset: 0;
@@ -528,6 +570,26 @@ function heartSvg(): SVGElement {
     svg('path', {
       d: 'M12 21.05 10.6 19.8C5.5 15.2 2.1 12.1 2.1 8.35 2.1 5.28 4.5 2.9 7.55 2.9c1.72 0 3.38.8 4.45 2.07A5.9 5.9 0 0 1 16.45 2.9c3.05 0 5.45 2.38 5.45 5.45 0 3.75-3.4 6.85-8.5 11.46L12 21.05Z',
       fill: 'currentColor',
+    }),
+  ])
+}
+
+/**
+ * The pouch glyph: a round shell with a pin on top. Deliberately not a military frag silhouette
+ * — this is a paint grenade, so it is a ball with a ring, and it is filled with `currentColor`
+ * so the empty state greys out with the rest of the chip.
+ */
+function grenadeSvg(): SVGElement {
+  return svg('svg', { class: 'ps-nade-icon', viewBox: '0 0 24 24', width: '15', height: '15' }, [
+    svg('circle', { cx: '12', cy: '14.5', r: '6.4', fill: 'currentColor' }),
+    // Neck and lever: two strokes are enough to stop the shell reading as a plain dot.
+    svg('path', { d: 'M10.4 6.4h3.2v2.4h-3.2z', fill: 'currentColor' }),
+    svg('path', {
+      d: 'M14 7.4h1.5a2 2 0 0 1 2 2v1.1',
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': '1.6',
+      'stroke-linecap': 'round',
     }),
   ])
 }

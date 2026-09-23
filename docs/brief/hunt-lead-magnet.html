@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<title>The Hunt — бриф лид-магнита · Quadcode</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  @page { size: A4; margin: 0; }
+  :root {
+    --bg: #0B0D15; --bg2: #13131E; --bg3: #212233;
+    --text: #FFFFFF; --muted: #A6A5AC; --dim: #6E6D76; --line: #2A2B3A;
+    --peach: #FF9569; --coral: #DD344D;
+    --accent: linear-gradient(135deg, #FF9569, #DD344D);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); font-family: "Manrope", system-ui, sans-serif; font-size: 11pt; line-height: 1.45; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page { width: 210mm; height: 297mm; padding: 18mm 18mm 16mm; position: relative; overflow: hidden; page-break-after: always; background: var(--bg); }
+  .page:last-child { page-break-after: auto; }
+  .foot { position: absolute; left: 18mm; right: 18mm; bottom: 9mm; display: flex; justify-content: space-between; font-size: 8.5pt; color: var(--dim); letter-spacing: .04em; }
+  .foot b { color: var(--muted); font-weight: 600; }
+
+  .eyebrow { font-size: 8.5pt; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--peach); }
+  h1 { font-size: 36pt; line-height: 1; font-weight: 800; text-transform: uppercase; letter-spacing: -.02em; margin: 10px 0 18px; }
+  h2 { font-size: 20pt; line-height: 1.1; font-weight: 800; text-transform: uppercase; letter-spacing: -.01em; margin: 4px 0 14px; }
+  h3 { font-size: 12pt; font-weight: 700; margin: 14px 0 6px; color: var(--text); }
+  p { color: var(--muted); }
+  p.lead { color: var(--text); font-size: 13.5pt; line-height: 1.35; max-width: 150mm; }
+  strong { color: var(--text); font-weight: 700; }
+  em { font-style: normal; color: var(--text); }
+  .accent { background: var(--accent); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .rule { height: 1px; background: var(--line); margin: 16px 0; }
+  .rule.peach { background: linear-gradient(90deg, #FF9569, #DD344D 60%, transparent); height: 2px; }
+
+  .grid { display: grid; gap: 12px; }
+  .g2 { grid-template-columns: 1fr 1fr; }
+  .g3 { grid-template-columns: 1fr 1fr 1fr; }
+  .card { background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .card .k { font-size: 8pt; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); font-weight: 700; margin-bottom: 4px; }
+  .card .v { font-size: 11.5pt; color: var(--text); }
+  .card.hi { border-color: rgba(255,149,105,.4); background: #17141a; }
+  .big { font-size: 30pt; font-weight: 800; letter-spacing: -.03em; line-height: 1; color: var(--text); }
+  .big small { font-size: 11pt; color: var(--muted); font-weight: 500; margin-left: 6px; letter-spacing: 0; }
+
+  ul { list-style: none; }
+  ul li { position: relative; padding-left: 16px; color: var(--muted); margin: 4px 0; }
+  ul li::before { content: ""; position: absolute; left: 0; top: .55em; width: 6px; height: 6px; border-radius: 50%; background: var(--peach); }
+  ol { list-style: none; counter-reset: n; }
+  ol li { counter-increment: n; position: relative; padding-left: 30px; margin: 8px 0; color: var(--muted); }
+  ol li::before { content: counter(n, decimal-leading-zero); position: absolute; left: 0; top: 1px; font-size: 9.5pt; font-weight: 800; color: var(--peach); letter-spacing: .04em; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+  th { text-align: left; font-size: 8pt; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); font-weight: 700; padding: 0 10px 8px 0; border-bottom: 1px solid var(--line); }
+  td { padding: 8px 10px 8px 0; border-bottom: 1px solid var(--line); color: var(--muted); vertical-align: top; }
+  td:first-child { color: var(--text); font-weight: 600; }
+  td.num { font-variant-numeric: tabular-nums; color: var(--text); font-weight: 600; }
+
+  .quote { border-left: 2px solid var(--peach); padding: 6px 0 6px 14px; margin: 8px 0; color: var(--text); font-size: 12pt; line-height: 1.3; }
+  .quote small { display: block; color: var(--dim); font-size: 8.5pt; margin-top: 4px; letter-spacing: .04em; text-transform: uppercase; }
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 9.5pt; color: var(--peach); background: #1a1b26; padding: 2px 6px; border-radius: 4px; }
+
+  .funnel { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin: 10px 0 4px; }
+  .funnel .step { background: var(--bg2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 8px; min-height: 70px; }
+  .funnel .step .n { font-size: 8pt; color: var(--peach); font-weight: 800; letter-spacing: .1em; }
+  .funnel .step .t { font-size: 9.5pt; color: var(--text); margin-top: 3px; line-height: 1.2; font-weight: 600; }
+  .funnel .step .m { font-size: 8pt; color: var(--dim); margin-top: 3px; }
+
+  .timeline { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .timeline .t { background: var(--bg2); border-radius: 10px; padding: 12px 14px; border-top: 2px solid var(--peach); }
+  .timeline .t .s { font-size: 8pt; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); font-weight: 700; }
+  .timeline .t .d { font-size: 12.5pt; color: var(--text); font-weight: 700; margin: 2px 0 6px; }
+
+  .verdict { display: inline-block; font-size: 8.5pt; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; padding: 5px 10px; border-radius: 999px; }
+  .go { background: rgba(255,149,105,.16); color: var(--peach); border: 1px solid rgba(255,149,105,.4); }
+  .kill { background: rgba(221,52,77,.14); color: #ff7b8f; border: 1px solid rgba(221,52,77,.4); }
+
+  .cover { display: flex; flex-direction: column; justify-content: space-between; }
+  .cover .logo { height: 28px; }
+  .cover .meta { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; border-top: 1px solid var(--line); padding-top: 14px; }
+  .cover .meta .k { font-size: 8pt; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); font-weight: 700; }
+  .cover .meta .v { color: var(--text); margin-top: 3px; font-weight: 500; }
+  .room { position: absolute; right: 18mm; top: 150mm; width: 78mm; height: 78mm; border: 1px solid var(--line); border-radius: 14px; background: radial-gradient(120% 90% at 30% 20%, #1c1a25 0%, #0f1018 60%); overflow: hidden; }
+  .room i { position: absolute; display: block; border-radius: 4px; }
+  .room .floor { left: -20%; right: -20%; bottom: 0; height: 38%; background: linear-gradient(180deg, #171826, #0d0e16); border-radius: 0; }
+  .room .desk { left: 12%; bottom: 30%; width: 26%; height: 9%; background: #2a2b3a; }
+  .room .screen { left: 16%; bottom: 39%; width: 18%; height: 12%; background: #0b0d15; border: 1px solid #3b3d52; }
+  .room .cursor { left: 18%; bottom: 44%; width: 5%; height: 2px; background: var(--peach); }
+  .room .lamp { left: 50%; bottom: 40%; width: 2px; height: 34%; background: #3b3d52; }
+  .room .glow { left: 38%; bottom: 30%; width: 26%; height: 26%; border-radius: 50%; background: radial-gradient(circle, rgba(255,149,105,.55), rgba(255,149,105,0) 70%); }
+  .room .radio { left: 72%; bottom: 30%; width: 14%; height: 8%; background: #2a2b3a; }
+  .room .box { left: 44%; bottom: 31%; width: 12%; height: 12%; background: linear-gradient(135deg,#2a2b3a,#1a1b26); border: 1px solid rgba(255,149,105,.7); box-shadow: 0 0 22px rgba(255,149,105,.35); }
+  .room .beam { left: 47%; bottom: 43%; width: 6%; height: 40%; background: linear-gradient(180deg, rgba(255,149,105,0), rgba(255,149,105,.35)); clip-path: polygon(45% 0, 55% 0, 100% 100%, 0 100%); border-radius: 0; }
+  .room .poster { left: 66%; top: 12%; width: 22%; height: 16%; background: #1a1b26; border: 1px solid #3b3d52; }
+  .room .label { position: absolute; left: 12px; bottom: 10px; font-size: 8pt; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+</style>
+</head>
+<body>
+
+<!-- ============ 01 ОБЛОЖКА ============ -->
+<section class="page cover">
+  <div>
+    <img class="logo" src="quadcode-logo.png" alt="quadcode.ai" />
+    <div class="rule peach" style="margin-top:22px"></div>
+    <p class="eyebrow" style="margin-top:26px">Бриф лид-магнита · Тестовый раунд 1</p>
+    <h1>The Hunt<br/><span class="accent">Найди ящик.</span><br/>Забери кредиты.</h1>
+    <p class="lead">3D-комната-головоломка на 5 минут, собранная нашими агентами. Решил — открыл ящик — получил 500 кредитов на новый аккаунт. Регистрация — это награда, а не барьер.</p>
+  </div>
+  <div class="room" aria-hidden="true">
+    <i class="floor"></i><i class="poster"></i><i class="desk"></i><i class="screen"></i><i class="cursor"></i>
+    <i class="lamp"></i><i class="glow"></i><i class="radio"></i><i class="beam"></i><i class="box"></i>
+    <span class="label">мастерская · концепт-эскиз</span>
+  </div>
+  <div class="meta">
+    <div><div class="k">Владелец</div><div class="v">Growth / игровой лендинг</div></div>
+    <div><div class="k">Формат</div><div class="v">Отдельная страница · hunt.html</div></div>
+    <div><div class="k">Сборка</div><div class="v">3–4 дня · без бэкенда</div></div>
+    <div><div class="k">Приз</div><div class="v">500 кредитов · новые аккаунты</div></div>
+    <div><div class="k">Лимит</div><div class="v">Первые 500 нашедших · 14 дней</div></div>
+    <div><div class="k">Статус</div><div class="v"><span class="verdict go">Предложение</span></div></div>
+  </div>
+  <div class="foot"><span><b>Quadcode</b> · The Hunt</span><span>Внутренний · Маркетинг</span><span>01 / 07</span></div>
+</section>
+
+<!-- ============ 02 ТЕЗИС ============ -->
+<section class="page">
+  <p class="eyebrow">01 · Зачем это</p>
+  <h2>Люди потратят пять минут,<br/>чтобы найти. Не чтобы заполнить форму.</h2>
+  <p class="lead">Любой лид-магнит, который мы могли бы выпустить, сначала просит email и только потом даёт ценность. Здесь наоборот: сначала играешь, а награда — это и есть аккаунт.</p>
+
+  <div class="rule"></div>
+  <div class="grid g2">
+    <div class="card">
+      <div class="k">Против чего</div>
+      <div class="v">Магниты «скачай PDF / встань в вейтлист». Ноль напряжения, ноль контакта с продуктом. Человек ничего не узнаёт о Quadcode до того, как мы просим его адрес.</div>
+    </div>
+    <div class="card hi">
+      <div class="k">Наш угол</div>
+      <div class="v">Посетитель играет в комнате, которую построили наши агенты, на том же движке, на котором строят наши пользователи. К моменту регистрации он уже попробовал продукт.</div>
+    </div>
+  </div>
+
+  <h3>Чужие механики — и что берём из каждой</h3>
+  <table>
+    <thead><tr><th style="width:26%">Референс</th><th>Что работает</th><th style="width:34%">Что берём</th></tr></thead>
+    <tbody>
+      <tr><td>Фастфуд: «приз внутри обеда»</td><td>Приз спрятан в том, за чем ты и так пришёл; чтобы найти — надо съесть.</td><td>Приз внутри игры, а не в баннере.</td></tr>
+      <tr><td>McDonald's Monopoly</td><td>Простой вход, видимый прогресс, «покупка не обязательна» делает это легальным розыгрышем.</td><td>Бесплатный вход, аккаунт для игры не нужен.</td></tr>
+      <tr><td>Золотой билет Вонки</td><td>Дефицит (5 билетов) превращает обычный продукт в событие и сам собирает медиа.</td><td>Жёсткий лимит: первые 500, окно 14 дней.</td></tr>
+      <tr><td>Кейсы CS2 / паки Pokémon</td><td>Само вскрытие — контент: люди смотрят, как открывают другие.</td><td>3-секундный reveal, сделанный под запись экрана.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Что проверяет раунд 1</h3>
+  <div class="quote">Потратят ли посетители 3–7 минут в 3D-комнате на поиск спрятанного ящика, если ящик стоит 500 кредитов?<small>Единственный вопрос. Всё остальное — раунд 2.</small></div>
+  <p>Никакого рандома, редкостей, коллекций, бэкенда. Одна комната, одна загадка, один приз, один код. Если это не держит внимание — ничего сверху не спасёт.</p>
+  <div class="foot"><span><b>Quadcode</b> · The Hunt</span><span>Внутренний · Маркетинг</span><span>02 / 07</span></div>
+</section>
+
+<!-- ============ 03 ПУТЬ ИГРОКА ============ -->
+<section class="page">
+  <p class="eyebrow">02 · Что видит игрок</p>
+  <h2>Вошёл. Прочитал стену.<br/>Три действия. Открыл ящик.</h2>
+
+  <ol>
+    <li><strong>Лендинг.</strong> Заголовок: <em>«The agents hid something.»</em> Одна кнопка — <em>Enter the workshop</em>. Подстрочник: <em>5 minutes, no signup.</em></li>
+    <li><strong>Комната.</strong> Мастерская агентов 8×8 м от первого лица (WASD + мышь; на телефоне — тап для перемещения). Тёмная база, коралловый свет, наш шрифт на всём, что читается. Три рабочих места — по агенту: <strong>Cody</strong> — терминал с мигающим курсором; <strong>Lumi</strong> — лампа над мольбертом; <strong>Sonic</strong> — радио. Плюс 8–9 предметов-наполнителей, чтобы важные не бросались в глаза.</li>
+    <li><strong>Подсказка.</strong> Постер на стене: <em>«Code writes. Design lights. Sound speaks.»</em> Это и есть порядок: терминал → лампа → радио.</li>
+    <li><strong>Действия.</strong> Каждый верный клик заметно меняет комнату. Терминал: бежит код, низкий гул. Лампа: свет уходит из холодного в коралловый, тень вытягивается и указывает на пустую стену. Радио: заходит бас, стена вздрагивает и отъезжает. Неверный порядок — мягкий сброс, без «ERROR», просто намёк перечитать стену.</li>
+    <li><strong>Ящик.</strong> Кубический кейс в нише, коралловый шов по крышке. Клик — открыть.</li>
+    <li><strong>Reveal — 3 секунды.</strong> 0–1 с: щелчок, крышка приподнимается на 2 см, из щели луч. 1–2 с: крышка откидывается, камера наезжает, луч заливает комнату. 2–3 с: в луче буква за буквой печатается код. Без конфетти и эмодзи. Момент Вонки, а не слот-машина.</li>
+    <li><strong>Забрать.</strong> Карточка поверх сцены: <strong>500 credits are yours.</strong> Код, срок, лимит. Одна кнопка → <span class="mono">quadcode.ai/signup?promo=WORKSHOP-500</span>. Мелким: <em>New accounts only.</em></li>
+  </ol>
+
+  <div class="rule"></div>
+  <h3>Защита от отвала: никто не уходит злым</h3>
+  <p>Цель — не отсеять людей, а дать каждому ощущение, что он нашёл сам. Подсказки от агентов по таймеру, вплоть до прямого ответа:</p>
+  <div class="grid g3" style="margin-top:8px">
+    <div class="card"><div class="k">60 с без прогресса</div><div class="v">Cody: <em>«Have you read the wall?»</em></div></div>
+    <div class="card"><div class="k">150 с без прогресса</div><div class="v">Lumi: <em>«Try him first. Then the light.»</em></div></div>
+    <div class="card"><div class="k">240 с без прогресса</div><div class="v">Sonic: <em>«Terminal, lamp, radio. Go.»</em></div></div>
+  </div>
+  <div class="foot"><span><b>Quadcode</b> · The Hunt</span><span>Внутренний · Маркетинг</span><span>03 / 07</span></div>
+</section>
+
+<!-- ============ 04 ПРИЗ И ВОРОНКА ============ -->
+<section class="page">
+  <p class="eyebrow">03 · Приз, воронка, метрики</p>
+  <h2>Один код. Одно правило.<br/>Шесть событий.</h2>
+
+  <div class="grid g3">
+    <div class="card hi"><div class="k">Приз</div><div class="big">500<small>кредитов</small></div><p style="margin-top:6px">Хватает на первую игру. Начисляются на новый аккаунт через промо-поле при регистрации.</p></div>
+    <div class="card"><div class="k">Лимит</div><div class="big">500<small>нашедших</small></div><p style="margin-top:6px">Жёсткий потолок: максимум 250 000 кредитов. Дальше код мёртв.</p></div>
+    <div class="card"><div class="k">Окно</div><div class="big">14<small>дней</small></div><p style="margin-top:6px">Дефицит и естественный конец теста. Дата напечатана на карточке приза.</p></div>
+  </div>
+
+  <h3>Почему один статический код — правильно для теста</h3>
+  <ul>
+    <li>Он утечёт в Discord и Telegram за час. <strong>Хорошо.</strong> Утёкший код — бесплатная дистрибуция ровно той аудитории, что нам нужна.</li>
+    <li>Защита в правиле, а не в секрете: <strong>новый аккаунт + 500 погашений + дедлайн</strong>. Это весь бюджет, и он контролируется на регистрации.</li>
+    <li>Ноль бэкенда. Без подписей, серверных хуков, сервиса валидации. Дни, а не недели.</li>
+    <li>Если промо-поля при регистрации нет: поле email на карточке приза, ручное начисление за 48 ч. Конверсия хуже, но тест не блокируется.</li>
+  </ul>
+
+  <div class="rule"></div>
+  <h3>Воронка — шесть событий, без cookie-баннера</h3>
+  <div class="funnel">
+    <div class="step"><div class="n">01</div><div class="t">Открыл страницу</div><div class="m">охват</div></div>
+    <div class="step"><div class="n">02</div><div class="t">Вошёл в комнату</div><div class="m">интерес</div></div>
+    <div class="step"><div class="n">03</div><div class="t">Первый клик по предмету</div><div class="m">вовлечение</div></div>
+    <div class="step"><div class="n">04</div><div class="t">Собрал последовательность</div><div class="m">решил</div></div>
+    <div class="step"><div class="n">05</div><div class="t">Открыл ящик</div><div class="m">reveal</div></div>
+    <div class="step"><div class="n">06</div><div class="t">Нажал Claim</div><div class="m">намерение → лид</div></div>
+  </div>
+  <p style="font-size:10pt">Каждое событие с таймстемпом → медианное время до ящика. Регистрация с кодом читается из системы аккаунтов, не со страницы.</p>
+
+  <h3>Критерии успеха / стопа</h3>
+  <table>
+    <thead><tr><th>Метрика</th><th style="width:20%">Идём в раунд 2</th><th style="width:16%">Стоп</th><th>Почему такая цифра</th></tr></thead>
+    <tbody>
+      <tr><td>Вошёл → открыл ящик</td><td class="num">≥ 30 %</td><td class="num">&lt; 15 %</td><td>При подсказках вплоть до ответа меньше 15 % значит: люди просто не хотят тратить время. Редкости это не починят.</td></tr>
+      <tr><td>Медианное время до ящика</td><td class="num">3–7 мин</td><td class="num">—</td><td>Меньше 3 — слишком легко, нечего рассказать. Больше 7 — комната бесит, а не развлекает.</td></tr>
+      <tr><td>Нажал Claim → регистрация с кодом</td><td class="num">≥ 10 %</td><td class="num">&lt; 3 %</td><td>Кто только что выиграл и всё равно не регистрируется — не лид ни для какого магнита.</td></tr>
+    </tbody>
+  </table>
+  <div class="foot"><span><b>Quadcode</b> · The Hunt</span><span>Внутренний · Маркетинг</span><span>04 / 07</span></div>
+</section>
+
+<!-- ============ 05 КОПИРАЙТ ============ -->
+<section class="page">
+  <p class="eyebrow">04 · Тексты и дистрибуция</p>
+  <h2>Слова, которые<br/>разносятся сами.</h2>
+  <p>Весь копирайт на английском, как и сайт. Каждая строка ниже — финальный драфт, не заглушка.</p>
+
+  <h3>Hero страницы</h3>
+  <div class="quote">THE AGENTS HID SOMETHING.<br/><span style="font-size:11pt;color:var(--muted)">Three of them built this room. One of them left a box in it. Find it — it's yours.</span><small>Кнопка: Enter the workshop · 5 minutes, no signup</small></div>
+
+  <h3>Ниже первого экрана (для тех, кто скроллит, а не играет)</h3>
+  <div class="quote" style="font-size:11.5pt">What's in the box? 500 credits on a new Quadcode account. Enough to build your first game.</div>
+
+  <h3>Карточка приза</h3>
+  <div class="quote" style="font-size:11.5pt">500 credits are yours.<br/><span style="color:var(--muted)">Code <span class="mono">WORKSHOP-500</span> · valid until [date] · first 500 finders</span><small>Кнопка: Claim on quadcode.ai → · Мелкий текст: New accounts only.</small></div>
+
+  <h3>Заголовок для шаринга (OG / meta)</h3>
+  <div class="quote" style="font-size:11.5pt">Quadcode hid 500 credits in a 3D room. Can you find them?<small>Это фраза, которую вставляют в чат. Она тащит кампанию сама.</small></div>
+
+  <div class="rule"></div>
+  <h3>Дистрибуция — что куда</h3>
+  <table>
+    <thead><tr><th style="width:24%">Канал</th><th>Ассет</th><th style="width:30%">Хук</th></tr></thead>
+    <tbody>
+      <tr><td>X / Threads</td><td>8-секундная запись экрана с reveal (крышка, луч, печатающийся код). Без озвучки.</td><td>«Our agents hid 500 credits. Room's open.»</td></tr>
+      <tr><td>Discord / Telegram</td><td>Ссылка. Больше ничего. Пусть код утекает сам.</td><td>Комьюнити делает работу.</td></tr>
+      <tr><td>Игровой лендинг</td><td>Одна строка под hero, коралловый eyebrow: <em>Something's hidden →</em></td><td>Любопытство, не баннер.</td></tr>
+      <tr><td>Рассылка</td><td>Тема: <em>«We hid something.»</em> Тело: три предложения и ссылка.</td><td>Самое короткое письмо в нашей истории.</td></tr>
+      <tr><td>Креаторы / стримеры</td><td>Ссылка за 24 ч до публики. Без брифа и сценария — просто «кто первый найдёт».</td><td>Контент формата «распаковка», бесплатно.</td></tr>
+    </tbody>
+  </table>
+  <div class="foot"><span><b>Quadcode</b> · The Hunt</span><span>Внутренний · Маркетинг</span><span>05 / 07</span></div>
+</section>
+
+<!-- ============ 06 СКОУП ============ -->
+<section class="page">
+  <p class="eyebrow">05 · Объём сборки</p>
+  <h2>Три-четыре дня.<br/>Ничего нового под капотом.</h2>
+  <p>Всё ниже переиспользует то, что уже работает на игровом лендинге: стек Three.js, систему HUD, бренд-токены, регулятор качества для слабых телефонов.</p>
+
+  <table style="margin-top:8px;font-size:9.5pt">
+    <thead><tr><th style="width:20%">Часть</th><th>Что</th><th style="width:30%">Откуда</th></tr></thead>
+    <tbody>
+      <tr><td>Страница</td><td>Отдельная <span class="mono">hunt.html</span>. Без ссылки из навигации на старте — страницу находят по шаринг-ссылке.</td><td>Шаблон: <span class="mono">play.html</span></td></tr>
+      <tr><td>Сцена</td><td>Комната из примитивов, три эмиссивных ключевых объекта, один источник с тенью, 8–9 предметов-наполнителей.</td><td>Текущий стек Three.js, Environment, CameraRig</td></tr>
+      <tr><td>Логика</td><td>Стейт-машина: три шага, мягкий сброс при неверном порядке, таймер подсказок.</td><td>~150 строк, новое</td></tr>
+      <tr><td>Ящик и reveal</td><td>Анимация крышки, spotlight + bloom-луч, печатающийся код.</td><td>GradeShader, текущий bloom-проход</td></tr>
+      <tr><td>UI</td><td>Реплики агентов, карточка приза, кнопка Claim.</td><td>HUD.js, токены лендинга</td></tr>
+      <tr><td>Мобилка</td><td>Тап для перемещения, крупные хитбоксы, bloom в половинном разрешении.</td><td>Ветка coarse-pointer, QualityGovernor</td></tr>
+      <tr><td>Аналитика</td><td>Шесть событий с таймстемпами.</td><td>Vercel Analytics или Plausible</td></tr>
+    </tbody>
+  </table>
+
+  <div class="rule"></div>
+  <div class="grid g2">
+    <div class="card">
+      <div class="k">В скоупе</div>
+      <ul style="margin-top:4px">
+        <li>Одна комната, одна загадка, один приз</li>
+        <li>Подсказки по таймеру вплоть до ответа</li>
+        <li>Записываемый 3-секундный reveal</li>
+        <li>Статический промокод с лимитом на регистрации</li>
+        <li>Шесть событий аналитики</li>
+        <li>Официальные правила в один абзац</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="k">Явно за скоупом — раунд 2, если тест пройдёт</div>
+      <ul style="margin-top:4px">
+        <li>Случайные призы, уровни редкости</li>
+        <li>Коллекции, обмен</li>
+        <li>Серверный посев или валидация кодов</li>
+        <li>Призы внутри билдов самих пользователей</li>
+        <li>Кнопки шаринга, лидерборды</li>
+        <li>Несколько комнат</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 style="margin-top:10px">Таймлайн</h3>
+  <div class="timeline">
+    <div class="t"><div class="s">День 1–2</div><div class="d">Комната и загадка</div><p style="font-size:10pt">Сцена, три действия, сброс, подсказки. Проходится целиком на десктопе.</p></div>
+    <div class="t"><div class="s">День 3</div><div class="d">Reveal и Claim</div><p style="font-size:10pt">Анимация ящика, луч, печатающийся код, карточка приза. Мобильный проход.</p></div>
+    <div class="t"><div class="s">День 4</div><div class="d">Релиз</div><p style="font-size:10pt">Аналитика, текст правил, OG-картинка, ссылки креаторам за 24 ч до публики.</p></div>
+  </div>
+  <div class="foot"><span><b>Quadcode</b> · The Hunt</span><span>Внутренний · Маркетинг</span><span>06 / 07</span></div>
+</section>
+
+<!-- ============ 07 РИСКИ И РЕШЕНИЯ ============ -->
+<section class="page">
+  <p class="eyebrow">06 · Риски и что нужно</p>
+  <h2>Четыре риска. Два решения.<br/>И строим.</h2>
+
+  <table style="font-size:9.5pt">
+    <thead><tr><th style="width:22%">Риск</th><th>Реальность</th><th style="width:34%">Что делаем</th></tr></thead>
+    <tbody>
+      <tr><td>Юридика</td><td>Приз за действие — промоакция. Нужны бесплатный вход, опубликованные условия, дата окончания.</td><td>Бесплатный вход встроен. Правила в один абзац на странице. Юрист смотрит до запуска.</td></tr>
+      <tr><td>Код утечёт в первый день</td><td>Утечёт. В трёх комьюнити-серверах в течение часа.</td><td>Так и задумано. Бюджет держится лимитом погашений, не секретностью. Утечка = дистрибуция.</td></tr>
+      <tr><td>Телефоны</td><td>3D с тенью и bloom на среднем Android.</td><td>Примитивы, одна тень, bloom в половинном разрешении; QualityGovernor уже работает в наших играх.</td></tr>
+      <tr><td>Слишком легко / сложно</td><td>Сложность — догадка, пока не поиграют реальные люди.</td><td>Подсказки доходят до ответа на 240 с. Медиану до ящика подкручиваем после 200 сессий.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="rule"></div>
+  <h3>Решения, нужные до дня 1</h3>
+  <div class="grid g2">
+    <div class="card hi">
+      <div class="k">01 · Погашение</div>
+      <div class="v">Есть ли <strong>промо-поле при регистрации</strong>, которое может начислить 500 кредитов новому аккаунту с лимитом и сроком?</div>
+      <p style="margin-top:6px;font-size:10pt">Да → чистейшая воронка, ноль ручной работы.<br/>Нет → поле email на карточке приза, ручное начисление за 48 ч. Тест идёт в любом случае.</p>
+    </div>
+    <div class="card hi">
+      <div class="k">02 · Бюджет</div>
+      <div class="v">Подтвердить потолок: <strong>500 нашедших × 500 кредитов = 250 000 кредитов</strong> максимум за 14 дней.</div>
+      <p style="margin-top:6px;font-size:10pt">Меньший лимит — нормально: цифра печатается на карточке приза, так что это решение, а не переменная.</p>
+    </div>
+  </div>
+
+  <h3>Что потом</h3>
+  <div class="grid g2">
+    <div class="card"><div class="k"><span class="verdict go">Прошёл</span></div><p style="margin-top:6px;font-size:10pt">Раунд 2: призы внутри игр на лендинге, лестница редкости, где средний уровень — 24 ч доступа к моделям за пейволом (Veo, Seedance 2.5, аудио). Механика становится онбордингом.</p></div>
+    <div class="card"><div class="k"><span class="verdict kill">Не прошёл</span></div><p style="margin-top:6px;font-size:10pt">За две недели и четыре дня сборки узнаём, что «внимание за кредиты» не конвертит. Комната остаётся портфолио-кейсом, месяц на полную версию не тратим.</p></div>
+  </div>
+
+  <div class="rule peach" style="margin-top:14px;margin-bottom:10px"></div>
+  <p class="lead" style="font-size:12.5pt">Два «да» по решениям — и <span class="mono">hunt.html</span> стартует завтра.</p>
+  <div class="foot"><span><b>Quadcode</b> · The Hunt</span><span>Внутренний · Маркетинг</span><span>07 / 07</span></div>
+</section>
+
+</body>
+</html>

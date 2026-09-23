@@ -1,0 +1,97 @@
+# IDE Emulation — custom UI sample
+# Demonstrates show_subpanel / switch_subpanel for left, center, and right.
+
+project:
+  project_name: CustomUIPanels
+  root_path: /projects/CustomUIPanels
+  selected: src/app.js
+  files:
+    - src/app.js
+    - src/panels.js
+    - ui/planning.html
+    - ui/preview.html
+    - README.md
+
+topic: Custom UI panels
+initial_zoom: 0.82
+initial_vp_scale: 0.65
+camera_smoothness: 0.7
+background: gradient
+hide_right_panel: false
+
+main_panel:
+  custom:
+    id: app-preview-video
+    label: App Preview
+    video: /.temp/recordings/message_box_1782111045951.mp4
+    loop: true
+    muted: true
+    controls: true
+    fit: contain
+
+actions:
+  - at: 0
+    type: camera_pan_to
+    target: ide_full
+    duration: 600
+
+  - at: 500
+    type: show_subpanel
+    side: left
+    label: Planning
+    url: subpanels/planning_progress.html
+
+  - at: 1200
+    type: show_subpanel
+    side: center
+    label: Architecture
+    url: scenarios/subpanels/iframe_scale_white_box.html
+    scale: x0.9 # optional iframe content scale; numeric 0.9 also works
+
+  - at: 1900
+    type: show_subpanel
+    side: right
+    label: Structure
+    url: subpanels/game_structure.html
+
+  # Switch away and back to prove every custom tab remains addressable.
+  - at: 3000
+    type: switch_subpanel
+    side: center
+    label: Web browsers
+
+  - at: 3800
+    type: switch_subpanel
+    side: center
+    label: Architecture
+
+  - at: 4600
+    type: switch_subpanel
+    side: left
+    label: Chat
+
+  - at: 5400
+    type: switch_subpanel
+    side: left
+    label: Planning
+
+  - at: 6200
+    type: switch_subpanel
+    side: right
+    label: Files
+
+  - at: 7000
+    type: switch_subpanel
+    side: right
+    label: Structure
+
+  - at: 7800
+    type: switch_panel
+    panel_id: app-preview-video
+
+  - at: 8000
+    type: fit_to_video
+    panel_id: app-preview-video
+
+  - at: 9500
+    type: stop_record

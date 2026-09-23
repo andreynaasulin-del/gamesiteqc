@@ -5,3 +5,14 @@ dist
 archive
 .quadcodeai
 *.log
+# Heavy generation sources — the site ships only public/landing/web + posters.
+public/landing/explore/*.mp4
+public/landing/explore/*.png
+public/landing/gallery/*.mp4
+public/landing/gallery/*.png
+public/landing/hq
+videos
+meta
+docs
+motion_render_ide_video
+*.docx

@@ -262,6 +262,12 @@ function clamp01(v: number): number {
  * is not, because a path corner planned 0.22 m off the panel puts a 0.3 m capsule 0.08 m inside
  * it. Padding the obstacle instead of the whole world buys the missing clearance exactly where
  * it is needed and leaves the treads alone.
+ *
+ * Applied to the panel's THIN axis only — see `padThinAxis`. Growing the long axis too used to
+ * cost 0.24 m of doorway, which a 0.76 m sliding door cannot spare: with recast eroding 0.22 m
+ * off each side as well, every such doorway came out of the bake sealed, and the rooms behind
+ * them became navmesh islands no bot could reach. (Measured on `corridors.glb`: four of its five
+ * corridors were unreachable, so every bot in the map funnelled down the fifth.)
  */
 const LEAF_PAD = 0.12
 /** The strips only have to be tall enough that no storey leaves `walkableHeight` above them. */
@@ -305,6 +311,13 @@ export function buildOpenDoorObstacles(root: Object3D, doors: readonly DoorInfo[
   for (const door of doors) {
     if ((door.kind ?? 'door') !== 'door' || !door.clip || door.leafMeshes.length === 0) continue
 
+    // The aperture: where the leaves sit while CLOSED, which is by definition the hole in the
+    // wall. Whatever the open pose turns out to be, the obstacle is kept out of this box —
+    // otherwise the strip plugs the very doorway it is supposed to keep walkable.
+    const aperture = new Box3()
+    root.updateMatrixWorld(true)
+    for (const leaf of door.leafMeshes) aperture.union(_leafBox.setFromObject(leaf, true))
+
     const poses = capturePoses(root, door)
     const mixer = new AnimationMixer(root)
     const action = mixer.clipAction(door.clip)
@@ -320,12 +333,13 @@ export function buildOpenDoorObstacles(root: Object3D, doors: readonly DoorInfo[
       for (const leaf of door.leafMeshes) {
         const box = _leafBox.setFromObject(leaf, true)
         if (box.isEmpty()) continue
+        if (!clipToOutsideAperture(box, aperture)) continue
         // Stand it on the floor: the leaf reaches it anyway, and a strip that floats leaves a
         // walkable sliver underneath for recast to thread a path through.
         const floorY = Math.min(box.min.y, door.center.y - 1)
         box.min.y = floorY
         box.max.y = Math.max(box.max.y, floorY + MIN_LEAF_HEIGHT)
-        box.expandByVector(_leafSize.set(LEAF_PAD, 0, LEAF_PAD))
+        padThinAxis(box)
         box.getSize(_leafSize)
         box.getCenter(_leafCenter)
         const geometry = new BoxGeometry(_leafSize.x, _leafSize.y, _leafSize.z)
@@ -352,6 +366,52 @@ export function buildOpenDoorObstacles(root: Object3D, doors: readonly DoorInfo[
   mesh.matrixAutoUpdate = false
   mesh.updateMatrixWorld(true)
   return mesh
+}
+
+/** Minimum useful obstacle width; anything thinner than this recast would swallow anyway. */
+const MIN_OBSTACLE = 0.02
+
+/**
+ * Trim `box` back to the part of it that lies OUTSIDE `aperture`, along the door's width axis.
+ *
+ * A leaf that is open still overlaps its own doorway a little — a sliding panel never travels
+ * its full width, a hinged one sweeps past the jamb. That overlap is real geometry, but marking
+ * it as an obstacle costs the doorway clearance it cannot spare, and the room behind it falls
+ * out of the navmesh entirely. Bots have to be able to walk through an open door; a shoulder
+ * brushing the panel edge is a far cheaper bug than an unreachable third of the map.
+ *
+ * Returns false when nothing is left, i.e. the leaf is entirely inside the doorway (door
+ * furniture — handles, rails — that never leaves the frame).
+ */
+function clipToOutsideAperture(box: Box3, aperture: Box3): boolean {
+  if (aperture.isEmpty()) return true
+  // Width axis = the horizontal axis the doorway is wide along; the other one is its thickness.
+  aperture.getSize(_leafSize)
+  const axis = _leafSize.x >= _leafSize.z ? 'x' : 'z'
+  const lo = aperture.min[axis]
+  const hi = aperture.max[axis]
+  const centre = (box.min[axis] + box.max[axis]) * 0.5
+  if (centre <= lo) box.max[axis] = Math.min(box.max[axis], lo)
+  else if (centre >= hi) box.min[axis] = Math.max(box.min[axis], hi)
+  else return false
+  return box.max[axis] - box.min[axis] > MIN_OBSTACLE
+}
+
+/**
+ * Grow the box by `LEAF_PAD` on its thin horizontal axis only.
+ *
+ * The pad exists to keep a 0.3 m capsule off a panel FACE that recast only cleared 0.22 m for.
+ * Along the panel's length it buys nothing and costs doorway, so it is not applied there.
+ */
+function padThinAxis(box: Box3): void {
+  box.getSize(_leafSize)
+  if (_leafSize.x <= _leafSize.z) {
+    box.min.x -= LEAF_PAD
+    box.max.x += LEAF_PAD
+  } else {
+    box.min.z -= LEAF_PAD
+    box.max.z += LEAF_PAD
+  }
 }
 
 /** Local transforms of every node the clip writes to, so the closed pose can be put back. */

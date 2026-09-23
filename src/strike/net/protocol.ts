@@ -8,6 +8,7 @@ import { ARMOR } from '../config'
 import { PLAYER } from '../config'
 import type {
   DamageEvent,
+  GrenadeEvent,
   HitEvent,
   KillEvent,
   MapSelection,
@@ -20,6 +21,7 @@ import type {
 
 export type {
   DamageEvent,
+  GrenadeEvent,
   HitEvent,
   KillEvent,
   MapSelection,
@@ -133,6 +135,12 @@ export function botsFillIsSet(value: unknown): boolean {
 export const RPCS = {
   /** OTHERS — ShotEvent, receivers spawn a paint-only projectile */
   shot: 'shot',
+  /**
+   * OTHERS — GrenadeEvent. The same deal as `shot`: everyone simulates the same arc and the
+   * same burst from the same origin/velocity/fuse, and only the thrower's copy resolves damage
+   * (the host for its bots). Receivers get paint, sound and a shell to run away from.
+   */
+  grenade: 'grenade',
   /** HOST — HitEvent, the host validates then applies damage */
   hit: 'hit',
   /** ALL — DamageEvent, HUD feedback */
@@ -336,6 +344,7 @@ export interface TeamResult {
 /** Payload of every RPC, keyed by name — lets `rpc.register` stay type safe. */
 export interface RpcPayloads {
   shot: ShotEvent
+  grenade: GrenadeEvent
   hit: HitEvent
   damage: DamageEvent
   kill: KillEvent

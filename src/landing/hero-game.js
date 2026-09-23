@@ -154,7 +154,11 @@ export class GameCard {
       this.status.textContent = "";
       this.playButton.removeAttribute("aria-busy");
       clearTimeout(this.loadTimer);
+      // Focus has to land on the frame, not just once at creation: any click on the page since
+      // (carousel arrows, the Exit chip hover, the other card) took it, and without focus the
+      // frame's document never receives WASD — the exact "A does nothing" report.
       this.frame?.focus();
+      this.frame?.contentWindow?.focus();
     } else {
       this.status.textContent = "";
       this.playButton?.removeAttribute("aria-busy");

@@ -1,0 +1,267 @@
+/* ------------------------------------------------------------------
+   EXPLORE SHOWREEL — full-bleed video stage, copy bottom-left, tile rail
+   on the bottom edge. The video IS the section; nothing frames it.
+   ------------------------------------------------------------------ */
+.reel {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  height: min(100svh, 62vw);
+  min-height: 560px;
+  background: #000;
+  outline: none;
+}
+.reel-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  z-index: -2;
+}
+/* Legibility only where the copy sits: a left wash and a bottom wash.
+   The centre of the frame stays untouched — it is the product. */
+.reel-shade {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(5, 5, 9, 0.72) 0%, rgba(5, 5, 9, 0.28) 34%, transparent 58%),
+    linear-gradient(0deg, rgba(5, 5, 9, 0.9) 0%, rgba(5, 5, 9, 0.35) 22%, transparent 42%),
+    linear-gradient(180deg, rgba(5, 5, 9, 0.55) 0%, transparent 16%);
+}
+.reel-copy {
+  position: absolute;
+  left: max(48px, calc((100% - var(--max)) / 2));
+  bottom: 184px;
+  width: min(520px, calc(100% - 96px));
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+.reel-kicker {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.78);
+  margin-bottom: 6px;
+}
+.reel-title {
+  font-size: clamp(48px, 7vw, 104px);
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  color: #fff;
+}
+.reel-line {
+  font-size: 19px;
+  color: rgba(255, 255, 255, 0.82);
+  max-width: 34ch;
+  margin-bottom: 10px;
+}
+.reel.is-swap .reel-copy > :is(.eyebrow, .reel-title, .reel-line) {
+  animation: reel-rise 620ms var(--ease-out-expo) backwards;
+}
+.reel.is-swap .reel-title { animation-delay: 40ms; }
+.reel.is-swap .reel-line { animation-delay: 90ms; }
+@keyframes reel-rise {
+  from { opacity: 0; transform: translateY(14px); }
+}
+
+/* Tile rail */
+.reel-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 28px;
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  padding-inline: max(48px, calc((100% - var(--max)) / 2));
+}
+.reel-rail {
+  flex: 1;
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 4px;
+  margin: -4px;
+}
+.reel-rail::-webkit-scrollbar { display: none; }
+.reel-tile {
+  position: relative;
+  flex: 0 0 auto;
+  width: 164px;
+  aspect-ratio: 16 / 10;
+  padding: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #111;
+  outline: 1px solid rgba(255, 255, 255, 0.14);
+  outline-offset: -1px;
+  opacity: 0.62;
+  transition: opacity 200ms ease, transform 200ms var(--ease-out-quint), outline-color 200ms ease;
+}
+.reel-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.reel-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.7), transparent 60%);
+}
+.reel-tile__name {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 1;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+.reel-tile__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.16);
+  opacity: 0;
+}
+.reel-tile__bar i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left;
+  transform: scaleX(var(--p, 0));
+}
+.reel-tile[aria-pressed="true"] {
+  opacity: 1;
+  outline: 2px solid var(--peach);
+  outline-offset: -2px;
+}
+.reel-tile[aria-pressed="true"] .reel-tile__bar { opacity: 1; }
+@media (hover: hover) and (pointer: fine) {
+  .reel-tile:hover { opacity: 1; transform: translateY(-3px); }
+}
+.reel-toggle {
+  flex: 0 0 auto;
+  background: rgba(10, 10, 14, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.reel-toggle__pause {
+  width: 14px;
+  height: 16px;
+  border-inline: 4px solid currentColor;
+}
+.reel-toggle[aria-pressed="false"] .reel-toggle__play,
+.reel-toggle[aria-pressed="true"] .reel-toggle__pause { display: none; }
+
+/* ------------------------------------------------------------------
+   WORLDS — masonry carousel. Two rows; a column holds one tall card or
+   two short ones. Horizontal scroll with snap, arrows, mouse drag.
+   ------------------------------------------------------------------ */
+.worlds {
+  --row: clamp(170px, 19vw, 280px);
+  --gap: 12px;
+  padding-bottom: 80px;
+}
+.worlds-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+.worlds-head h2 { margin-top: 10px; }
+.worlds-nav { display: flex; gap: 10px; }
+.worlds-track {
+  display: flex;
+  gap: var(--gap);
+  height: calc(var(--row) * 2 + var(--gap));
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: max(48px, calc((100% - var(--max)) / 2));
+  padding-inline: max(48px, calc((100% - var(--max)) / 2));
+  scrollbar-width: none;
+  cursor: grab;
+  outline: none;
+}
+.worlds-track::-webkit-scrollbar { display: none; }
+.worlds-track.is-drag { cursor: grabbing; scroll-snap-type: none; user-select: none; }
+.worlds-track.is-drag video { pointer-events: none; }
+.worlds-col {
+  flex: 0 0 auto;
+  width: calc(var(--row) * var(--w));
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  scroll-snap-align: start;
+}
+.worlds-card {
+  position: relative;
+  margin: 0;
+  flex: var(--rows) 1 0;
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--raised);
+  outline: 1px solid var(--line);
+  outline-offset: -1px;
+}
+.worlds-card video {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  transition: transform 600ms var(--ease-out-quint);
+}
+.worlds-card figcaption {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: grid;
+  gap: 2px;
+  padding: 36px 16px 14px;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.72), transparent);
+  pointer-events: none;
+}
+.worlds-card figcaption span {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--peach);
+}
+.worlds-card figcaption strong {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+@media (hover: hover) and (pointer: fine) {
+  .worlds-card:hover video { transform: scale(1.035); }
+}
+
+@media (max-width: 767px) {
+  .reel { height: 92svh; min-height: 520px; }
+  .reel-copy { left: 20px; width: calc(100% - 40px); bottom: 150px; }
+  .reel-line { font-size: 16px; }
+  .reel-bottom { padding-inline: 20px; bottom: 20px; }
+  .reel-tile { width: 112px; border-radius: 10px; }
+  .reel-tile__name { font-size: 12px; left: 8px; bottom: 8px; }
+  .worlds { --row: 150px; }
+  .worlds-track { padding-inline: 20px; scroll-padding-inline: 20px; }
+  .worlds-nav { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reel.is-swap .reel-copy > * { animation: none; }
+}

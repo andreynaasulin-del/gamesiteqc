@@ -7,13 +7,13 @@ export const GRAPHICS_KEY = 'ps.graphics'
 export const GRAPHICS_PROFILES = {
   // The floor profile is aimed at an integrated GPU: half-resolution shadows (the map is lit by
   // one low sun, so its shadows are long and soft anyway) and a 1024x576 pixel budget.
-  low: { pixelRatio: 1, pixels: 1024 * 576, shadowSize: 512, sky: false,
+  low: { pixelRatio: 1, pixels: 1024 * 576, shadowSize: 512, shadowHz: 20, sky: false,
     post: { enabled: false, ao: { enabled: false }, bloom: { enabled: false }, grain: { enabled: false }, aa: 'fxaa' } },
-  medium: { pixelRatio: 1.25, pixels: 1920 * 1080, shadowSize: 2048, sky: true,
+  medium: { pixelRatio: 1.25, pixels: 1920 * 1080, shadowSize: 2048, shadowHz: 24, sky: true,
     post: { enabled: true, ao: { enabled: false }, bloom: { enabled: false }, grain: { enabled: false }, aa: 'fxaa' } },
-  high: { pixelRatio: 2, pixels: 2560 * 1440, shadowSize: 4096, sky: true,
+  high: { pixelRatio: 2, pixels: 2560 * 1440, shadowSize: 4096, shadowHz: 30, sky: true,
     post: { enabled: true, ao: { enabled: true }, bloom: { enabled: true }, grain: { enabled: true }, aa: 'smaa' } },
-} satisfies Record<GraphicsQuality, { pixelRatio: number; pixels: number; shadowSize: number; sky: boolean; post: PostPatch }>
+} satisfies Record<GraphicsQuality, { pixelRatio: number; pixels: number; shadowSize: number; shadowHz: number; sky: boolean; post: PostPatch }>
 
 export function readGraphicsPreference(): GraphicsPreference {
   try {

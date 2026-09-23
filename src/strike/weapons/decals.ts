@@ -25,14 +25,33 @@ export interface Decals {
     team: TeamId,
     seed: number,
   ): void
+  /**
+   * Drains the deferred build queue within this frame's budget. Must be called once a frame;
+   * without it a grenade's paint would queue up and never appear.
+   */
+  update(): void
   clear(): void
   readonly count: number
+  /** Splats requested but not yet projected. Zero in normal play, up to ~12 right after a burst. */
+  readonly pending: number
   dispose(): void
 }
 
 interface DecalSlot {
   mesh: Mesh
   used: boolean
+}
+
+/**
+ * One deferred splat. Pooled and reused: `point`/`normal` are the caller's scratch vectors, so
+ * they have to be copied, and a burst must not allocate 16 vectors to do it.
+ */
+interface DecalRequest {
+  target: (Object3D & { geometry: Mesh['geometry'] }) | null
+  point: Vector3
+  normal: Vector3
+  team: TeamId
+  seed: number
 }
 
 const forward = new Vector3(0, 0, 1)
@@ -60,6 +79,17 @@ export function createDecals(scene: Scene): Decals {
   })
   let cursor = 0
   let count = 0
+  /** Ring buffer of deferred requests: `queue[head .. head + queued)`, wrapping. */
+  const queue: DecalRequest[] = Array.from({ length: DECALS.maxQueued }, () => ({
+    target: null,
+    point: new Vector3(),
+    normal: new Vector3(),
+    team: 'a' as TeamId,
+    seed: 0,
+  }))
+  let head = 0
+  let queued = 0
+  let budget = DECALS.buildsPerFrame
 
   function makeMaterials(team: TeamId): MeshStandardMaterial[] {
     return alphaMaps.map((alphaMap) => new MeshStandardMaterial({
@@ -81,47 +111,103 @@ export function createDecals(scene: Scene): Decals {
     slot.used = false
   }
 
+  /** Projects one splat for real. The expensive half: a BVH shapecast plus a geometry build. */
+  function build(
+    target: Object3D & { geometry: Mesh['geometry'] },
+    point: Vector3,
+    normal: Vector3,
+    team: TeamId,
+    seed: number,
+  ): void {
+    const slot = slots[cursor]
+    cursor = (cursor + 1) % slots.length
+    if (slot.used) clearSlot(slot)
+    else count++
+
+    const random = seededRandom(seed)
+    const diameter = DECALS.minSize + (DECALS.maxSize - DECALS.minSize) * random()
+    projectorPoint.copy(point).addScaledVector(normal, DECALS.offset)
+    rotation.setFromUnitVectors(forward, normal)
+    orientation.setFromQuaternion(rotation)
+    orientation.z += random() * Math.PI * 2
+    size.set(diameter, diameter * (0.8 + random() * 0.35), diameter * 0.35)
+    target.updateWorldMatrix(true, false)
+    const geometry = createSurfaceDecal(target as Mesh, projectorPoint, orientation, size)
+
+    const followsTarget = target.parent !== null && target.parent !== scene
+    if (followsTarget) {
+      inverse.copy(target.matrixWorld).invert()
+      geometry.applyMatrix4(inverse)
+      target.add(slot.mesh)
+    } else {
+      scene.add(slot.mesh)
+    }
+    slot.mesh.geometry = geometry
+    slot.mesh.material = materials[team][seed & 3]
+    slot.mesh.visible = true
+    slot.mesh.position.set(0, 0, 0)
+    slot.mesh.rotation.set(0, 0, 0)
+    slot.mesh.scale.set(1, 1, 1)
+    slot.used = true
+  }
+
   return {
     add(target, point, normal, team, seed) {
-      const slot = slots[cursor]
-      cursor = (cursor + 1) % slots.length
-      if (slot.used) clearSlot(slot)
-      else count++
-
-      const random = seededRandom(seed)
-      const diameter = DECALS.minSize + (DECALS.maxSize - DECALS.minSize) * random()
-      projectorPoint.copy(point).addScaledVector(normal, DECALS.offset)
-      rotation.setFromUnitVectors(forward, normal)
-      orientation.setFromQuaternion(rotation)
-      orientation.z += random() * Math.PI * 2
-      size.set(diameter, diameter * (0.8 + random() * 0.35), diameter * 0.35)
-      target.updateWorldMatrix(true, false)
-      const geometry = createSurfaceDecal(target as Mesh, projectorPoint, orientation, size)
-
-      const followsTarget = target.parent !== null && target.parent !== scene
-      if (followsTarget) {
-        inverse.copy(target.matrixWorld).invert()
-        geometry.applyMatrix4(inverse)
-        target.add(slot.mesh)
-      } else {
-        scene.add(slot.mesh)
+      // Under budget: project it now, so a paintball still paints the wall it just hit.
+      if (budget > 0 && queued === 0) {
+        budget--
+        build(target, point, normal, team, seed)
+        return
       }
-      slot.mesh.geometry = geometry
-      slot.mesh.material = materials[team][seed & 3]
-      slot.mesh.visible = true
-      slot.mesh.position.set(0, 0, 0)
-      slot.mesh.rotation.set(0, 0, 0)
-      slot.mesh.scale.set(1, 1, 1)
-      slot.used = true
+      // Over budget: queue it. A full queue drops its oldest request — that paint belongs to an
+      // explosion the player has already stopped looking at.
+      if (queued === queue.length) {
+        head = (head + 1) % queue.length
+        queued--
+      }
+      const request = queue[(head + queued) % queue.length]
+      request.target = target
+      request.point.copy(point)
+      request.normal.copy(normal)
+      request.team = team
+      request.seed = seed
+      queued++
+    },
+    update() {
+      // Drain on THIS frame's remaining budget, then refill for the next one. Refilling first
+      // would let a burst frame build twice over: the shots spend the budget through `add`, and
+      // a fresh budget here would immediately spend it again.
+      while (queued > 0 && budget > 0) {
+        const request = queue[head]
+        head = (head + 1) % queue.length
+        queued--
+        budget--
+        const { target } = request
+        request.target = null
+        // The target can be gone by now (a dead player's avatar, a disposed map): a queued splat
+        // is never worth keeping a corpse alive for.
+        if (target && target.geometry?.attributes.position) {
+          build(target, request.point, request.normal, request.team, request.seed)
+        }
+      }
+      budget = DECALS.buildsPerFrame
     },
     clear() {
       for (const slot of slots) clearSlot(slot)
+      for (const request of queue) request.target = null
       count = 0
       cursor = 0
+      head = 0
+      queued = 0
+      budget = DECALS.buildsPerFrame
     },
     get count() { return count },
+    get pending() { return queued },
     dispose() {
       for (const slot of slots) clearSlot(slot)
+      // Queued requests hold a reference to map/avatar meshes; dropping them lets the session go.
+      for (const request of queue) request.target = null
+      queued = 0
       for (const teamMaterials of Object.values(materials)) {
         for (const material of teamMaterials) material.dispose()
       }

@@ -8,7 +8,13 @@
  * makes a map-editor house look like a photograph rather than a clay model.
  *
  * The sun's orthographic shadow frustum is small (a house, not the 30 m lawn) and re-centred on
- * the player every frame, snapped to shadow texels so the edges do not crawl while walking.
+ * the player, snapped to shadow texels so the edges do not crawl while walking.
+ *
+ * That re-centring — and the shadow map render that goes with it — runs on its own clock rather
+ * than every frame (`shadowHz`). Re-rendering 108 casters at 60 Hz cost 1.3 ms of CPU per frame
+ * on an M1, a fifth of the whole draw phase, to move shadows by a few centimetres. The two must
+ * stay on the *same* clock: the shader samples the depth map through the light's current matrix,
+ * so moving the light without re-rendering slides every shadow off its object.
  */
 import {
   Box3,
@@ -84,8 +90,11 @@ export interface EnvironmentRig {
   hemi: HemisphereLight
   /** The sky dome. Follows the camera; `null` if the sky could not be built. */
   sky: SkyMesh | null
-  /** Re-centre the shadow frustum. Call once per frame with the local player's feet position. */
-  update(playerPos: Vector3): void
+  /**
+   * Move the sky with the viewer, and re-centre the shadow frustum when its clock is due.
+   * Call once per frame with the local player's feet position and the frame's delta.
+   */
+  update(playerPos: Vector3, dt?: number): void
   dispose(): void
 }
 
@@ -115,6 +124,12 @@ export function createEnvironment(engine: Engine, bounds: Box3): EnvironmentRig 
 
   let sun = new DirectionalLight(SUN_COLOR, SUN_INTENSITY)
   sun.castShadow = true
+  // The depth map is redrawn from `update()` on the profile's clock, never by the renderer's own
+  // per-frame pass. Three honours this on the WebGPU backend too.
+  sun.shadow.autoUpdate = false
+  /** Seconds between shadow map refreshes, and the time owed toward the next one. */
+  let shadowInterval = 1 / GRAPHICS_PROFILES[engine.graphics.quality].shadowHz
+  let shadowClock = Number.POSITIVE_INFINITY
   const shadowSize = GRAPHICS_PROFILES[engine.graphics.quality].shadowSize
   sun.shadow.mapSize.set(shadowSize, shadowSize)
   // -0.0002 with a 4096 map over 32 m (7.8 mm texels): enough to kill acne on the big flat
@@ -223,10 +238,16 @@ export function createEnvironment(engine: Engine, bounds: Box3): EnvironmentRig 
       const previous = sun
       sun = previous.clone()
       sun.shadow.mapSize.set(profile.shadowSize, profile.shadowSize)
+      // `clone()` copies the flag, but say it anyway: a fresh light with a stale empty depth map
+      // and nobody to fill it is a map lit with no shadows at all.
+      sun.shadow.autoUpdate = false
       scene.remove(previous, previous.target)
       scene.add(sun, sun.target)
       previous.dispose()
     }
+    shadowInterval = 1 / profile.shadowHz
+    // The new light has never been drawn into: refresh on the very next frame, not in 50 ms.
+    shadowClock = Number.POSITIVE_INFINITY
     texel = (extent * 2) / profile.shadowSize
     if (sky) sky.visible = profile.sky
   }
@@ -236,8 +257,21 @@ export function createEnvironment(engine: Engine, bounds: Box3): EnvironmentRig 
   // black cube. One more bake after the first real frame is cheap insurance.
   let rebakeFrames = sky ? 2 : 0
 
-  function update(playerPos: Vector3) {
+  function update(playerPos: Vector3, dt = 0) {
     if (rebakeFrames > 0 && --rebakeFrames === 0) bakeEnvironment()
+
+    if (sky) {
+      // The dome is smaller than the far plane, so it travels with the viewer. Every frame:
+      // it is one matrix, and a dome that lags is a horizon that slides.
+      sky.position.copy(playerPos)
+      sky.updateMatrixWorld()
+    }
+
+    // Everything below moves the sun and re-renders its depth map, so it waits for the clock.
+    // A frame of lag on a shadow is invisible; 60 Hz of re-rendering every caster is not.
+    shadowClock += dt
+    if (shadowClock < shadowInterval) return
+    shadowClock = 0
 
     // Keep the frustum centre inside the map so the sun never leaves the world behind.
     _clamped.set(
@@ -260,12 +294,9 @@ export function createEnvironment(engine: Engine, bounds: Box3): EnvironmentRig 
     sun.position.copy(_snap).addScaledVector(SUN_DIR, sunDistance)
     sun.target.updateMatrixWorld()
     sun.updateMatrixWorld()
-
-    if (sky) {
-      // The dome is smaller than the far plane, so it travels with the viewer.
-      sky.position.copy(playerPos)
-      sky.updateMatrixWorld()
-    }
+    // `autoUpdate` is off (see the header), so this is the only thing that redraws the map into
+    // the depth buffer — and it is deliberately in the same branch as the move above.
+    sun.shadow.needsUpdate = true
   }
 
   update(_center)

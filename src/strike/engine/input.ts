@@ -7,6 +7,11 @@ export interface Input {
   /** E pressed this frame (edge): open/close the door or window under the crosshair. */
   readonly interact: boolean
   /**
+   * G pressed this frame (edge): throw a paint grenade. An edge, never a held state — a
+   * grenade is one press, one throw, whatever the finger does afterwards.
+   */
+  readonly grenade: boolean
+  /**
    * Weapon slot picked this frame (edge, 1 = rifle, 2 = pistol, 3 = knife), 0 = no change.
    * Keys 1/2/3 select directly; the wheel cycles through the slots.
    */
@@ -86,6 +91,7 @@ export function createInput(canvas: HTMLCanvasElement): Input {
   let fire = false
   let reload = false
   let interact = false
+  let grenade = false
   let weaponSlot = 0
   let heldSlot = 1
   let wheelAccumulator = 0
@@ -106,6 +112,15 @@ export function createInput(canvas: HTMLCanvasElement): Input {
     weaponSlot = slot
   }
 
+  // `code` is the physical key and works across layouts. Some embedded browsers emit it as
+  // empty/`Unidentified`, however, so letter `key` values get a safe fallback instead of losing
+  // just one direction (the reported A-key regression).
+  const inputCode = (event: KeyboardEvent): string => {
+    if (event.code && event.code !== 'Unidentified') return event.code
+    const key = event.key.toLowerCase()
+    return /^[a-z]$/.test(key) ? `Key${key.toUpperCase()}` : event.key
+  }
+
   const syncMove = () => {
     move.forward = Number(keys.has('KeyW') || keys.has('ArrowUp'))
       - Number(keys.has('KeyS') || keys.has('ArrowDown'))
@@ -119,13 +134,14 @@ export function createInput(canvas: HTMLCanvasElement): Input {
   const onKeyDown = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement | null
     if (target instanceof Element && target.matches('input, textarea, select, [contenteditable=true]')) return
-    if (event.code === 'KeyP' && !event.repeat) {
+    const code = inputCode(event)
+    if (code === 'KeyP' && !event.repeat) {
       event.preventDefault()
       if (isActive()) releasePointer()
       else if (pointerReleased) requestLock()
       return
     }
-    if (event.code === 'Escape' && isActive()) {
+    if (code === 'Escape' && isActive()) {
       pointerReleased = false
       onBlur()
       if (locked) {
@@ -143,19 +159,21 @@ export function createInput(canvas: HTMLCanvasElement): Input {
       return
     }
     if (!isActive()) return
-    if (/^(Space|ArrowUp|ArrowDown|ArrowLeft|ArrowRight|Tab)$/.test(event.code)) event.preventDefault()
-    if (event.code === 'KeyR' && !event.repeat) reload = true
-    if (event.code === 'KeyE' && !event.repeat) interact = true
+    if (/^(Space|ArrowUp|ArrowDown|ArrowLeft|ArrowRight|Tab)$/.test(code)) event.preventDefault()
+    if (code === 'KeyR' && !event.repeat) reload = true
+    if (code === 'KeyE' && !event.repeat) interact = true
+    if (code === 'KeyG' && !event.repeat) grenade = true
     if (!event.repeat) {
-      const digit = /^(?:Digit|Numpad)([1-9])$/.exec(event.code)
+      const digit = /^(?:Digit|Numpad)([1-9])$/.exec(code)
       if (digit) selectSlot(Number(digit[1]))
     }
-    keys.add(event.code)
+    keys.add(code)
     syncMove()
   }
   const onKeyUp = (event: KeyboardEvent) => {
-    if (isActive() && event.code === 'Tab') event.preventDefault()
-    keys.delete(event.code)
+    const code = inputCode(event)
+    if (isActive() && code === 'Tab') event.preventDefault()
+    keys.delete(code)
     syncMove()
   }
   const onMouseDown = (event: MouseEvent) => {
@@ -205,7 +223,7 @@ export function createInput(canvas: HTMLCanvasElement): Input {
   const onBlur = () => {
     keys.clear()
     fire = false
-    reload = interact = false
+    reload = interact = grenade = false
     weaponSlot = 0
     wheelAccumulator = 0
     dragging = false
@@ -261,8 +279,10 @@ export function createInput(canvas: HTMLCanvasElement): Input {
   const onCanvasClick = () => requestLock()
   const onContextMenu = (event: Event) => event.preventDefault()
 
-  document.addEventListener('keydown', onKeyDown)
-  document.addEventListener('keyup', onKeyUp)
+  // Capture phase wins over page/overlay listeners. The canvas is not always the event target in
+  // an embedded game, and a bubbling listener elsewhere must never swallow a movement key.
+  document.addEventListener('keydown', onKeyDown, true)
+  document.addEventListener('keyup', onKeyUp, true)
   document.addEventListener('mousemove', onMouseMove)
   document.addEventListener('pointerlockchange', onLock)
   document.addEventListener('pointerlockerror', failLock)
@@ -278,6 +298,7 @@ export function createInput(canvas: HTMLCanvasElement): Input {
     get fire() { return fire },
     get reload() { return reload },
     get interact() { return interact },
+    get grenade() { return grenade },
     get weaponSlot() { return weaponSlot },
     get scoreboard() { return keys.has('Tab') },
     get locked() { return locked },
@@ -308,6 +329,7 @@ export function createInput(canvas: HTMLCanvasElement): Input {
     update() {
       reload = false
       interact = false
+      grenade = false
       weaponSlot = 0
     },
     dispose() {
@@ -316,8 +338,8 @@ export function createInput(canvas: HTMLCanvasElement): Input {
       clearLockRequest()
       onBlur()
       errorCallbacks.clear()
-      document.removeEventListener('keydown', onKeyDown)
-      document.removeEventListener('keyup', onKeyUp)
+      document.removeEventListener('keydown', onKeyDown, true)
+      document.removeEventListener('keyup', onKeyUp, true)
       document.removeEventListener('mousemove', onMouseMove)
       document.removeEventListener('pointerlockchange', onLock)
       document.removeEventListener('pointerlockerror', failLock)

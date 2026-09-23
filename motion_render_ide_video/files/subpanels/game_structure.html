@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style id="__qc-fouc-guard">body{visibility:hidden!important}</style>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--qc-color-bg-primary, #0d0d14);
+      color: var(--qc-color-text-primary, #ccc);
+      font-family: var(--qc-var-font-primary, system-ui, sans-serif);
+      font-size: 12px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .root { padding: 6px 0; }
+
+    /* ── Search bar ── */
+    .search-wrap {
+      padding: 4px 8px 6px;
+      position: sticky; top: 0;
+      background: var(--qc-color-bg-primary, #0d0d14);
+      z-index: 1;
+    }
+    .search-input {
+      width: 100%;
+      height: 24px;
+      background: var(--qc-color-bg-secondary, rgba(255,255,255,0.05));
+      border: 1px solid var(--qc-color-bg-secondary2, rgba(255,255,255,0.08));
+      border-radius: 4px;
+      color: var(--qc-color-text-primary, #ccc);
+      font-size: 11px;
+      font-family: inherit;
+      padding: 0 8px;
+      outline: none;
+    }
+    .search-input::placeholder { color: var(--qc-color-text-dark, #444); }
+    .search-input:focus { border-color: var(--qc-color-primary, #5b8def); }
+
+    /* ── Tree node ── */
+    .node {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      height: 22px;
+      padding-right: 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      user-select: none;
+    }
+    .node:hover { background: var(--qc-color-bg-secondary, rgba(255,255,255,0.04)); }
+    .node--active { background: var(--qc-color-bg-secondary2, rgba(255,255,255,0.08)) !important; }
+    .node--active .node__label { color: var(--qc-color-text-light, #fff); }
+
+    .node__indent { flex-shrink: 0; }
+    .node__arrow {
+      width: 12px; height: 12px; min-width: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 8px;
+      color: var(--qc-color-text-info, #555);
+      transition: transform 0.15s;
+      flex-shrink: 0;
+    }
+    .node__arrow--open { transform: rotate(90deg); }
+    .node__arrow--leaf { opacity: 0; }
+
+    .node__icon {
+      width: 14px; height: 14px; min-width: 14px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .node__icon span {  /* .icon mask span */
+      width: 13px; height: 13px; min-width: 13px; min-height: 13px;
+    }
+
+    .node__label {
+      flex: 1;
+      font-size: 11px;
+      color: var(--qc-color-text-primary, #bbb);
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .node__label--folder { color: var(--qc-color-text-secondary, #999); }
+
+    .node__badge {
+      font-size: 9px;
+      padding: 1px 4px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.06);
+      color: var(--qc-color-text-info, #666);
+      flex-shrink: 0;
+    }
+    .node__badge--new    { background: rgba(91,141,239,0.15); color: var(--qc-color-primary, #6aabff); }
+    .node__badge--mod    { background: rgba(232,164,74,0.12); color: var(--qc-color-secondary, #e8a44a); }
+    .node__badge--done   { background: rgba(126,203,130,0.15); color: #7ecb82; }
+    .node__badge--pc     { background: rgba(201,123,232,0.15); color: #c97be8; }
+
+    /* ── Section separator ── */
+    .sep {
+      height: 1px;
+      background: var(--qc-color-bg-secondary, rgba(255,255,255,0.05));
+      margin: 4px 8px;
+    }
+    .sep-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--qc-color-text-dark, #444);
+      padding: 6px 8px 2px;
+    }
+  </style>
+</head>
+<body>
+<div class="root" id="root"></div>
+
+<script>
+  // Icon helper — uses phosphor set via /_ide/
+  function iconSpan(name, opacity) {
+    var s = document.createElement('span');
+    s.className = 'icon';
+    s.style.cssText = 'width:13px;height:13px;min-width:13px;min-height:13px;' +
+      '--icon:url(\'/_ide/images/icons/phosphor/' + name + '.png\');' +
+      'opacity:' + (opacity || 0.6) + ';';
+    return s;
+  }
+
+  // Map entity kind → phosphor icon name + accent color
+  var KIND_ICON = {
+    // categories
+    characters: 'users',
+    locations:  'map-pin',
+    items:      'backpack',
+    npcs:       'person',
+    quests:     'scroll',
+    systems:    'cpu',
+    // entity types
+    hero:       'shield-star',
+    enemy:      'skull',
+    boss:       'crown',
+    merchant:   'storefront',
+    guard:      'shield',
+    villager:   'person',
+    dungeon:    'compass',
+    town:       'house',
+    forest:     'tree',
+    cave:       'mountains',
+    arena:      'sword',
+    weapon:     'sword',
+    armor:      'shield',
+    potion:     'flask',
+    key:        'key',
+    relic:      'star',
+    misc:       'cube',
+    main_quest: 'scroll',
+    side_quest: 'note',
+    bounty:     'target',
+    combat:     'sword',
+    inventory:  'backpack',
+    dialog:     'chat-circle',
+    ai:         'robot',
+    save:       'floppy-disk',
+    weather:    'cloud',
+  };
+  var KIND_COLOR = {
+    characters: '#6aabff',
+    locations:  '#7ecb82',
+    items:      '#e8a44a',
+    npcs:       '#c97be8',
+    quests:     '#ff8c6b',
+    systems:    '#5bc8d4',
+  };
+
+  function entityIcon(kind, categoryColor) {
+    var name = KIND_ICON[kind] || 'circle';
+    var s = iconSpan(name, 0.75);
+    if (categoryColor) s.style.setProperty('--icon-tint', categoryColor);
+    return s;
+  }
+
+  // Game logic structure data
+  // type: 'category' | 'group' | 'entity'
+  var TREE = [
+    { id: 'characters', label: 'Characters', type: 'category', kind: 'characters', open: true, children: [
+      { id: 'heroes', label: 'Heroes', type: 'group', kind: 'characters', open: true, children: [
+        { id: 'warrior',  label: 'Warrior',       kind: 'hero',   badge: 'pc' },
+        { id: 'mage',     label: 'Mage',           kind: 'hero',   badge: 'pc' },
+        { id: 'rogue',    label: 'Rogue',          kind: 'hero',   badge: 'new' },
+      ]},
+      { id: 'enemies', label: 'Enemies', type: 'group', kind: 'characters', open: true, children: [
+        { id: 'goblin',   label: 'Goblin',         kind: 'enemy' },
+        { id: 'skeleton', label: 'Skeleton',       kind: 'enemy' },
+        { id: 'troll',    label: 'Cave Troll',     kind: 'enemy',  badge: 'new' },
+        { id: 'lich',     label: 'Lich King',      kind: 'boss',   badge: 'mod' },
+        { id: 'dragon',   label: 'Elder Dragon',   kind: 'boss' },
+      ]},
+    ]},
+    { id: 'locations', label: 'Locations', type: 'category', kind: 'locations', open: true, children: [
+      { id: 'ironhaven',  label: 'Ironhaven',      kind: 'town' },
+      { id: 'deepwood',   label: 'Deepwood',       kind: 'forest', badge: 'mod' },
+      { id: 'dungeon1',   label: 'Crypt of Malgath', kind: 'dungeon', open: false, children: [
+        { id: 'd1_entry',   label: 'Entry Hall',   kind: 'dungeon' },
+        { id: 'd1_pit',     label: 'The Pit',      kind: 'dungeon' },
+        { id: 'd1_throne',  label: 'Throne Room',  kind: 'dungeon', badge: 'new' },
+      ]},
+      { id: 'arena1',     label: 'Pit Arena',      kind: 'arena',  badge: 'new' },
+      { id: 'cave1',      label: 'Whispering Caverns', kind: 'cave' },
+    ]},
+    { id: 'items', label: 'Items', type: 'category', kind: 'items', open: false, children: [
+      { id: 'weapons', label: 'Weapons', type: 'group', kind: 'items', open: true, children: [
+        { id: 'iron_sword',  label: 'Iron Sword',    kind: 'weapon' },
+        { id: 'fire_staff',  label: 'Staff of Embers', kind: 'weapon', badge: 'new' },
+        { id: 'shadow_bow',  label: 'Shadow Bow',    kind: 'weapon', badge: 'new' },
+      ]},
+      { id: 'armor', label: 'Armor', type: 'group', kind: 'items', open: true, children: [
+        { id: 'chain_mail',  label: 'Chain Mail',    kind: 'armor' },
+        { id: 'mage_robes',  label: 'Mage Robes',    kind: 'armor' },
+      ]},
+      { id: 'consumables', label: 'Consumables', type: 'group', kind: 'items', open: true, children: [
+        { id: 'health_pot',  label: 'Health Potion', kind: 'potion' },
+        { id: 'mana_pot',    label: 'Mana Potion',   kind: 'potion' },
+        { id: 'key_crypts',  label: 'Crypt Key',     kind: 'key' },
+      ]},
+      { id: 'relics', label: 'Relics', type: 'group', kind: 'items', open: true, children: [
+        { id: 'amulet',      label: 'Amulet of Sight', kind: 'relic', badge: 'new' },
+        { id: 'ring_power',  label: 'Ring of Power',   kind: 'relic' },
+      ]},
+    ]},
+    { id: 'npcs', label: 'NPCs', type: 'category', kind: 'npcs', open: false, children: [
+      { id: 'blacksmith',  label: 'Borin the Smith',    kind: 'merchant' },
+      { id: 'alchemist',   label: 'Sera the Alchemist', kind: 'merchant', badge: 'mod' },
+      { id: 'innkeeper',   label: 'Old Gareth',         kind: 'villager' },
+      { id: 'captain',     label: 'Captain Voss',       kind: 'guard' },
+      { id: 'oracle',      label: 'The Oracle',         kind: 'villager', badge: 'new' },
+    ]},
+    { id: 'quests', label: 'Quests', type: 'category', kind: 'quests', open: false, children: [
+      { id: 'main_q', label: 'Main Story', type: 'group', kind: 'quests', open: true, children: [
+        { id: 'q_awakening', label: 'The Awakening',      kind: 'main_quest', badge: 'done' },
+        { id: 'q_crypts',    label: 'Descent into Crypts', kind: 'main_quest' },
+        { id: 'q_lich',      label: 'Slay the Lich King', kind: 'main_quest', badge: 'mod' },
+      ]},
+      { id: 'side_q', label: 'Side Quests', type: 'group', kind: 'quests', open: true, children: [
+        { id: 'q_lost_cat',  label: 'Lost Cargo',         kind: 'side_quest' },
+        { id: 'q_arena',     label: 'Arena Champion',     kind: 'bounty',     badge: 'new' },
+        { id: 'q_herbs',     label: 'Rare Herbs',         kind: 'side_quest' },
+      ]},
+    ]},
+    { id: 'systems', label: 'Systems', type: 'category', kind: 'systems', open: false, children: [
+      { id: 'sys_combat',    label: 'Combat',             kind: 'combat',    badge: 'mod' },
+      { id: 'sys_inventory', label: 'Inventory',          kind: 'inventory' },
+      { id: 'sys_dialog',    label: 'Dialog',             kind: 'dialog',    badge: 'new' },
+      { id: 'sys_ai',        label: 'AI Behavior',        kind: 'ai',        badge: 'mod' },
+      { id: 'sys_save',      label: 'Save / Load',        kind: 'save' },
+      { id: 'sys_weather',   label: 'Weather',            kind: 'weather',   badge: 'new' },
+    ]},
+  ];
+
+  var _activeId = 'warrior';
+
+  function buildNode(item, depth, categoryKind) {
+    var wrap = document.createElement('div');
+    var isExpandable = item.children && item.children.length > 0;
+    var catKind = item.type === 'category' ? item.kind : categoryKind;
+    var accentColor = KIND_COLOR[catKind] || null;
+
+    var row = document.createElement('div');
+    row.className = 'node' + (item.id === _activeId ? ' node--active' : '');
+    row.style.paddingLeft = (8 + depth * 14) + 'px';
+
+    // Arrow
+    var arrow = document.createElement('div');
+    arrow.className = 'node__arrow' +
+      (isExpandable ? (item.open ? ' node__arrow--open' : '') : ' node__arrow--leaf');
+    arrow.textContent = '▶';
+    row.appendChild(arrow);
+
+    // Icon
+    var iconWrap = document.createElement('div');
+    iconWrap.className = 'node__icon';
+    var iconEl = entityIcon(item.kind || (item.type === 'category' ? item.kind : null), accentColor);
+    if (accentColor && (item.type === 'category' || item.type === 'group')) {
+      iconEl.style.opacity = '0.8';
+    }
+    iconWrap.appendChild(iconEl);
+    row.appendChild(iconWrap);
+
+    // Label
+    var lbl = document.createElement('span');
+    lbl.className = 'node__label';
+    lbl.textContent = item.label;
+    if (item.type === 'category') {
+      lbl.style.color = accentColor || 'var(--qc-color-text-secondary, #999)';
+      lbl.style.fontWeight = '600';
+    } else if (item.type === 'group') {
+      lbl.style.color = 'var(--qc-color-text-secondary, #888)';
+    }
+    row.appendChild(lbl);
+
+    // Badge
+    if (item.badge) {
+      var bdg = document.createElement('span');
+      var badgeClass = 'node__badge';
+      if (item.badge === 'new')  badgeClass += ' node__badge--new';
+      else if (item.badge === 'mod') badgeClass += ' node__badge--mod';
+      else if (item.badge === 'done') badgeClass += ' node__badge--done';
+      else if (item.badge === 'pc')  badgeClass += ' node__badge--pc';
+      bdg.className = badgeClass;
+      bdg.textContent = item.badge;
+      row.appendChild(bdg);
+    }
+
+    wrap.appendChild(row);
+
+    // Children container
+    var childWrap = null;
+    if (isExpandable) {
+      childWrap = document.createElement('div');
+      if (!item.open) childWrap.style.display = 'none';
+      item.children.forEach(function(child) {
+        childWrap.appendChild(buildNode(child, depth + 1, catKind));
+      });
+      wrap.appendChild(childWrap);
+
+      row.addEventListener('click', function() {
+        item.open = !item.open;
+        arrow.className = 'node__arrow' + (item.open ? ' node__arrow--open' : '');
+        childWrap.style.display = item.open ? '' : 'none';
+      });
+    } else {
+      // Leaf click — set active
+      row.addEventListener('click', function() {
+        _activeId = item.id;
+        document.querySelectorAll('.node--active').forEach(function(n) { n.classList.remove('node--active'); });
+        row.classList.add('node--active');
+      });
+    }
+
+    return wrap;
+  }
+
+  function render(tree) {
+    var root = document.getElementById('root');
+    root.innerHTML = '';
+
+    // Search bar
+    var sw = document.createElement('div');
+    sw.className = 'search-wrap';
+    var inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'search-input';
+    inp.placeholder = 'Search game elements…';
+    sw.appendChild(inp);
+    root.appendChild(sw);
+
+    var treeWrap = document.createElement('div');
+    tree.forEach(function(item) { treeWrap.appendChild(buildNode(item, 0)); });
+    root.appendChild(treeWrap);
+  }
+
+  async function init() {
+    if (window.QC || await new Promise(r => {
+      var d = Date.now() + 1500, t = setInterval(() => { (window.QC || Date.now() > d) && (clearInterval(t), r(window.QC)); }, 20);
+    })) {
+      await QC.ready();
+      await QC.style.applyMainCss();
+    }
+    document.getElementById('__qc-fouc-guard')?.remove();
+    render(TREE);
+  }
+
+  init();
+</script>
+</body>
+</html>

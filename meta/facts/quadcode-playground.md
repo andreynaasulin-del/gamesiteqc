@@ -93,3 +93,46 @@ TYPE: fact
 - `asset-url.ts` reads `import.meta.env?.BASE_URL ?? '/'` so host/config modules import in Node.
 - Node cannot resolve the sources' extensionless imports: `tests/ts-resolve.mjs` hook +
   `register()` before dynamic imports. Tests: `tests/strike-teams.js` (6), suite 42/42, build ok.
+
+## Strike — Corridors was a two-lane shooting gallery (map layout overlay)
+- `corridors.glb` is FIVE parallel 2 m corridors (walls at x -3/-1/1/3), 14 m long, spawn rooms
+  across the full width at each end. C3 (x -1..1) runs spawn-to-spawn with no door, so the whole
+  match happened in one tube. Measured before: 100% of bot traffic in C3, 0% everywhere else.
+- Fixed in code, not in the GLB: `src/strike/map/layout.ts` is a per-map list of boxes applied to
+  the parsed scene graph in `loadMap()` *before* `buildStaticColliders` — the one seam where
+  movement collider, bullet collider, bounds, navmesh source and static batching all pick new
+  geometry up for free. `loadMap({ layout })`; `?layout=off` in the map viewer = raw GLB.
+- Cover is only ever `COVER_LOW` 1.15 (crouch eye 1.0, stand eye 1.6 — safe crouched, shoot over
+  it standing, and above the 1.09 m the controller can mount so it never becomes a platform) or
+  `COVER_FULL` 2.05 (under the map's 2.1 m walls). Climbables rise in `STEP_RISE` 0.5 m, under
+  `NAVMESH.walkableClimb` 0.52, so recast connects them and bots use the route too.
+- THREE ENGINE BUGS found doing this, none corridors-specific:
+  1. `doors.ts` — `LEAF_PAD` 0.12 was applied to both horizontal axes of the open-door navmesh
+     obstacle. On this map's 0.76 m doorways that sealed them, so every room behind a door was an
+     unreachable island. Now `clipToOutsideAperture()` + `padThinAxis()`.
+  2. `spawns.ts` — `MAX_ZONE_RISE` 0.6: the zone sampler was finding the new roof and spawning
+     teams on it. A zone is one storey; a sample far above its authored floor is a different one.
+  3. `LayoutSpec.levels` → merged into `MapData.levels` by `map-loader.ts`. `createRoamTargetSet`
+     probes once per declared level, so bots ignored the roof entirely (0%) until it was listed.
+- Measured after (1376 samples, 12 bots, 2 min): C1 12.4 / C2 22.5 / C3 24.9 / C4 17.0 / C5 18.6
+  / roof 4.7. All five long sightlines broken, spawn-to-spawn broken. 141 draw calls and 60 fps
+  unchanged, load 555→565 ms.
+- `tests/strike-map-layout.js` (5) pins the door bug and the level declaration; verified to fail
+  when the fix is reverted. Suite now 88/88, build ok.
+
+## Paint Strike — paint grenades + bot nerf (W6)
+- `src/strike/weapons/grenades.ts` — bounce sim + burst. Same authority model as `projectiles.ts`:
+  every client simulates the arc from the `GrenadeEvent` (origin/velocity/fuse/seed), only the
+  thrower's copy passes `resolveDamage: true` and reports hits.
+- One hit per victim per burst, `shotId = "<grenade id>:<victim id>"` — the host's replay guard
+  remembers a shot id ONCE, so a shared id would silently drop every victim after the first.
+- Damage is priced host-side in `blastDamage()` (net/host.ts) from `hit.falloff` (0..1, clamped);
+  `hit.weapon === 'grenade'` deliberately has no `WEAPONS` row. `GRENADE.maxDamage` is below
+  `PLAYER.maxHp` — a grenade opens a fight, markers finish it. No friendly fire, LOS-gated.
+- Tuning in `config.ts` → `GRENADE`. Thrown with **G** (`input.grenade` edge), 2 per life,
+  refilled in `revive()`. HUD chip: `.ps-nades` + `hud.setGrenades()`.
+- `BOTS` cut 20 % in the same wave (senses ×0.8, delays ×1.25, burst 4→3);
+  `tests/strike-grenades.js` pins the baseline ratios so a later "small tweak" that hands the
+  difficulty back fails a test. Suite: 101/101 via `node --test tests/*.js`.
+- Bun is NOT installed: the colocated `src/**/*.test.ts` (bun:test) files cannot be run here.
+  Runnable tests live in `tests/*.js` and load TS through `tests/ts-resolve.mjs`.

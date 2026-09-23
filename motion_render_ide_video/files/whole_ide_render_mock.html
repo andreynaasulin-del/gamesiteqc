@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<!-- This is page to be shown in Quadcode.ai ide workspace - SKILL COMPLIANCE REQUIRED
+Any edits must follow skill with alias dev_create_meta_ui_to_work_with_project_data_using_html_js -->
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/png" href="/_ide/images/icons/phosphor/camera.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,300;1,400&family=Lexend:wght@400;700&display=swap" rel="stylesheet">
+  <style id="__qc-fouc-guard">body{visibility:hidden!important}</style>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--qc-color-bg-primary, #0d0d14);
+      color: var(--qc-color-text-primary, #ccc);
+      font-family: var(--qc-var-font-primary, 'Suisse Intl', system-ui, sans-serif);
+      font-size: 13px;
+      overflow: hidden;
+    }
+
+    /* Full-page background canvas layer */
+    #bg-canvas-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Page content above bg */
+    #page-root {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    /* Demo controls overlay */
+    #demo-controls {
+      position: fixed;
+      top: 10px;
+      right: 12px;
+      z-index: 100;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .demo-btn {
+      height: 26px;
+      padding: 0 12px;
+      border: none;
+      border-radius: 5px;
+      font-size: 11px;
+      font-family: inherit;
+      cursor: pointer;
+      background: rgba(128,128,128,0.18);
+      color: var(--qc-color-text-primary, #ccc);
+      transition: opacity 0.15s;
+    }
+    .demo-btn:hover { opacity: 0.8; }
+    /* "Play" button — mirrors .button-large-secondary in main.css. Was using
+       --qc-color-primary as bg + hardcoded #fff text; in the current
+       electric_dark scheme PRIMARY is #FFFFFF, so it rendered white-on-white.
+       Now matches the same secondary treatment used for send buttons in
+       message_box.js: neutral dropdown-hover bg → turns white w/ dark text
+       on hover. */
+    .demo-btn.primary {
+      background: var(--qc-color-dropdown-hover, #565764);
+      color: var(--qc-color-text-primary, #bdbdbd);
+    }
+    .demo-btn.primary:hover {
+      opacity: 1;
+      background: var(--qc-color-emphase, #fff);
+      color: var(--qc-color-gray-1, #111);
+    }
+    .viewport-resize-controls {
+      display: flex;
+      gap: 2px;
+      padding: 2px;
+      border-radius: 6px;
+      background: rgba(128,128,128,0.12);
+    }
+    .viewport-resize-btn {
+      width: 22px;
+      height: 22px;
+      padding: 0;
+      border: none;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--qc-color-text-primary, #ccc);
+      background: transparent;
+    }
+    .viewport-resize-btn:hover { background: rgba(128,128,128,0.24); }
+    .viewport-resize-btn:focus-visible { outline: 2px solid var(--qc-color-primary, #3b82f6); outline-offset: 1px; }
+    .viewport-resize-btn .icon { width: 14px; height: 14px; background-color: currentColor; }
+
+    /* ── Recording mode — hide all demo chrome except the record/stop button ── */
+    body.is-recording #demo-controls .demo-btn:not(#btnRecord) {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    body.is-recording #demo-controls .demo-btn:not(#btnRecord) { display: none; }
+    /* Hide camera 3D panel and bottom panels (viewport, bg) during recording */
+    body.is-recording .ctrl3d,
+    body.is-recording #btmPanels {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+  </style>
+
+  <!-- gui_parts helpers -->
+  <script src="gui_parts/window_wrapper.js"></script>
+  <script src="gui_parts/header.js"></script>
+  <script src="gui_parts/status_bar.js"></script>
+  <script src="gui_parts/folder_tree.js"></script>
+  <script src="gui_parts/fake_console.js"></script>
+  <script src="gui_parts/tab_holder.js"></script>
+  <script src="gui_parts/browser.js"></script>
+  <script src="gui_parts/action_row.js"></script>
+  <script src="gui_parts/subagents_list_panel.js"></script>
+  <script src="gui_parts/message_log.js"></script>
+  <script src="gui_parts/message_box.js"></script>
+  <script src="gui_parts/main_panel.js"></script>
+  <script src="bg_animations.js"></script>
+  <script src="gui_parts/background.js"></script>
+  <script src="gui_parts/camera.js"></script>
+  <!-- js-yaml: loaded early so window.jsyaml is available when scenario parses -->
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  <script src="gui_parts/scenario.js"></script>
+  <script src="gui_parts/labels.js"></script>
+  <script src="gui_parts/custom_window.js"></script>
+  <script src="gui_parts/viewer_video.js"></script>
+  <script src="gui_parts/viewer_image.js"></script>
+  <script src="gui_parts/viewer_sound.js"></script>
+  <script src="gui_parts/recording.js"></script>
+</head>
+<body>
+
+<div id="bg-canvas-layer"></div>
+<div id="page-root"></div>
+
+<!-- Demo controls -->
+<div id="demo-controls">
+  <div class="viewport-resize-controls" role="group" aria-label="Resize IDE window">
+    <button class="viewport-resize-btn" id="btnWidthDecrease" title="Decrease IDE width" aria-label="Decrease IDE width">
+      <span class="icon" style="--icon:url('/_ide/images/icons/phosphor/arrows-in-line-horizontal.png')"></span>
+    </button>
+    <button class="viewport-resize-btn" id="btnWidthIncrease" title="Increase IDE width" aria-label="Increase IDE width">
+      <span class="icon" style="--icon:url('/_ide/images/icons/phosphor/arrows-out-line-horizontal.png')"></span>
+    </button>
+    <button class="viewport-resize-btn" id="btnHeightDecrease" title="Decrease IDE height" aria-label="Decrease IDE height">
+      <span class="icon" style="--icon:url('/_ide/images/icons/phosphor/arrows-in-line-vertical.png')"></span>
+    </button>
+    <button class="viewport-resize-btn" id="btnHeightIncrease" title="Increase IDE height" aria-label="Increase IDE height">
+      <span class="icon" style="--icon:url('/_ide/images/icons/phosphor/arrows-out-line-vertical.png')"></span>
+    </button>
+  </div>
+  <div class="viewport-resize-controls" role="group" aria-label="Resize side panels">
+    <button class="viewport-resize-btn" id="btnLeftPanelDecrease" title="Narrower left panel" aria-label="Narrower left panel">
+      <span class="icon" style="--icon:url('/_ide/images/icons/phosphor/arrow-line-right.png')"></span>
+    </button>
+    <button class="viewport-resize-btn" id="btnLeftPanelIncrease" title="Wider left panel" aria-label="Wider left panel">
+      <span class="icon" style="--icon:url('/_ide/images/icons/phosphor/arrow-line-left.png')"></span>
+    </button>
+    <button class="viewport-resize-btn" id="btnRightPanelDecrease" title="Narrower right panel" aria-label="Narrower right panel">
+      <span class="icon" style="--icon:url('/_ide/images/icons/phosphor/arrow-line-left.png')"></span>
+    </button>
+    <button class="viewport-resize-btn" id="btnRightPanelIncrease" title="Wider right panel" aria-label="Wider right panel">
+      <span class="icon" style="--icon:url('/_ide/images/icons/phosphor/arrow-line-right.png')"></span>
+    </button>
+  </div>
+  <button class="demo-btn" id="btnFitVideo">⬛ Fit to video</button>
+  <button class="demo-btn primary" id="btnRun">▶ Play</button>
+</div>
+
+<script src="../../resources/web/quadcode-ide.js"></script>
+<script>
+async function init() {
+  await QC.ready();
+  await QC.style.applyMainCss();
+  document.getElementById('__qc-fouc-guard').remove();
+
+  // ── 1. Window wrapper ────────────────────────────────────────────────────
+  const win = new IDEWindowWrapper({ nativeW: 1440, nativeH: 900, scale: 0.5 });
+  window.win = win;  // expose for debugging / console access
+  // Camera is created after SCENARIO is defined so we can pass initialZoom from it
+  // (see below — camera created after SCENARIO const)
+
+  // ── Background panel ─────────────────────────────────────────────────────
+  const bgLayer = document.getElementById('bg-canvas-layer');
+  const bg = new IDEBackground({ container: bgLayer });
+  bg.mount(document.body);
+  window.bg = bg;
+  win.mount(document.getElementById('page-root'));
+
+  // ── 2. Header ────────────────────────────────────────────────────────────
+  const header = new IDEHeader({ projectName: 'NeuralForge' });
+  header.mountInto(win);
+
+  // ── 3. Status bar ────────────────────────────────────────────────────────
+  const statusBar = new IDEStatusBar({
+    status:  'Ready',
+    branch:  'main',
+    lang:    'Python 3.11',
+    project: 'NeuralForge',
+    model:   'claude-sonnet-4-5',
+  });
+  statusBar.mountInto(win);
+
+  // ── 4. Main panel (genui layout: left tabs | center+bottom | right tabs) ──
+  // NOTE: setScenario() is called after SCENARIO is defined below, but
+  // BEFORE mountInto() — so browser tabs read initial state from scenario.
+  const mainPanel = new IDEMainPanel();
+  window.mainPanel = mainPanel;  // expose for debugging / console access
+
+  // ── Wire header panel toggle buttons → mainPanel ─────────────────────────
+  header.onPanelToggle((panelKey, visible) => {
+    if (panelKey === 'left')    visible ? mainPanel.showLeftPanel()    : mainPanel.hideLeftPanel();
+    if (panelKey === 'central') visible ? mainPanel.showCentralPanel() : mainPanel.hideCentralPanel();
+    if (panelKey === 'bottom')  visible ? mainPanel.showBottomPanel()  : mainPanel.hideBottomPanel();
+    if (panelKey === 'right')   visible ? mainPanel.showRightPanel()   : mainPanel.hideRightPanel();
+  });
+
+  // ── Demo controls ────────────────────────────────────────────────────────
+  const RESIZE_STEP = 80; // native IDE px; equals 40px at 0.5× viewport scale
+  const resizeIde = (deltaW, deltaH) => {
+    const size = win.adjustNativeSize(deltaW, deltaH);
+    console.log('[IDE] Manual viewport resize:', size);
+  };
+  document.getElementById('btnWidthDecrease').addEventListener('click', () => resizeIde(-RESIZE_STEP, 0));
+  document.getElementById('btnWidthIncrease').addEventListener('click', () => resizeIde( RESIZE_STEP, 0));
+  document.getElementById('btnHeightDecrease').addEventListener('click', () => resizeIde(0, -RESIZE_STEP));
+  document.getElementById('btnHeightIncrease').addEventListener('click', () => resizeIde(0,  RESIZE_STEP));
+  // Side panel width controls — percentage-point steps on the splitter layout
+  const PANEL_STEP = 2; // % per click
+  const resizePanel = (side, delta) => {
+    const width = mainPanel.adjustSidePanelWidth(side, delta);
+    console.log('[IDE] Manual panel resize:', side, width + '%');
+  };
+  document.getElementById('btnLeftPanelDecrease').addEventListener('click',  () => resizePanel('left',  -PANEL_STEP));
+  document.getElementById('btnLeftPanelIncrease').addEventListener('click',  () => resizePanel('left',   PANEL_STEP));
+  document.getElementById('btnRightPanelDecrease').addEventListener('click', () => resizePanel('right', -PANEL_STEP));
+  document.getElementById('btnRightPanelIncrease').addEventListener('click', () => resizePanel('right',  PANEL_STEP));
+
+  // ── Load YAML scenario via bridge ToolReadFile ────────────────────────────
+  // Default: scenarios/test_scenario.yaml (relative to this HTML file)
+  // Override: ?scenario=path/to/other.yaml  (project-root relative path)
+  const params       = new URLSearchParams(location.search);
+  // ── Resolve scenario path ─────────────────────────────────────────────────
+  // This HTML is served at: /skills/motion_render_ide_video/files/whole_ide_render_mock.html
+  // Default fallback:        scenarios/test_scenario.yaml  (relative to this file)
+  //
+  // ?scenario= accepts:
+  //   scenarios/my.yaml              → relative to this HTML (same folder)
+  //   /skills/.../scenarios/my.yaml  → absolute from server root
+  //   skills/.../scenarios/my.yaml   → absolute from server root (no leading slash)
+  const scenarioParam = params.get('scenario');
+  let scenarioPath;
+  if (!scenarioParam) {
+    scenarioPath = 'scenarios/test_scenario.yaml';
+  } else if (scenarioParam.startsWith('/')) {
+    // Absolute server path — use as-is
+    scenarioPath = scenarioParam;
+  } else if (scenarioParam.includes('/') && !scenarioParam.startsWith('scenarios/')) {
+    // Looks like a project-root relative path — prefix with /
+    scenarioPath = '/' + scenarioParam;
+  } else {
+    // Relative to this HTML file
+    scenarioPath = scenarioParam;
+  }
+
+  let SCENARIO;
+  try {
+    // Wait for js-yaml CDN to be ready (loaded via <script> tag above)
+    await new Promise(resolve => {
+      if (window.jsyaml) return resolve();
+      const t0 = Date.now();
+      const poll = setInterval(() => {
+        if (window.jsyaml || Date.now() - t0 > 4000) { clearInterval(poll); resolve(); }
+      }, 30);
+    });
+    const resp = await fetch(scenarioPath);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status} loading ${scenarioPath}`);
+    const yamlText = await resp.text();
+    SCENARIO = IDEScenario.parseYaml(yamlText);
+    // Coerce top-level numeric fields (js-yaml returns correct types, but guard anyway)
+    ['initial_zoom', 'initial_vp_scale', 'camera_smoothness', 'camera_move_duration'].forEach(k => {
+      if (SCENARIO[k] !== undefined) SCENARIO[k] = parseFloat(SCENARIO[k]) || SCENARIO[k];
+    });
+    window._SCENARIO = SCENARIO;  // debug exposure
+    console.log('[IDE] Loaded scenario:', scenarioPath, 'actions:', SCENARIO.actions && SCENARIO.actions.length);
+    document.title = scenarioPath.split('/').pop();
+  } catch (e) {
+    console.error('[IDE] Failed to load scenario:', scenarioPath, e);
+    SCENARIO = { project: 'Demo', actions: [], browser_tabs: [] };
+  }
+
+  document.getElementById('btnFitVideo').addEventListener('click', async () => {
+    // Custom center panels are separate from nested browser tabs, so resolve
+    // the active video panel through mainPanel rather than browser state alone.
+    const panelId = mainPanel.getActiveVideoPanelId() || 'br-video';
+    const fallbackPanelId = panelId === 'br-video' ? null : 'br-video';
+
+    try {
+      const r = await mainPanel.fitToVideo(panelId, win);
+      console.log('[IDE] Fit result:', r);
+      return;
+    } catch (e) {
+      // Preserve legacy behavior when a non-video center panel is selected.
+      if (fallbackPanelId && mainPanel.getVideoSrc(fallbackPanelId)) {
+        try {
+          const r = await mainPanel.fitToVideo(fallbackPanelId, win);
+          console.log('[IDE] Fit result (fallback):', r);
+          return;
+        } catch (fallbackError) {
+          console.warn('[IDE] Fit to video fallback failed:', fallbackError.message);
+        }
+      }
+
+      // Empty browser tabs may still fit to the first scheduled video.
+      const firstSwitchVideo = (SCENARIO.actions || []).find(a => a.type === 'switch_video' && a.video);
+      if (!firstSwitchVideo) {
+        console.warn('[IDE] Fit to video: no video in active panel or scenario');
+        return;
+      }
+      try {
+        const r = await resize_ide_to_perfect_fit(
+          firstSwitchVideo.video,
+          mainPanel.getVisiblePanels(),
+          win
+        );
+        console.log('[IDE] Fit result (scenario fallback):', r);
+      } catch (fallbackError) {
+        console.warn('[IDE] resize_ide_to_perfect_fit failed:', fallbackError.message);
+      }
+    }
+  });
+
+  // ── Apply background from SCENARIO (before mount is fine) ────────────────
+  if (SCENARIO.background) bg.apply(SCENARIO.background);
+
+  // ── Status bar identity from SCENARIO ────────────────────────────────────
+  // `model_name` is the one model string the whole demo shows (combo, badge,
+  // status bar); `lang` replaces the Python default for non-Python projects.
+  if (SCENARIO.model_name) statusBar.setModel(SCENARIO.model_name);
+  if (SCENARIO.lang)       statusBar.setLang(SCENARIO.lang);
+  if (SCENARIO.branch)     statusBar.setBranch(SCENARIO.branch);
+  {
+    const pName = SCENARIO.project && (SCENARIO.project.project_name || SCENARIO.project);
+    if (typeof pName === 'string' && pName) { header.setProject(pName); statusBar.setProject(pName); }
+  }
+
+  // ── Mount main panel now that SCENARIO is loaded ──────────────────────────
+  mainPanel.setScenario(SCENARIO);
+  mainPanel.mountInto(win);
+
+  // ── Apply panel visibility AFTER mount (DOM must exist) ──────────────────
+  if (SCENARIO.hide_right_panel) mainPanel.hideRightPanel();
+
+  // ── Labels overlay ───────────────────────────────────────────────────────
+  const labels = new IDELabels();
+  labels.mount(document.body, win);
+  window.labels = labels;
+
+  // ── Camera — reads initial_zoom / initial_vp_scale / smoothness from SCENARIO
+  const camera = new IDECamera(win, {
+    initialZoom:    SCENARIO.initial_zoom    || 1,
+    initialVpScale: SCENARIO.initial_vp_scale !== undefined ? SCENARIO.initial_vp_scale : 1.0,
+    smoothness:     SCENARIO.camera_smoothness    !== undefined ? SCENARIO.camera_smoothness    : 0.6,
+    moveDuration:   SCENARIO.camera_move_duration !== undefined ? SCENARIO.camera_move_duration : undefined,
+    moveEasing:     SCENARIO.camera_move_easing   || undefined,
+  });
+  camera.mount(document.body);
+  window.camera = camera;
+
+  // ── Shared scenario factory — used by both Play and Record ──────────────────
+  let activeScenario = null;
+  const btnRun = document.getElementById('btnRun');
+
+  function _resetPlayBtn() {
+    btnRun.textContent = '▶ Play';
+    btnRun.classList.remove('primary');
+    btnRun.style.background = '';
+    activeScenario = null;
+  }
+
+  function _makeScenario(extraOpts) {
+    return new IDEScenario(SCENARIO, Object.assign({
+      header,
+      mainPanel,
+      statusBar,
+      camera,
+      labels,
+      bg,
+      win,
+      onDone: () => {
+        _resetPlayBtn();
+        if (extraOpts && extraOpts.onDone) extraOpts.onDone();
+      },
+    }, extraOpts || {}));
+  }
+
+  // ── PLAY / STOP button ───────────────────────────────────────────────────────
+  btnRun.addEventListener('click', () => {
+    if (activeScenario && activeScenario.isRunning) {
+      activeScenario.stop();
+      _resetPlayBtn();
+      return;
+    }
+    activeScenario = _makeScenario();
+    btnRun.textContent = '⏹ Stop';
+    btnRun.style.background = 'rgba(200,60,60,0.7)';
+    activeScenario.play();
+  });
+
+  // ── RECORD button ────────────────────────────────────────────────────────────
+  const rec = new IDERecording({
+    camera,
+    getScenario: (opts) => {
+      if (activeScenario && activeScenario.isRunning) {
+        activeScenario.stop();
+        _resetPlayBtn();
+      }
+      activeScenario = _makeScenario(opts);
+      return activeScenario;
+    },
+    onRecordStart: () => {
+      btnRun.style.display = 'none';
+    },
+    onRecordStop: (filename) => {
+      btnRun.style.display = '';
+      console.log('[IDE] Recording saved to:', filename);
+    },
+  });
+  rec.mount(document.getElementById('demo-controls'));
+}
+
+init();
+</script>
+</body>
+</html>

@@ -251,13 +251,13 @@ export const settings = {
    */
   dummies: {
     enabled: true,
-    /** How many are standing at any moment. */
-    count: 6,
+    /** How many are standing at any moment. Ten keeps a cast useful after the first hit. */
+    count: 10,
     /** Metres from the caster they stand inside, and no nearer than. */
-    radius: 13.0,
-    minRadius: 5.0,
+    radius: 15.0,
+    minRadius: 4.5,
     /** Metres between two of them, so they never share a patch of floor. */
-    separation: 2.4,
+    separation: 2.2,
     /** Normalised height, metres — the same treatment the player's rig gets.
      *  Read once, when the model is loaded. */
     height: 1.78,

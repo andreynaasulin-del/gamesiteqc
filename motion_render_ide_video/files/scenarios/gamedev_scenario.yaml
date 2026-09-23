@@ -1,0 +1,267 @@
+# IDE Emulation — gamedev_scenario.yaml
+# Tests: show_subpanel (left + right), switch_subpanel, custom panel iframes
+
+project:
+  project_name: DungeonCraft
+  root_path: /projects/DungeonCraft
+  selected: game/player/PlayerController.cpp
+  files:
+    - engine/core/ecs.cpp
+    - engine/core/event_bus.h
+    - engine/renderer/render_pipeline.cpp
+    - engine/renderer/shader_manager.h
+    - engine/physics/rigidbody.cpp
+    - game/player/PlayerController.cpp
+    - game/player/Inventory.cpp
+    - game/player/SkillTree.h
+    - game/ai/BehaviorTree.cpp
+    - game/world/DungeonGen.cpp
+    - game/world/BiomeGenerator.cpp
+    - game/ui/HUD.cpp
+    - assets/config/game_config.yaml
+    - assets/config/balance.json
+    - README.md
+
+topic: DungeonCraft — AI-assisted game dev
+
+initial_zoom: 0.9
+initial_vp_scale: 0.6
+camera_smoothness: 0.7
+background: gradient
+hide_right_panel: false
+
+actions:
+
+  # ── 0s: gentle float ─────────────────────────────────────────────────────────
+  - at: 0
+    type: camera_move
+    zoom: 0.88
+    rx: 2
+    ry: -4
+    duration: 800
+
+  - at: "+400"
+    type: camera_anim
+    name: float
+
+  # ── 1s: load Planning Progress into LEFT panel ───────────────────────────────
+  - at: 1000
+    type: show_subpanel
+    side: left
+    label: "Planning"
+    url: subpanels/planning_progress.html
+
+  # ── 2s: pan to left panel so we see it load ──────────────────────────────────
+  - at: 2000
+    type: camera_pan_to
+    target: chat_log
+    margin: 0.05
+    duration: 800
+
+  # ── 3s: load Game Structure into RIGHT panel ─────────────────────────────────
+  - at: 3000
+    type: show_subpanel
+    side: right
+    label: "Game Structure"
+    url: subpanels/game_structure.html
+
+  # ── 4.5s: zoom out to see full IDE with both panels active ───────────────────
+  - at: 4500
+    type: camera_pan_to
+    target: ide_full
+    duration: 900
+
+  # ── 5.5s: user asks about dungeon generation ─────────────────────────────────
+  - at: 5500
+    type: send_message
+    text: Implement room-connection algorithm in DungeonGen
+
+  # ── 7s: agent answers ────────────────────────────────────────────────────────
+  - at: 7000
+    type: begin_answer
+    tool_calls:
+      - ToolVectorSearch  dungeon room connection algorithm
+      - ToolReadFile  game/world/DungeonGen.cpp
+      - ToolTextFileEdit  game/world/DungeonGen.cpp
+    answer: Done! Added a minimum spanning tree room-connector using Prim's algorithm in DungeonGen.cpp. Rooms are now guaranteed connected with optional extra loops for exploration variety.
+
+  - at: "+600"
+    type: select_file
+    path: game/world/DungeonGen.cpp
+
+  # ── 10s: switch LEFT panel back to Chat (built-in tab) ───────────────────────
+  # This tests that switching away from Planning works fine
+  - at: 10000
+    type: switch_subpanel
+    side: left
+    label: "Chat"
+
+  # ── 11s: switch LEFT panel back to Planning ──────────────────────────────────
+  - at: 11000
+    type: switch_subpanel
+    side: left
+    label: "Planning"
+
+  # ── 12s: pan to right panel (Game Structure tree) ────────────────────────────
+  - at: 12000
+    type: camera_pan_to
+    target: ide_full
+    duration: 700
+
+  # ── 13s: switch RIGHT panel to Game Structure (already active, idempotent test)
+  - at: 13000
+    type: switch_subpanel
+    side: right
+    label: "Game Structure"
+
+  # ── 14s: second user message ─────────────────────────────────────────────────
+  - at: 14000
+    type: send_message
+    text: Balance enemy AI aggression in BehaviorTree
+
+  # ── 15.5s: agent answers ─────────────────────────────────────────────────────
+  - at: 15500
+    type: begin_answer
+    tool_calls:
+      - ToolReadFile  game/ai/BehaviorTree.cpp
+      - ToolReadFile  assets/config/balance.json
+      - ToolTextFileEdit  assets/config/balance.json
+    answer: Updated balance.json — aggression_scale reduced to 0.65 and patrol_radius increased to 12. Enemies now feel challenging but not overwhelming.
+
+  - at: "+500"
+    type: select_file
+    path: assets/config/balance.json
+
+  # ── 19s: switch RIGHT panel back to Files ────────────────────────────────────
+  - at: 19000
+    type: switch_subpanel
+    side: right
+    label: "Files"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ── 20s: SUBAGENT CALLS demo ─────────────────────────────────────────────
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  # PO calls Cody to add boss encounter logic
+  - at: 20000
+    type: add_subagent_call
+    id: call_cody
+    caller: po
+    target: dev
+    role: Developer
+    name: Cody
+    question: "Implement boss encounter trigger in DungeonGen.cpp"
+    status: executing
+    switch_tab: true
+
+  # Cody starts searching code
+  - at: 20800
+    type: update_subagent_call
+    id: call_cody
+    tool: "ToolVectorSearch  boss encounter"
+
+  - at: 21500
+    type: update_subagent_call
+    id: call_cody
+    tool: "ToolReadFile  game/world/DungeonGen.cpp"
+
+  # PO also calls Lumi in parallel for assets
+  - at: 22000
+    type: add_subagent_call
+    id: call_lumi
+    caller: po
+    target: designer
+    role: Designer
+    name: Lumi
+    question: "Generate boss room environment concept art"
+    status: executing
+    switch_tab: false
+
+  - at: 22600
+    type: update_subagent_call
+    id: call_cody
+    tool: "ToolTextFileEdit  game/world/DungeonGen.cpp"
+
+  - at: 22800
+    type: update_subagent_call
+    id: call_lumi
+    tool: "Generating dungeon boss room…"
+
+  # Cody finishes first
+  - at: 23800
+    type: update_subagent_call
+    id: call_cody
+    finish: true
+    elapsed: "0:03s"
+
+  # Lumi finishes shortly after
+  - at: 24600
+    type: update_subagent_call
+    id: call_lumi
+    finish: true
+    elapsed: "0:02s"
+
+  # Dev now calls Sonic for sound — and it will fail (missing asset pack)
+  - at: 25200
+    type: add_subagent_call
+    id: call_sonic
+    caller: dev
+    target: creative
+    role: Sound Designer
+    name: Sonic
+    question: "Add boss battle music trigger on room entry"
+    status: executing
+    switch_tab: false
+
+  - at: 25900
+    type: update_subagent_call
+    id: call_sonic
+    tool: "ToolReadFile  assets/audio/boss_music.ogg"
+
+  - at: 26600
+    type: update_subagent_call
+    id: call_sonic
+    fail: true
+
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - at: 27000
+    type: add_console_log
+    kind: tool
+    text: "ToolVectorSearch  \"dungeon boss encounter logic\""
+  - at: 27600
+    type: add_console_log
+    kind: out
+    text: "Found 6 matches across 4 files"
+  - at: 28000
+    type: add_console_log
+    kind: tool
+    text: "ToolReadFile  game/world/DungeonGen.cpp"
+  - at: 28500
+    type: add_console_log
+    kind: out
+    text: "Read 487 lines"
+  - at: 29300
+    type: add_console_log
+    kind: tool
+    text: "ToolTextFileEdit  game/world/DungeonGen.cpp"
+  - at: 30000
+    type: add_console_log
+    kind: ok
+    text: "Done — 3 edits applied"
+
+  # ── zoom out, drift ───────────────────────────────────────────────────────
+  - at: 27000
+    type: camera_move
+    zoom: 0.78
+    rx: 5
+    ry: -7
+    duration: 1000
+
+  - at: "+600"
+    type: camera_anim
+    name: drift
+
+  # ── stop ──────────────────────────────────────────────────────────────────
+  - at: 31000
+    type: stop_record

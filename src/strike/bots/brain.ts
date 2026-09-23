@@ -308,7 +308,9 @@ export function createBotBrain(opts: BotBrainOptions): BotBrain {
   function pickRoamGoal(now: number, spawns: SpawnLayout): void {
     // A few tries: the blacklist is small and short-lived, so a clear point turns up fast.
     for (let attempt = 0; attempt < ROAM_BLACKLIST_TRIES; attempt++) {
-      const buildingTarget = opts.roamTargets?.sample(opts.rng)
+      // Passing our own position is what lets the pool keep a bot on an upper storey instead
+      // of sending it back down the stairs the moment it arrives.
+      const buildingTarget = opts.roamTargets?.sample(opts.rng, opts.self.position)
       if (!buildingTarget) break
       if (isBlacklisted(buildingTarget, now)) continue
       setNavigationGoal(buildingTarget)
@@ -593,7 +595,7 @@ export function createBotBrain(opts: BotBrainOptions): BotBrain {
       if (perceptionAccumulator >= perceptionPeriod) {
         perceptionAccumulator %= perceptionPeriod
         perceive(now, enemies)
-        if (visibleTarget || opts.roamTargets?.isIndoor(opts.self.position)) {
+        if (visibleTarget || opts.roamTargets?.isInPlay(opts.self.position)) {
           outdoorWithoutEnemySince = -Infinity
           returningIndoors = false
         } else if (outdoorWithoutEnemySince === -Infinity) {

@@ -12,8 +12,11 @@
     <link rel="icon" href="landing/quadcode-mark.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="src/landing/tokens.css" />
     <link rel="stylesheet" href="src/landing/landing.css" />
+    <link rel="stylesheet" href="src/landing/pricing.css" />
     <link rel="stylesheet" href="src/landing/screen-fit.css" />
     <link rel="stylesheet" href="src/landing/atmosphere.css" />
+    <link rel="stylesheet" href="src/landing/bold.css" />
+    <link rel="stylesheet" href="src/landing/showreel.css" />
     <script type="module" src="src/landing/app.js"></script>
   </head>
   <body>
@@ -24,7 +27,7 @@
           src="landing/quadcode-logo.png"
           alt="quadcode.ai"
           width="168"
-          height="38"
+          height="40"
       /></a>
       <nav id="main-nav" class="main-nav" aria-label="Main navigation">
         <a class="nav-active" href="#games" aria-current="page"
@@ -125,6 +128,19 @@
         </p>
       </section>
 
+      <div class="kinetic" aria-hidden="true">
+        <div class="kinetic__track">
+          <span>Type a prompt</span><span>Get a game</span><span>Play it now</span><span>Ship it tonight</span>
+          <span>Type a prompt</span><span>Get a game</span><span>Play it now</span><span>Ship it tonight</span>
+        </div>
+      </div>
+      <div class="kinetic kinetic--ghost" aria-hidden="true">
+        <div class="kinetic__track">
+          <span>3D</span><span>Multiplayer</span><span>Physics</span><span>Bots</span><span>Sound</span><span>Art</span>
+          <span>3D</span><span>Multiplayer</span><span>Physics</span><span>Bots</span><span>Sound</span><span>Art</span>
+        </div>
+      </div>
+
       <section
         class="capabilities"
         id="capabilities"
@@ -196,64 +212,71 @@
         </div>
       </section>
 
+      <!-- EXPLORE. Full-bleed showreel: one video at a time, a tile rail
+           along the bottom edge (Higgsfield pattern). Logic and data in
+           src/landing/showreel.js; styles in src/landing/showreel.css. -->
       <section
-        class="explore section"
+        class="reel"
         id="explore"
         aria-labelledby="explore-title"
+        data-reel
+        role="region"
+        aria-roledescription="carousel"
+        tabindex="0"
       >
-        <div class="container">
-          <h2 class="center" id="explore-title">Explore Quadcode games</h2>
-          <div
-            class="gallery"
-            data-reveal
-            role="region"
-            aria-roledescription="carousel"
-            aria-label="Quadcode game previews"
-            tabindex="0"
+        <link rel="prefetch" as="video" data-reel-next href="" />
+        <video
+          class="reel-video"
+          data-reel-video
+          muted
+          playsinline
+          preload="metadata"
+          aria-hidden="true"
+        ></video>
+        <div class="reel-shade" aria-hidden="true"></div>
+        <div class="reel-copy">
+          <h2 id="explore-title" class="reel-kicker">
+            Made with <span class="accent">Quadcode</span>
+          </h2>
+          <p class="eyebrow" data-reel-genre></p>
+          <p class="reel-title" data-reel-title></p>
+          <p class="reel-line" data-reel-line></p>
+          <a class="button" href="https://quadcode.ai/#download"
+            ><span class="spark" aria-hidden="true"></span>Build a game like
+            this</a
           >
-            <div class="gallery-viewport frame">
-              <img
-                id="gallery-image"
-                src="landing/dragon.webp"
-                alt="Dragon flying over a volcanic landscape"
-                width="1280"
-                height="720"
-                loading="lazy"
-              />
-              <div class="gallery-shade"></div>
-              <button
-                class="icon-button gallery-prev"
-                aria-label="Previous game preview"
-              >
-                <i data-icon="arrow-left"></i></button
-              ><button
-                class="icon-button gallery-next"
-                aria-label="Next game preview"
-              >
-                <i data-icon="arrow-right"></i>
-              </button>
-              <div class="gallery-info">
-                <div>
-                  <span class="eyebrow" id="gallery-category"
-                    >3D · Flying game</span
-                  >
-                  <h3 id="gallery-title">Dragon Flight</h3>
-                </div>
-                <button class="button secondary small" id="open-preview">
-                  <i data-icon="play"></i>Watch preview
-                </button>
-              </div>
-            </div>
-            <div
-              class="gallery-thumbnails"
-              id="gallery-thumbnails"
-              aria-label="Choose a game preview"
-            ></div>
-            <p class="gallery-status" aria-live="polite" id="gallery-status">
-              Dragon Flight · 1 of 5
-            </p>
-          </div>
         </div>
+        <div class="reel-bottom">
+          <div class="reel-rail" data-reel-rail aria-label="Choose a game"></div>
+          <button
+            class="icon-button reel-toggle"
+            type="button"
+            data-reel-toggle
+            aria-pressed="false"
+            aria-label="Pause showreel"
+          >
+            <i data-icon="play" class="reel-toggle__play"></i
+            ><span class="reel-toggle__pause" aria-hidden="true"></span>
+          </button>
+        </div>
+        <p class="sr-only" aria-live="polite" data-reel-status></p>
+      </section>
+
+      <section class="worlds section" data-worlds aria-labelledby="worlds-title">
+        <header class="worlds-head container">
+          <div>
+            <p class="eyebrow">Any genre, any style</p>
+            <h2 id="worlds-title">Worlds creators build</h2>
+          </div>
+          <div class="worlds-nav">
+            <button class="icon-button" type="button" data-worlds-prev aria-label="Scroll worlds back">
+              <i data-icon="arrow-left"></i></button
+            ><button class="icon-button" type="button" data-worlds-next aria-label="Scroll worlds forward">
+              <i data-icon="arrow-right"></i>
+            </button>
+          </div>
+        </header>
+        <div class="worlds-track" data-worlds-track tabindex="0" aria-label="Game gallery"></div>
       </section>
 
       <section
@@ -290,40 +313,22 @@
                 <span class="step-number">02</span>
                 <div class="mini-agents">
                   <div class="mini-agent">
-                    <img
-                      src="landing/cody.jpg"
-                      alt=""
-                      width="42"
-                      height="42"
-                      loading="lazy"
-                    />
+                    <span class="mini-agent__mark agent-role--peach"><i data-icon="code"></i></span>
                     <div>
-                      <strong>Cody</strong><span>Game logic & code</span>
+                      <strong>Cody</strong><span>Game logic &amp; code</span>
                     </div>
                     <span class="agent-status" aria-hidden="true"></span>
                   </div>
                   <div class="mini-agent">
-                    <img
-                      src="landing/lumi.jpg"
-                      alt=""
-                      width="42"
-                      height="42"
-                      loading="lazy"
-                    />
+                    <span class="mini-agent__mark agent-role--coral"><i data-icon="palette"></i></span>
                     <div>
-                      <strong>Lumi</strong><span>Worlds & visual design</span>
+                      <strong>Lumi</strong><span>Worlds &amp; visual design</span>
                     </div>
                     <span class="agent-status" aria-hidden="true"></span>
                   </div>
                   <div class="mini-agent">
-                    <img
-                      src="landing/sonic.jpg"
-                      alt=""
-                      width="42"
-                      height="42"
-                      loading="lazy"
-                    />
-                    <div><strong>Sonic</strong><span>Motion & sound</span></div>
+                    <span class="mini-agent__mark agent-role--steel"><i data-icon="waveform"></i></span>
+                    <div><strong>Sonic</strong><span>Motion &amp; sound</span></div>
                     <span class="agent-status" aria-hidden="true"></span>
                   </div>
                 </div>
@@ -438,44 +443,69 @@
         aria-labelledby="pricing-title"
       >
         <div class="container">
-          <header class="pricing-heading">
-            <div>
-              <p class="eyebrow" data-reveal>Credits, not seats</p>
-              <h2 id="pricing-title">Pick the pace you build at</h2>
-              <p>
-                Same app, same three agents on every plan. You pick two
-                things: how many credits land each month — and which models
-                may spend them.
+          <!-- One rate card, not three cards. The plans are columns of a
+               single typeset table; every model family is named once, on
+               the left, and the section heading sits in the table's corner
+               cell where a spec sheet would print its title. #plan-list is
+               a display:contents shell so the JS-rendered cells take part
+               in the same grid as the heading. -->
+          <div class="rate" data-reveal>
+            <header class="rate__corner">
+              <p class="eyebrow">Credits, not seats</p>
+              <h2 id="pricing-title">Pick your pace</h2>
+              <p class="rate__lede">
+                One app, every agent. Choose how many credits you get each
+                month and which models can use them. Pro is half price right
+                now.
               </p>
+            </header>
+            <!-- THE HOLD. First attempt put this in the corner cell, under
+                 the sentence it proves. Correct argument, invisible result:
+                 the corner is bottom-aligned across the head, so the clock
+                 landed in the empty band left of the buttons, two hundred
+                 pixels below the prices — nobody saw it.
+                 It now sits IN the price stack, as its own head row
+                 spanning exactly the columns whose price is struck (app.js
+                 writes --offer-col/--offer-span from plans.js, so re-pricing
+                 a tier moves the strip). Directly under the two discounted
+                 prices, directly above their buttons. The span is what
+                 names the plans — no "applies to Pro" note needed, the
+                 strip simply is not over the column it does not apply to.
+                 A head row, not an overlay: every column still aligns line
+                 by line, the row just gets taller for all of them.
+                 `hidden` until JS arms it — a dead clock is worse than no
+                 clock. Window logic in src/landing/offer.js. -->
+            <div class="offer" data-offer hidden>
+              <!-- Label and clock are both aria-hidden: read out they are a
+                   dangling fragment ("Half price held for") followed by a
+                   digit soup that changes every second. The live region
+                   below says the whole sentence, in minutes. -->
+              <p class="offer__label" aria-hidden="true">
+                <i data-icon="clock"></i>Half price held for
+              </p>
+              <p class="offer__clock" aria-hidden="true">
+                <span data-offer-clock>06:00:00</span>
+              </p>
+              <!-- On desktop the column span says "these two plans" and this
+                   line is for screen readers only, which have no position to
+                   read. Below 900px the columns become stacked cards and the
+                   span means nothing, so the phone stylesheet un-hides it —
+                   same sentence, shown exactly where geometry stops
+                   carrying it. -->
+              <p class="sr-only offer__scope">On Pro and Pro yearly.</p>
+              <p class="sr-only" data-offer-live aria-live="polite"></p>
             </div>
-            <ul class="pricing-legend" data-reveal aria-label="How plans work">
-              <li>
-                <i data-icon="sparkles"></i>
-                <div><strong>One credit pool</strong><span>Code, visuals, 3D and sound share it</span></div>
-              </li>
-              <li>
-                <i data-icon="check"></i>
-                <div><strong>Refills monthly</strong><span>On every plan, yearly included</span></div>
-              </li>
-              <li>
-                <i data-icon="lock"></i>
-                <div><strong>Locked = opens on Pro</strong><span>Cinematic video and audio models</span></div>
-              </li>
-            </ul>
-          </header>
-          <div class="plan-grid" id="plan-list"></div>
-          <div class="plan-foot" data-reveal>
-            <p class="plan-footnote">
-              Prices in USD, before tax. Every plan is managed and cancelled
-              from your profile.
-            </p>
-            <aside class="plan-enterprise">
-              <span>Studio or classroom? Shared credit pools, invoicing, onboarding.</span>
-              <a class="plan-enterprise__link" href="mailto:support@quadcode.ai"
-                >Talk to us <i data-icon="arrow-up-right"></i
-              ></a>
-            </aside>
+            <div class="rate__body" id="plan-list"></div>
           </div>
+          <footer class="rate__foot" data-reveal>
+            <p id="rate-every-plan"></p>
+            <p>
+              Prices in USD, before tax. Manage or cancel from your profile.
+              Studio or classroom?
+              <a href="mailto:support@quadcode.ai">Talk to us</a> about a
+              shared pool.
+            </p>
+          </footer>
         </div>
       </section>
 
@@ -516,7 +546,7 @@
           <div class="footer-column" data-reveal>
             <h3>Legal</h3>
             <a href="https://quadcode.ai/privacy">Privacy policy</a
-            ><a href="https://quadcode.ai/terms">Terms & conditions</a>
+            ><a href="https://quadcode.ai/terms">Terms &amp; conditions</a>
           </div>
         </div>
         <div class="footer-bottom" data-reveal>

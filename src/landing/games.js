@@ -10,6 +10,8 @@
  *   embed       same-origin page that boots the game; receives `?embed`
  *   poster      still frame shown before Play; `landing/games/<poster>`
  *   controls    short hint rows rendered under the title in preview state
+ *   escExits    default true; set false when the game claims Esc for itself,
+ *               so the card's Exit button stops promising that shortcut
  */
 export const games = [
   {
@@ -62,6 +64,13 @@ export const games = [
       "A teal paintball marker aimed toward colourful corridor doorways, with paint splashes across the walls",
     embed: "strike.html",
     status: "live",
+    // Paint Strike takes the pointer, and Esc inside it releases the lock
+    // and opens the game's own pause menu — it does NOT leave the card. So
+    // the card's Exit button must not advertise Esc as the way out. This is
+    // a field rather than an `id === "strike"` check in the renderer: the
+    // next pointer-locking game would have silently inherited the wrong
+    // hint.
+    escExits: false,
   },
 ];
 

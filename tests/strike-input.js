@@ -46,6 +46,14 @@ test('locked WASD, arrows, jump, crouch, walk and scoreboard use real handlers',
   f.key('Tab','keyup'); assert.equal(f.input.scoreboard, false);
 });
 
+test('A movement survives browsers that omit the physical key code', t => {
+  const f = fixture(t); f.lock(true);
+  f.send(document, 'keydown', { code: 'Unidentified', key: 'a' });
+  assert.equal(f.input.move.right, -1, 'A must move left when only event.key is available');
+  f.send(document, 'keyup', { code: 'Unidentified', key: 'a' });
+  assert.equal(f.input.move.right, 0, 'fallback keyup must release the same movement');
+});
+
 test('mouse aim/fire and reload/interact/weapon edges are consumed once', t => {
   const f = fixture(t); f.lock(true);
   f.send(document,'mousemove',{movementX:12,movementY:-5});
@@ -119,13 +127,13 @@ test('launch wiring starts the match with or without capture; every match ignore
   assert.doesNotMatch(click,/menu\.close/); assert.match(click,/opts\.onResume/);
   // Launching must not depend on the capture: the menu closes on the way out, the fallback
   // takes over when nothing answers, and a refusal is a control scheme rather than a dialog.
-  const launch=game.split('function requestLockSoon(): void {')[1].split('\n  }')[0];
-  assert.match(launch,/menu\.close\(\)/); assert.match(launch,/input\.engage\(\)/);
+  const launch=game.split('function requestLockSoon(reason: \'team-pick\' | \'resume\' = \'resume\'): void {')[1].split('\n  }')[0];
+  assert.match(launch,/menu\.close\(\)/); assert.match(launch,/input\.requestLock\(\)/); assert.match(launch,/input\.engage\(\)/);
   const lockError=game.split('input.onLockError((message) => {')[1].split('})')[0];
   assert.doesNotMatch(lockError,/menu\.open/); assert.match(lockError,/setPointerReleased\(true, message\)/);
   // Picking a side enters the match instead of handing the player back to the menu.
   const closeTeam=game.split('function closeTeamScreen(): void {')[1].split('\n  }')[0];
-  assert.match(closeTeam,/requestLockSoon\(\)/); assert.doesNotMatch(closeTeam,/menu\.open/);
+  assert.match(closeTeam,/requestLockSoon\(/); assert.doesNotMatch(closeTeam,/menu\.open/);
   // The pause row is a score, not a capacity: "3/3" reads as a full room to a player in it.
   const row=overlays.split('const renderTeams = () => {')[1].split('\n  }')[0];
   assert.match(row,/\} v \$\{/); assert.doesNotMatch(row,/\}\/\$\{MATCH\.teamSize\}/);

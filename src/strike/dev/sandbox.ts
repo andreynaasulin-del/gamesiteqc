@@ -106,7 +106,7 @@ export async function start(): Promise<void> {
     overlay.crosshair.classList.add('hit')
     window.setTimeout(() => overlay.crosshair.classList.remove('hit'), 100)
   }
-  const effects = createEffects(scene)
+  const effects = createEffects(scene, camera)
   const decals = createDecals(scene)
   const projectiles = createProjectiles(scene, room.world, decals, effects, audio)
   const dummies = createDummies(scene)
@@ -234,6 +234,7 @@ export async function start(): Promise<void> {
     viewModel.setHopper(marker.hopper, WEAPON.hopperSize)
     viewModel.update(frameDt, speed, controller.state.grounded)
     projectiles.update(frameDt, hittables)
+    decals.update()
     effects.update(frameDt)
     clock.update(now)
     updateDummies(dummies, clock.getElapsed(), audio)

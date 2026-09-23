@@ -7,7 +7,6 @@ class Node extends EventTarget {
   dataset = { position: 'center' };
   classList = { add() {}, toggle() {} };
   attrs = {};
-  contentWindow = {};
   setAttribute(k, v) { this.attrs[k] = v; }
   removeAttribute(k) { delete this.attrs[k]; }
   appendChild(n) { this.child = n; }
@@ -15,13 +14,21 @@ class Node extends EventTarget {
   focus() { this.focused = true; }
   contains(n) { return n === this; }
 }
+/** The iframe's window in these tests: the GameCard must be able to focus it for keys to land. */
+class FakeWindow {
+  focus() { this.focused = true; }
+}
 function fixture() {
   globalThis.location = new URL('http://localhost/?fps');
   globalThis.window = new EventTarget();
   window.location = location;
   window.matchMedia = () => ({ matches: true });
   globalThis.document = new EventTarget();
-  document.createElement = () => new Node();
+  document.createElement = () => {
+    const node = new Node();
+    node.contentWindow = new FakeWindow();
+    return node;
+  };
   const nodes = new Map();
   const card = new Node();
   card.querySelector = (s) => {
@@ -53,6 +60,10 @@ test('ready / exit / replay mounts a fresh iframe and forwards FPS', () => {
     assert.match(old.src, /fps=/);
     assert.doesNotMatch(old.attrs.allow, /pointer-lock/);
     message(g, 'qc:ready'); assert.equal(g.state, 'playing');
+    // Without BOTH focuses the game loads but its document never receives WASD — keys go to
+    // the parent page, and "A does nothing" is the report. Pin the pair so it cannot regress.
+    assert.equal(old.focused, true, 'the frame element itself must be focused');
+    assert.equal(old.contentWindow.focused, true, 'the frame window must be focused for keys');
     message(g, 'qc:exit'); assert.equal(g.state, 'preview');
     assert.equal(old.removed, true);
     g.play(); assert.notEqual(g.frame, old);

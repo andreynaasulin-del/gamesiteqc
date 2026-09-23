@@ -18,6 +18,15 @@ export const PLAN_DISCOUNT = 0.5;
 export const anchorPrice = (price, discount = PLAN_DISCOUNT) =>
   Math.round(price / (1 - discount));
 
+/** A plan's own discount: the shared constant unless it opts out with
+ *  `discount: 0`. The entry tier is sold at list — the launch offer is a
+ *  Pro offer, and a struck price on every column is a struck price on none. */
+export const planDiscount = (plan) => plan.discount ?? PLAN_DISCOUNT;
+
+/** Struck regular rate for a plan, or null when it is not on offer. */
+export const planAnchor = (plan) =>
+  planDiscount(plan) > 0 ? anchorPrice(plan.price, planDiscount(plan)) : null;
+
 /** 5000 -> "5,000". Thousands separators: a five-digit credit figure with no
  *  grouping reads as a serial number. */
 export const formatCredits = (credits) => credits.toLocaleString("en-US");
@@ -46,7 +55,7 @@ export const MODEL_CATALOG = [
   { id: "cli", name: "Claude Code · Codex", role: "CLI" },
   { id: "image", name: "Image & UI models", role: "Image" },
   { id: "video", name: "Seedance 2.0", role: "Video" },
-  { id: "video-pro", name: "Seedance 2.5 · Veo", role: "Cinema" },
+  { id: "video-pro", name: "Seedance 2.5 · Veo", role: "Video+" },
   { id: "audio", name: "Music, voice & SFX", role: "Audio" },
 ];
 
@@ -78,20 +87,6 @@ const PRO_MODELS = {
   audio: FULL,
 };
 
-// Headline of the access panel. The locked tier does not get "4 of 6" — a
-// fraction is a score, and nobody buys a 4/6. It gets a sentence that names
-// what is missing and where it opens.
-export const ACCESS_PANEL = {
-  partial: {
-    title: "Code, image & 720p video",
-    note: "Cinematic video & sound open on Pro",
-  },
-  full: {
-    title: "Every model family",
-    note: "Full line-up, no ceilings",
-  },
-};
-
 export const plans = [
   {
     id: "monthly",
@@ -100,43 +95,64 @@ export const plans = [
     price: 9,
     per: "month",
     unit: "credits / mo",
-    pitch: "First playable build: prototype, play, iterate.",
+    // Sold at list price: no struck anchor on this column. The discount
+    // belongs to Pro — see planDiscount().
+    discount: 0,
+    // Captions are one line each so the three names sit level; the pitch
+    // is the long form for anywhere with room.
+    badge: "For your first game",
+    pitch: "For your first game: prototype, play, iterate.",
     billing: "Billed monthly. Cancel any time.",
     models: MONTHLY_MODELS,
-    // Short, one line each: these sit under the ladder as a footer strip,
-    // not a second checklist competing with it.
+    // The entry tier's features are, by construction, what EVERY plan has
+    // (the other two say "everything in Monthly"). The rate card prints them
+    // once, under the table, as the "every plan" line — see everyPlan().
     features: ["All three agents", "macOS & Windows", "Your files, your repo"],
     cta: "Start monthly",
   },
+  // ONE Pro tier, two ways to pay for it. The two columns below are the
+  // same product — same credits, same models — so they are named as such:
+  // "Pro" and "Pro yearly", not "Monthly Pro" and "Yearly" as if they were
+  // different things.
+  //
+  // The recommendation (`featured`) sits on the monthly Pro term — the
+  // centre column, the tier the whole ladder points at ("From Pro"), and
+  // the lowest-commitment way to get every model open. The yearly column
+  // does not need a band: its price does the arguing, and its billing line
+  // states the saving in dollars.
   {
     id: "monthly-pro",
-    name: "Monthly Pro",
+    name: "Pro",
     credits: 5000,
     price: 29,
     per: "month",
     unit: "credits / mo",
-    // No "most popular" — we have no numbers to back that claim. The badge
-    // states what the tier is for, which is true by construction.
-    badge: "Built for shipping",
+    badge: "Every model unlocked",
     featured: true,
-    pitch: "Building every week: 5× the credits, every model open.",
+    pitch: "Building every week: 5× the credits, every model unlocked.",
     billing: "Billed monthly. Cancel any time.",
     models: PRO_MODELS,
-    features: ["Everything in Monthly", "1080p video & full audio", "MCP & CLI integrations"],
+    // "MCP & CLI integrations" used to sit here — but the CLI row is open on
+    // Monthly too, so the perk contradicted the table above it.
+    features: ["Everything in Monthly", "1080p video & full audio", "Cinematic video & sound models"],
     cta: "Go Pro",
   },
   {
     id: "yearly",
-    name: "Yearly",
+    name: "Pro yearly",
     credits: 5000,
     price: 180,
     per: "year",
     unit: "credits / mo",
-    badge: "Lowest per credit",
-    pitch: "Monthly Pro, paid once. Same credits, all twelve months.",
-    billing: "One payment, twelve months of Pro.",
-    // The "save $X" line under the CTA is computed against this plan, never
-    // typed: see yearlySavings().
+    // No "most popular" — we have no numbers to back that claim. The caption
+    // states a fact the two prices above it make true.
+    badge: "Best price per credit",
+    pitch: "Pro, paid once. Same credits, all twelve months.",
+    // Rendered as-is, with the saving spliced in before the period — see
+    // rateHeadMarkup. Keep it short: the saving is what makes this line long.
+    billing: "Billed once a year",
+    // The "saves $X" line is computed against this plan, never typed: see
+    // yearlySavings().
     comparedTo: "monthly-pro",
     models: PRO_MODELS,
     features: ["Everything in Pro", "Price locked 12 months", "Lowest cost per credit"],
@@ -160,6 +176,14 @@ export function yearlySavings(plan, all = plans) {
   if (!reference || reference.per !== "month") return 0;
   return Math.max(0, reference.price * 12 - plan.price);
 }
+
+/**
+ * What every plan has. Derived from the entry tier rather than typed a
+ * second time: if Monthly gains a feature, all plans gain it, and the line
+ * under the table follows without anyone remembering to edit it.
+ */
+export const everyPlan = (all = plans) =>
+  all.reduce((low, plan) => (monthlyEquivalent(plan) < monthlyEquivalent(low) ? plan : low)).features;
 
 /**
  * Where every plan button lands: the signed-in checkout on the main site.

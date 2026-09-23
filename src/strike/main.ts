@@ -61,6 +61,12 @@ async function boot(): Promise<void> {
 
 async function play(): Promise<void> {
   const mount = appRoot()
+  // Inside the hero card the frame only has focus if the click lands on it — the landing gives
+  // it focus once at load, but any click on the page (carousel, pricing, the card's own chrome)
+  // takes it back, and then WASD dies silently: key events go to the parent document and the
+  // game never sees them. Re-claiming focus on any pointer-down inside the game is invisible
+  // when the frame already has it and fixes the "A does nothing" report everywhere else.
+  window.addEventListener('pointerdown', () => window.focus(), true)
   const { RendererInitError } = await import('./engine/renderer')
   const map = pickMap()
   const character = defaultCharacter(String(Math.random()))

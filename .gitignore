@@ -6,3 +6,12 @@ archive/
 .DS_Store
 *.log
 .vercel
+# Generation sources (up to 115 MB each) stay local; web copies + posters are committed.
+public/landing/explore/*.mp4
+public/landing/explore/*.png
+public/landing/gallery/*.mp4
+public/landing/gallery/*.png
+public/landing/hq/
+public/landing/web/abyss.mp4
+videos/
+*.docx

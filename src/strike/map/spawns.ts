@@ -35,6 +35,8 @@ const MAX_GRID_CANDIDATES = 4000
 /** A candidate is "indoor" when a ray up from this height finds a ceiling/slab within range. */
 const INDOOR_PROBE_HEIGHT = 0.3
 const INDOOR_CEILING_RANGE = 4
+/** How far above its own authored floor a zone sample may land before it counts as a roof. */
+const MAX_ZONE_RISE = 0.6
 /** A candidate must sit this close to the navmesh, otherwise bots could never reach it. */
 const NAV_SNAP_TOLERANCE = 0.3
 /** Cap on the candidate set the O(n^2) farthest-pair search runs over. */
@@ -111,6 +113,12 @@ function samplePolygon(zone: ZoneInfo, world: WorldQuery, count: number): Vector
     if (!pointInPolygon(polygon, x, z)) continue
     const floorY = validateFloor(world, x, zone.floorY, z)
     if (floorY === null) continue
+    // A zone is a flat footprint drawn on one storey; anything meaningfully above its own floor
+    // is a different surface that happens to be over it — a roof deck, a walkway, a crate. Zone
+    // heights are authored by hand and drift (some sit a metre off the ground they mark), so the
+    // downward probe can start above a roof and find it first. Spawning a team up there is not a
+    // recoverable mistake, so the rise is capped and the sampler simply tries elsewhere.
+    if (floorY > zone.floorY + MAX_ZONE_RISE) continue
     out.push(new Vector3(x, floorY, z))
   }
   if (out.length === 0) {

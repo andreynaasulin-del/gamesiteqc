@@ -139,6 +139,49 @@ export const WEAPONS = {
   },
 } as const
 
+/**
+ * Paint grenades (W6) — the answer to "every fight is decided by whoever peeks first".
+ *
+ * A paint grenade is not a frag: it cannot kill from full health from any distance, and that is
+ * deliberate. `maxDamage` at the centre leaves a full-health player standing (and painted), so a
+ * grenade opens a fight instead of ending it — it flushes a corner, covers a push and takes a
+ * camper to half, then the markers decide it.
+ *
+ * Not in `WEAPONS`: it is thrown with G whatever is in your hands, so it has no slot, no
+ * magazine and no `damageScale` (the host prices a grenade hit straight off these numbers).
+ */
+export const GRENADE = {
+  /** Carried per life. No pickups: the pouch refills on respawn, like the hopper. */
+  carried: 2,
+  /** Fuse from the moment it leaves the hand (ms). Long enough to be thrown back at you. */
+  fuseMs: 1_500,
+  /** One throw per this long, so G is not a second trigger. */
+  cooldownMs: 800,
+  /** Launch speed (m/s) and how far above the crosshair it is lobbed (degrees). */
+  throwSpeed: 12.5,
+  throwPitchDeg: 9,
+  /** Spawns this far down the look direction: a grenade must not clip into our own camera. */
+  throwOffset: 0.45,
+  /** Its own gravity: heavier than a paintball so the arc reads as a lob. */
+  gravity: 18,
+  /** Speed kept across a bounce, and how much of the slide along the surface survives it. */
+  restitution: 0.4,
+  friction: 0.7,
+  /** Collision radius of the shell (m). */
+  radius: 0.08,
+  /** Below this speed on the ground the shell stops rolling and waits out its fuse. */
+  restSpeed: 0.6,
+  /** Nothing outside this radius (m) is painted or damaged, and walls block the blast. */
+  blastRadius: 4,
+  /** Damage at the centre of the burst, falling off to `minDamage` at `blastRadius`. */
+  maxDamage: 45,
+  minDamage: 10,
+  /** Paint splats sprayed onto the geometry around the burst. */
+  splats: 16,
+  /** How far the paint reaches when it looks for a surface to stick to (m). */
+  splatRange: 5,
+}
+
 /** Damage per body part. 100 hp: head = 2 hits, torso = 3, limbs = 5. */
 export const DAMAGE: Record<'head' | 'torso' | 'arm' | 'leg', number> = {
   head: 50,
@@ -164,7 +207,36 @@ export const DECALS = {
   maxSize: 0.3,
   /** Push decal geometry off the surface to avoid z-fighting. */
   offset: 0.004,
+  /**
+   * Decal geometries built per frame; the rest wait in a queue.
+   *
+   * Projecting one splat costs ~0.24 ms (a BVH shapecast plus a `DecalGeometry` build), which is
+   * invisible for a paintball — one hit, one decal. A grenade asks for 16 at once: measured at
+   * 3.9 ms in a single frame, which is a guaranteed dropped frame on every throw. Four a frame
+   * spreads that burst over ~66 ms, keeps single shots instant, and nobody can see paint arrive
+   * four frames late.
+   */
+  buildsPerFrame: 4,
+  /**
+   * Deferred splats waiting to be built. Two simultaneous bursts plus gunfire is the realistic
+   * worst case; beyond that the oldest requests are dropped, because paint that lands half a
+   * second after the explosion is worse than paint that never lands.
+   */
+  maxQueued: 48,
 }
+
+/**
+ * Does sound come up by itself on the first team pick?
+ *
+ * `false` keeps every match silent until someone asks for sound in the Esc menu. Nothing else
+ * changes — the context, the sample bank and the mixer are all still built the moment they are
+ * asked for, so turning it on mid-match costs nothing and loses nothing.
+ *
+ * Off on purpose while the mix is being reworked: the current one is loud enough to be a
+ * distraction in playtests, and "mute it every time you reload the page" is not a workflow.
+ * Flip to `true` to restore the first-gesture start.
+ */
+export const AUDIO_AUTOSTART = false
 
 export const DOORS = {
   /** Players toggle doors/windows with E when the crosshair is on one within this range (m). */
@@ -184,18 +256,38 @@ export const NET = {
   botSnapshotHz: 15,
 }
 
+/**
+ * Bot skill, dialled DOWN 20 % from the numbers this shipped with (W6).
+ *
+ * The complaint was not that bots were unbeatable, it was that a fight was over in a third of
+ * a second either way: a bot saw you across the whole house, reacted in 320 ms and held a
+ * four-shot burst on a 2.6° cone. Every number below is the old one moved 20 % towards
+ * "human": the senses are 20 % shorter/narrower, the delays 25 % longer (= 20 % less of the
+ * time spent shooting) and the aim cone 25 % wider. Nothing about the shooting itself changed,
+ * so a bot still kills you — it just has to work for it, and you get the seconds back.
+ *
+ * Previous values are kept in the comments: this is a balance dial, not a rewrite.
+ */
 export const BOTS = {
-  aimSettleMs: 120,
+  /** 120 → 150: a snapped-on target is not shot at instantly. */
+  aimSettleMs: 150,
   fireSpeedThreshold: 0.7,
-  decisionHz: 8,
-  viewDistance: 28,
-  fovDeg: 130,
-  /** Standard deviation of aim error in degrees. */
-  aimErrorDeg: 2.6,
-  reactionMs: 320,
-  memoryMs: 4_000,
-  burstShots: 4,
-  burstPauseMs: 450,
+  /** 8 → 6.4 Hz: re-plans a fifth less often, so it commits to bad positions like a player. */
+  decisionHz: 6.4,
+  /** 28 → 22.4 m (−20 %): no more cross-house spotting the moment you leave spawn. */
+  viewDistance: 22.4,
+  /** 130° → 104° (−20 %): flanking actually works now. */
+  fovDeg: 104,
+  /** Standard deviation of aim error in degrees. 2.6 → 3.25 (+25 % cone). */
+  aimErrorDeg: 3.25,
+  /** 320 → 400 ms: a quarter-second of peek is yours before it shoots. */
+  reactionMs: 400,
+  /** 4 s → 3.2 s of chasing a target it cannot see any more. */
+  memoryMs: 3_200,
+  /** 4 → 3 balls a burst: less chance a single burst finishes you. */
+  burstShots: 3,
+  /** 450 → 560 ms between bursts: the gap you trade shots in. */
+  burstPauseMs: 560,
   names: ['Pixel', 'Voxel', 'Bezier', 'Mesh', 'Shader', 'Quad', 'Splat', 'Lumen', 'Vertex', 'Brush'],
 }
 

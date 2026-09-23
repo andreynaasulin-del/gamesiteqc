@@ -20,6 +20,7 @@ import type { MapData, MapSelection, SpawnLayout, SpawnPoint, TeamId, WorldQuery
 import { registerDynamicColliders } from '../player/dynamic-colliders'
 import { createDecals, type Decals } from '../weapons/decals'
 import { createEffects, type Effects } from '../weapons/effects'
+import { createGrenades, type Grenades } from '../weapons/grenades'
 import { createProjectiles, type Projectiles } from '../weapons/projectiles'
 
 export interface MapSessionOptions {
@@ -44,6 +45,8 @@ export interface MapSession {
   decals: Decals
   effects: Effects
   projectiles: Projectiles
+  /** Paint grenades in flight. Same authority model as `projectiles`, area damage on burst. */
+  grenades: Grenades
   environment: EnvironmentRig
   /**
    * Door leaves and window sashes: the moving obstacles a `CharacterController` collides with
@@ -91,8 +94,12 @@ export async function createMapSession(opts: MapSessionOptions): Promise<MapSess
   registerDynamicColliders(map.collider.geometry, dynamicColliders)
   const environment = createEnvironment(engine, map.bounds)
   const decals = createDecals(engine.scene)
-  const effects = createEffects(engine.scene)
+  // The camera is what billboards the instanced particles; without it they face +Z.
+  const effects = createEffects(engine.scene, engine.camera)
   const projectiles = createProjectiles(engine.scene, world, decals, effects, audio)
+  // Grenades share the bullet collider on purpose: a shell bounces off a closed window sash and
+  // sails through an open one, which is exactly how the paint behaves.
+  const grenades = createGrenades(engine.scene, world, decals, effects, audio)
 
   // Spawns are resolved twice on purpose: once now (no navmesh, so the game is playable the
   // moment the map is up) and once when recast is ready, which filters out points bots could
@@ -109,6 +116,7 @@ export async function createMapSession(opts: MapSessionOptions): Promise<MapSess
     decals,
     effects,
     projectiles,
+    grenades,
     environment,
     dynamicColliders,
     leastCrowdedSpawn(team, occupied) {
@@ -138,6 +146,7 @@ export async function createMapSession(opts: MapSessionOptions): Promise<MapSess
       if (disposed) return
       disposed = true
       projectiles.dispose()
+      grenades.dispose()
       decals.dispose()
       effects.dispose()
       doors.dispose()

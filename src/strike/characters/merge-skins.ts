@@ -23,6 +23,22 @@ const SHADE_STEP = 4
 const CULL_MARGIN = 1.75
 /** Below this triangle count a part is face detail (eyes, teeth) and has no business in the shadow map. */
 const SHADOW_MIN_TRIANGLES = 600
+/**
+ * Triangles per square metre of silhouette, above which a part is detail geometry rather than
+ * shape — hair strands, eyebrows, a sculpted jaw, the paint decal welded onto the body.
+ *
+ * The shadow map is 512×512 for the whole level, so a character occupies a few dozen pixels in
+ * it. `WavyHair` spends 63 904 triangles to fill about ten of them, and it does that INSIDE the
+ * shadow the head already casts: the silhouette is identical with the hair excluded. Measured
+ * on the corridors map with six avatars, excluding everything above this line took the shadow
+ * pass from 573 k triangles to 266 k and `renderer.render` from 11.0 ms to 7.9 ms a frame
+ * (p95 14.6 → 9.6 ms) with no visible difference in the shadows.
+ *
+ * Clothing sits an order of magnitude below the line (a tuxedo leg is ~28 k, dense hair is
+ * ~180 k–580 k), so the rule separates cleanly and does not quietly eat a garment when the
+ * wardrobe changes.
+ */
+const SHADOW_MAX_TRIANGLE_DENSITY = 60_000
 
 export interface MergeResult {
   /** Meshes created by welding parts together. */
@@ -194,8 +210,17 @@ function weld(parts: SkinnedMesh[]): SkinnedMesh {
 function prepare(mesh: SkinnedMesh): void {
   const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material
   const transparent = material instanceof MeshStandardMaterial && material.transparent
-  mesh.castShadow = !transparent && triangleCount(mesh.geometry) >= SHADOW_MIN_TRIANGLES
   mesh.frustumCulled = true
+
+  // The bind-pose radius, read BEFORE the cull margin inflates it — the shadow rule is about how
+  // much geometry the part really packs, and the margin would flatter a dense part by 3×.
   if (!mesh.geometry.boundingSphere) mesh.geometry.computeBoundingSphere()
+  const radius = mesh.geometry.boundingSphere?.radius ?? 0
+  const triangles = triangleCount(mesh.geometry)
+  const density = triangles / Math.max(1e-4, radius * radius)
+
+  mesh.castShadow =
+    !transparent && triangles >= SHADOW_MIN_TRIANGLES && density <= SHADOW_MAX_TRIANGLE_DENSITY
+
   if (mesh.geometry.boundingSphere) mesh.geometry.boundingSphere.radius *= CULL_MARGIN
 }

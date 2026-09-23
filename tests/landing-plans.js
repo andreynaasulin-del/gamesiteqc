@@ -4,14 +4,64 @@ import { readFileSync } from "node:fs";
 import {
   plans,
   anchorPrice,
+  planAnchor,
+  planDiscount,
   formatCredits,
+  monthlyEquivalent,
+  yearlySavings,
   PLAN_DISCOUNT,
   PLANS_URL,
 } from "../src/landing/plans.js";
 
+// Pro and Pro yearly are ONE product bought on two terms. The recommended
+// column is the monthly Pro term (centre of the table, the tier every
+// "From Pro" cell points at); the yearly column earns its place with a
+// lower per-month price and a stated saving, not a band.
+test("the two Pro terms are the same product, and monthly Pro is recommended", () => {
+  const byId = Object.fromEntries(plans.map((plan) => [plan.id, plan]));
+  const pro = byId["monthly-pro"];
+  const yearly = byId.yearly;
+
+  // Same product: same credits, same model access, row for row.
+  assert.equal(pro.credits, yearly.credits);
+  assert.deepEqual(pro.models, yearly.models);
+  // ...and named as one product, so the columns cannot read as two tiers.
+  assert.match(yearly.name, new RegExp(`^${pro.name}\\b`));
+
+  // Two terms: the yearly one must cost less per month, or it has no reason
+  // to exist; the recommendation sits on the monthly Pro term.
+  assert.ok(
+    monthlyEquivalent(yearly) < monthlyEquivalent(pro),
+    `yearly ($${monthlyEquivalent(yearly)}/mo) must undercut monthly ($${monthlyEquivalent(pro)}/mo)`,
+  );
+  assert.deepEqual(
+    plans.filter((plan) => plan.featured).map((plan) => plan.id),
+    ["monthly-pro"],
+  );
+
+  // The saving is arithmetic, not a marketing figure.
+  assert.equal(yearlySavings(yearly), pro.price * 12 - yearly.price);
+  // Both terms are struck at the same discount, so the two crossed-out
+  // rates cannot tell different stories about the same offer.
+  assert.equal(planDiscount(yearly), planDiscount(pro));
+  assert.equal(anchorPrice(yearly.price) / yearly.price, anchorPrice(pro.price) / pro.price);
+});
+
+// The launch discount is a Pro offer. The entry tier is sold at list, so
+// its column carries no struck price — and the two Pro columns must.
+test("only the Pro terms carry a struck regular rate", () => {
+  const byId = Object.fromEntries(plans.map((plan) => [plan.id, plan]));
+  assert.equal(planAnchor(byId.monthly), null);
+  assert.equal(planAnchor(byId["monthly-pro"]), anchorPrice(byId["monthly-pro"].price));
+  assert.equal(planAnchor(byId.yearly), anchorPrice(byId.yearly.price));
+  // The heading may not promise a discount on every plan when one is at list.
+  const landing = readFileSync("index.html", "utf8");
+  assert.doesNotMatch(landing, /Every plan is\s+half/i);
+});
+
 // The two credit figures are a product decision, not styling. Anyone
 // touching this file has to break a test to change them.
-test("Monthly is 1,000 credits and Monthly Pro is 5,000", () => {
+test("Monthly is 1,000 credits and both Pro terms are 5,000", () => {
   const byId = Object.fromEntries(plans.map((plan) => [plan.id, plan]));
   assert.equal(byId.monthly.credits, 1000);
   assert.equal(byId["monthly-pro"].credits, 5000);
@@ -101,4 +151,72 @@ test("the games landing is the only surface that shows the offer", () => {
       `$${plan.price} is hardcoded in index.html`,
     );
   }
+});
+
+// Three columns sitting side by side is the one place inconsistent
+// punctuation is impossible to miss: the yearly line shipped without its
+// final period because its sentence was hardcoded in the renderer while the
+// other two came from this file. Both facts are now locked — the copy lives
+// here, and the renderer only splices the saving into it.
+test("the billing line comes from plans.js and every column ends its sentence", () => {
+  const app = readFileSync("src/landing/app.js", "utf8");
+
+  // No column may have its billing sentence written in the renderer.
+  assert.match(
+    app,
+    /const base = escapeHtml\(plan\.billing\)/,
+    "the billing sentence must be read from plans.js, not typed in app.js",
+  );
+  assert.doesNotMatch(
+    app,
+    /"Billed |`Billed /,
+    "a billing sentence is hardcoded in app.js",
+  );
+
+  for (const plan of plans) {
+    // The renderer strips one trailing period and re-adds it after the
+    // saving, so a string carrying two would print "..Pro.." .
+    assert.doesNotMatch(plan.billing, /\.\s*\.$/, `${plan.id}: double period`);
+    // Long enough to be a sentence, short enough to stay on one line next
+    // to a $168 saving at the 316px column width.
+    assert.ok(
+      plan.billing.length <= 48,
+      `${plan.id}: billing is ${plan.billing.length} chars and will wrap the row for all three columns`,
+    );
+  }
+
+  // The saving names a plan, and it must be the plan the arithmetic used.
+  const byId = Object.fromEntries(plans.map((plan) => [plan.id, plan]));
+  for (const plan of plans) {
+    if (!yearlySavings(plan)) continue;
+    assert.ok(byId[plan.comparedTo], `${plan.id}: comparedTo points at nothing`);
+    assert.equal(byId[plan.comparedTo].per, "month", `${plan.id}: the reference term must be monthly`);
+  }
+});
+
+// ARIA table roles require a role="row" inside a role="table". This grid has
+// neither — the DOM is one element per PLAN holding that plan's whole
+// column, and `display: contents` removes the wrapper boxes. Cells with no
+// owning row are dropped from the accessibility tree, so the roles were
+// decoration that failed validation. Each cell states its own full sentence
+// instead; this test stops the roles coming back.
+test("the pricing grid claims no table semantics it cannot honour", () => {
+  const app = readFileSync("src/landing/app.js", "utf8");
+  const landing = readFileSync("index.html", "utf8");
+  for (const role of ["cell", "row", "table", "columnheader", "rowheader", "rowgroup"]) {
+    for (const [name, source] of [["app.js", app], ["index.html", landing]]) {
+      assert.doesNotMatch(
+        source,
+        new RegExp(`role="${role}"`),
+        `${name}: role="${role}" needs a table/row ancestor the rate grid does not have`,
+      );
+    }
+  }
+  // What replaces them: the cell's sr-only text names the plan, so it reads
+  // correctly with no row or column context to reconstruct.
+  assert.match(
+    app,
+    /const sr = `\$\{plan\.name\} — \$\{label\}: \$\{verdict\}\.`/,
+    "cell sr-only text must be a complete sentence naming its plan",
+  );
 });

@@ -9,7 +9,7 @@
  *   frame      : look/camera/marker → net interpolation → avatars → projectiles → doors → HUD
  */
 import { Vector3 } from 'three'
-import { ARMOR, BUILTIN_MAPS, DOORS, PLAYER, TEAMS } from '../config'
+import { ARMOR, AUDIO_AUTOSTART, BUILTIN_MAPS, DOORS, PLAYER, TEAMS } from '../config'
 import { createAudio, type Audio, type AudioListenerPose, type SoundName } from '../engine/audio'
 import { createEventBus } from '../engine/events'
 import type { OptionalSoundName } from '../engine/sfx-manifest'
@@ -42,7 +42,17 @@ import {
 } from '../net/protocol'
 import type { Room } from '../net/room'
 import { createClock, createSnapshotSender } from '../net/sync'
-import type { DoorInfo, Hittable, MapSelection, MatchState, ShotEvent, TeamId, WeaponKind } from '../types'
+import type {
+  DoorInfo,
+  GrenadeEvent,
+  HitEvent,
+  Hittable,
+  MapSelection,
+  MatchState,
+  ShotEvent,
+  TeamId,
+  WeaponKind,
+} from '../types'
 import { createHud } from '../ui/hud'
 import { createPrompt } from '../ui/prompt'
 import { createScoreboard } from '../ui/scoreboard'
@@ -143,9 +153,12 @@ export async function startGame(opts: GameOptions): Promise<Game> {
     play(name: SoundName | OptionalSoundName, at?: Vector3, listener?: AudioListenerPose, gain?: number): void
   }
   const rawAudio = createAudio() as GameAudio
-  // Every new match is silent, regardless of settings from previous visits.
+  // Every new match is silent, regardless of settings from previous visits. It stays that way
+  // only until the player's first gesture — see `startAudioOnce`.
   let muted = true
   rawAudio.setMuted(true)
+  /** Has the first-gesture sound start already run? It is offered once per session. */
+  let audioOffered = false
   const audio: GameAudio = {
     resume: () => muted ? Promise.resolve() : rawAudio.resume(),
     setMuted: (on) => rawAudio.setMuted(on),
@@ -227,12 +240,11 @@ export async function startGame(opts: GameOptions): Promise<Game> {
         if (states[door.id] === true) built.doors.setOpen(door.id, true, true)
       }
     }
-    built.projectiles.onPlayerHit((hit) => {
-      // My shots and (on the host) my bots' shots both land here; the host validates either way.
-      const authority = hostSide.authority
-      if (authority) authority.submitHit(hit)
-      else if (hit.by === room.me.id) void room.rpc.call(RPCS.hit, hit, 'host')
-    })
+    // My shots and (on the host) my bots' shots both land here; the host validates either way.
+    built.projectiles.onPlayerHit(reportHit)
+    // A grenade burst is several hits at once, each already carrying its own `shotId`, so it
+    // takes the same road as a paintball with nothing special about it.
+    built.grenades.onPlayerHit(reportHit)
 
     // --- glass (W4-A + W4-C) ---
     // A pane shatters where its shot was simulated by its owner, and nowhere else. Every client
@@ -261,6 +273,17 @@ export async function startGame(opts: GameOptions): Promise<Game> {
       glassSystem.update(1)
     }
     return built
+  }
+
+  /**
+   * Every hit this client resolves — paintball or grenade burst — goes to the host to be
+   * priced and applied. On the host that is a direct call; on a client it is one RPC, and only
+   * for hits we own (a bot's hit resolved here belongs to the authority, not to us).
+   */
+  function reportHit(hit: HitEvent): void {
+    const authority = hostSide.authority
+    if (authority) authority.submitHit(hit)
+    else if (hit.by === room.me.id) void room.rpc.call(RPCS.hit, hit, 'host')
   }
 
   /** `GlassPane.id` of the pane that mesh belongs to — `HitResult.object` is the pane itself. */
@@ -305,6 +328,14 @@ export async function startGame(opts: GameOptions): Promise<Game> {
           session?.projectiles.spawn(shot, { detectPlayers: true })
         }
         void room.rpc.call(RPCS.shot, shot, 'others')
+      },
+      // Our grenade: we simulate it AND resolve its burst (`resolveDamage`), everyone else
+      // only gets to watch. Same live-session guard as a shot — a grenade thrown on the frame
+      // a map change starts must not bounce around a house that no longer exists.
+      onGrenade: (event) => {
+        warnIfNothingToHit()
+        session?.grenades.spawn(event, { resolveDamage: true })
+        void room.rpc.call(RPCS.grenade, event, 'others')
       },
       onFell: () => {
         if (hostSide.authority) hostSide.authority.respawnPlayer(room.me.id)
@@ -476,6 +507,19 @@ export async function startGame(opts: GameOptions): Promise<Game> {
   })
 
   /**
+   * Somebody else's grenade. Registered here rather than in `client.ts` because it needs the
+   * live session and nothing else does anything with it: we replay the arc for the paint and
+   * the noise, and `resolveDamage: false` because the thrower already owns its hits.
+   *
+   * Sent to OTHERS, so our own throws never come back to us — but the id check stays, because
+   * a room implementation that ever echoes would otherwise double every burst.
+   */
+  const offGrenadeRpc = room.rpc.register<GrenadeEvent>(RPCS.grenade, (ev) => {
+    if (!ev?.id || ev.by === room.me.id) return
+    session?.grenades.spawn(ev, { resolveDamage: false })
+  })
+
+  /**
    * The host threw one of our hits away. Every rule in `validate()` answered with silence until
    * now, so a shooter could not tell a refused hit from a missed shot — the difference between
    * "hits feel broken" and a bug report that names the rule. Broadcast and filtered by id, the
@@ -611,6 +655,7 @@ export async function startGame(opts: GameOptions): Promise<Game> {
   let lastArmor = -1
   let lastHp = -1
   let lastHopper = -1
+  let lastGrenades = -1
   let lastReloading = false
   let sentGrounded: boolean | undefined
   let sentReloading: boolean | undefined
@@ -668,8 +713,15 @@ export async function startGame(opts: GameOptions): Promise<Game> {
     for (const h of remotePlayers.hittables()) _hittables.push(h)
     _hittables.push(localPlayer.hittable())
     session.projectiles.update(dt, _hittables)
+    // After the paintballs and against the same list of capsules. Same team, thrower included,
+    // takes nothing: friendly fire is off everywhere else in this game and a grenade is not the
+    // place to introduce it.
+    session.grenades.update(dt, _hittables)
+    // After the shooters have queued their paint, and before the render: drains this frame's
+    // share of the splat backlog a burst leaves behind.
+    session.decals.update()
     session.effects.update(dt)
-    session.environment.update(localPlayer.position)
+    session.environment.update(localPlayer.position, dt)
 
     if (now - lastHudPoll > HUD_POLL_MS) {
       lastHudPoll = now
@@ -748,6 +800,10 @@ export async function startGame(opts: GameOptions): Promise<Game> {
       lastHopper = marker.hopper
       lastReloading = marker.reloading
       hud.setHopper(marker.hopper, marker.reloading)
+    }
+    if (localPlayer.grenades !== lastGrenades) {
+      lastGrenades = localPlayer.grenades
+      hud.setGrenades(lastGrenades)
     }
     hud.setSpread(localPlayer.spread)
 
@@ -829,6 +885,34 @@ export async function startGame(opts: GameOptions): Promise<Game> {
   }
 
   /**
+   * Sound comes up with the first team pick, and from nowhere else.
+   *
+   * A match opens muted because an AudioContext may only start inside a user gesture — not
+   * because silence is the intent. Picking a side is that gesture, and it is the one click
+   * every player makes, so the match stops starting silent with the only way out buried two
+   * levels deep in the Esc menu. It runs once: a player who then turns sound off stays off.
+   *
+   * `AUDIO_AUTOSTART` is off while the mix is being reworked, which makes this a no-op and
+   * leaves the Esc menu toggle — a user gesture in its own right, so it can still start the
+   * context — as the only way in. Nothing is torn down: the toggle works mid-match.
+   */
+  function startAudioOnce(): void {
+    if (audioOffered || !AUDIO_AUTOSTART) return
+    audioOffered = true
+    muted = false
+    rawAudio.setMuted(false)
+    void audio.resume().catch((error: unknown) => {
+      // Refused anyway (an autoplay policy we did not satisfy): back to silence, and the menu
+      // toggle is still there as a second, unambiguous gesture. Say so — a match that starts
+      // silent for a reason nobody can see is the bug we are fixing, not a smaller version
+      // of it.
+      console.warn('[audio] first-gesture start refused, staying muted:', error)
+      muted = true
+      rawAudio.setMuted(true)
+    })
+  }
+
+  /**
    * A host that has just inherited the room does not have its authority up yet, and the very
    * first pick can land inside that window. Waiting for our own authority beats sending
    * ourselves an RPC that nobody is registered to answer.
@@ -845,6 +929,7 @@ export async function startGame(opts: GameOptions): Promise<Game> {
     // counts us as acting on a user gesture — which is what used to drop the player into the
     // Esc menu instead of the match, one extra click away from playing.
     input.requestLock()
+    startAudioOnce()
     const authority = await waitForAuthority()
     const result = authority
       ? authority.requestTeam(room.me.id, choice)
@@ -872,7 +957,7 @@ export async function startGame(opts: GameOptions): Promise<Game> {
     setSpectating(false)
     // Picking a side IS the gesture that starts the match, so this never bounces the player
     // into the menu: the capture is asked for, and if the browser says no we play without it.
-    if (wasOpen && !input.locked) requestLockSoon()
+    if (wasOpen && !input.locked) requestLockSoon('team-pick')
   }
 
   /**
@@ -897,8 +982,10 @@ export async function startGame(opts: GameOptions): Promise<Game> {
     hud.setHp(PLAYER.maxHp)
   }
 
-  function requestLockSoon(): void {
+  let lockRequestReason: 'team-pick' | 'resume' | 'none' = 'none'
+  function requestLockSoon(reason: 'team-pick' | 'resume' = 'resume'): void {
     window.clearTimeout(lockFallbackTimer)
+    lockRequestReason = reason
     // The match starts now, whatever the browser decides about the mouse: a menu that only
     // `pointerlockchange` could close was a locked door wherever the capture is refused (an
     // embedded frame, Safari, a window that is not the focused one).
@@ -983,6 +1070,7 @@ export async function startGame(opts: GameOptions): Promise<Game> {
     // player has to clear — it is the control scheme they now have. The menu stays shut.
     input.engage()
     hud.setPointerReleased(true, message)
+    lockRequestReason = 'none'
   })
   let lastUnlockAt = -Infinity
   const offLock = input.onLockChange((locked) => {
@@ -990,11 +1078,24 @@ export async function startGame(opts: GameOptions): Promise<Game> {
     syncPointerHint()
     if (locked) {
       window.clearTimeout(lockFallbackTimer)
+      lockRequestReason = 'none'
       menu.close()
     }
     // Losing the lock while the team screen is up is what the team screen is for. Drag-look is
     // a running match too — do not pause it because there is no capture to hold.
     else if (!teamScreen.isOpen && !input.pointerReleased && !input.engaged) {
+      // Do not open the menu just because the browser refused the lock on the way in from the
+      // team screen. The fallback (drag-look) is already engaged by `offLockError`, but if we
+      // get here before that callback runs, stay out of the menu: the player picked a side and
+      // wants to play, not stare at a pause screen.
+      if (menu.isOpen) return
+      if (lockRequestReason === 'team-pick') {
+        lockRequestReason = 'none'
+        // Engage drag-look immediately: the player is in the match and has no capture.
+        input.engage()
+        syncPointerHint()
+        return
+      }
       // Esc is the pause key of every shooter ever made, so it pauses here too — even in the
       // hero card, where it used to throw the visitor back onto the page mid-match. The way
       // out of the card is the Exit chip, a click outside it, or this menu's own last button.
@@ -1097,6 +1198,7 @@ export async function startGame(opts: GameOptions): Promise<Game> {
       sender.stop()
       binding.stop()
       offDoorRpc()
+      offGrenadeRpc()
       offGlassRpc()
       offHitRejected()
       window.clearTimeout(lockFallbackTimer)
@@ -1182,6 +1284,7 @@ export async function startGame(opts: GameOptions): Promise<Game> {
         window.setTimeout(() => localPlayer.debug.setFire(false), ms)
       },
       reload: () => localPlayer.debug.reload(),
+      throwGrenade: () => localPlayer.debug.throwGrenade(),
       interact: () => {
         interactPressed = true
       },

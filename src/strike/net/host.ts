@@ -5,7 +5,7 @@
  * whoever inherits the room after a migration, adopting whatever state the previous host
  * published (teams, scores, match phase) instead of resetting the match.
  */
-import { ARMOR, DAMAGE, WEAPONS, MATCH, PLAYER } from '../config'
+import { ARMOR, DAMAGE, GRENADE, WEAPONS, MATCH, PLAYER } from '../config'
 import { armoredDamage } from '../game/combat'
 import type { EntityRegistry } from '../game/entities'
 import { createMatch, isLive, type Match } from '../game/match'
@@ -19,6 +19,7 @@ import type {
   PlayerSnapshot,
   SpawnPoint,
   TeamId,
+  WeaponKind,
 } from '../types'
 import {
   BOT_STATS_MS,
@@ -626,10 +627,21 @@ export function startHostAuthority(
 
     // The shooter names the body part; the host still owns the number that goes with it.
     const part = bodyPart(hit.part)
-    const weapon = hit.weapon && hit.weapon in WEAPONS ? hit.weapon : 'rifle'
-    const raw = weapon === 'knife'
-      ? Math.round(WEAPONS.knife.damage * (isBackstab(target, hit.point) ? WEAPONS.knife.backstabScale : 1))
-      : Math.round(DAMAGE[part] * WEAPONS[weapon].damageScale)
+    // A grenade is the one thing that scores a hit without being a held weapon, so it has no
+    // `WEAPONS` row and no `damageScale`. The claim carries only HOW FAR from the burst the
+    // victim stood; the curve that turns that into damage is the host's (`blastDamage`).
+    const claimed = hit.weapon
+    const weapon: WeaponKind | 'grenade' =
+      claimed === 'grenade'
+        ? 'grenade'
+        : claimed === 'pistol' || claimed === 'knife' || claimed === 'rifle'
+          ? claimed
+          : 'rifle'
+    const raw = weapon === 'grenade'
+      ? blastDamage(hit.falloff)
+      : weapon === 'knife'
+        ? Math.round(WEAPONS.knife.damage * (isBackstab(target, hit.point) ? WEAPONS.knife.backstabScale : 1))
+        : Math.round(DAMAGE[part] * WEAPONS[weapon].damageScale)
     const { amount, armor, absorbed } = armoredDamage(raw, target.armor, part, weapon)
     target.armor = armor
     write(target.id, PS.armor, armor)
@@ -818,6 +830,22 @@ function fakeCount(counts: { a: number; b: number }): { team: TeamId }[] {
   for (let i = 0; i < counts.a; i++) out.push({ team: 'a' })
   for (let i = 0; i < counts.b; i++) out.push({ team: 'b' })
   return out
+}
+
+/**
+ * What a paint grenade is worth against a victim whose thrower measured `falloff` (1 = standing
+ * on the burst, 0 = at the very edge of it). Never trusted off the wire: anything that is not a
+ * number in 0..1 reads as an edge hit, so a malformed claim is the cheapest possible one.
+ *
+ * Deliberately capped below a kill from full health (`GRENADE.maxDamage`): a grenade opens a
+ * fight, the markers finish it.
+ */
+function blastDamage(falloff: unknown): number {
+  const f =
+    typeof falloff === 'number' && Number.isFinite(falloff)
+      ? Math.min(1, Math.max(0, falloff))
+      : 0
+  return Math.round(GRENADE.minDamage + (GRENADE.maxDamage - GRENADE.minDamage) * f)
 }
 
 /** Never trust a body part off the wire: an unknown one is a torso hit. */
