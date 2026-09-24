@@ -640,9 +640,57 @@ footer.footer .footer-bottom {
 }
 @media (max-width: 767px) {
   .deal { margin-right: 8px; }
-  .deal__toggle { height: 34px !important; padding: 0 12px 0 3px !important; gap: 8px !important; font-size: 13px; }
-  .deal__badge { width: 28px; height: 28px; }
+  .deal__toggle { height: 38px !important; padding: 0 12px 0 4px !important; gap: 8px !important; font-size: 13px; }
+  .deal__badge { width: 30px; height: 30px; }
   .deal__label, .deal__chev { display: none; }
   .deal__clock { color: #fff; }
   .deal__panel { position: fixed; top: 60px; left: 12px; right: 12px; width: auto; }
+}
+
+/* ---- Mobile header fix ------------------------------------------------
+   At 390px the header overflowed (CTA + burger off-screen), content showed
+   through the transparent bar, the hide blur smeared on iOS and the deal
+   panel opened off the left edge. */
+@media (max-width: 767px) {
+  .site-header {
+    background: rgba(12, 13, 16, 0.86) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    backdrop-filter: blur(16px) saturate(140%);
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+  }
+  .site-header.is-hidden { filter: none !important; }
+  /* Narrow centred headings (max-width in ch) must stay centred. */
+  h2.center, .section-heading .center { margin-inline: auto !important; }
+  /* Workspace CTAs: same white buttons as desktop, not the dark mobile fallback. */
+  .workspace-card .button.secondary {
+    background: #fff !important;
+    color: #0d0e11 !important;
+    border-color: transparent !important;
+  }
+  .brand { min-width: 0; flex-shrink: 1; }
+  .deal { margin-left: auto !important; margin-right: 0 !important; position: static !important; }
+  .header-cta {
+    flex-shrink: 0;
+    width: 38px;
+    min-height: 38px !important;
+    height: 38px;
+    padding: 0 !important;
+    gap: 0 !important;
+    justify-content: center;
+    font-size: 0 !important;
+  }
+  .header-cta svg { width: 18px !important; height: 18px !important; margin: 0 !important; }
+  @media (max-width: 374px) {
+    .site-header { padding-inline: 10px !important; gap: 6px !important; }
+    .brand { gap: 6px !important; font-size: 14px !important; }
+    .brand img, .brand svg { width: 24px !important; height: 24px !important; }
+    .deal__toggle { padding-right: 9px !important; gap: 6px !important; }
+  }
+  .deal__panel {
+    position: fixed !important;
+    top: calc(var(--header-h) + 8px) !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+  }
 }
