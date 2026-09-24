@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#121B2D" />
     <meta
       name="description"
-      content="Describe a game and Quadcode's AI agents build it: code, art, 3D and sound, in your own project files. Desktop app for macOS and Windows."
+      content="Describe a game and Quadcode AI agents build it: code, art, 3D and sound, in your own project files. Desktop app for macOS and Windows."
     />
-    <title>Quadcode · Create games with AI</title>
+    <title>Quadcode AI · Create games with AI</title>
     <link rel="icon" href="landing/quadcode-mark.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="src/landing/tokens.css" />
     <link rel="stylesheet" href="src/landing/landing.css" />
@@ -17,18 +17,16 @@
     <link rel="stylesheet" href="src/landing/atmosphere.css" />
     <link rel="stylesheet" href="src/landing/bold.css" />
     <link rel="stylesheet" href="src/landing/showreel.css" />
+    <link rel="stylesheet" href="src/landing/hf.css" />
     <script type="module" src="src/landing/app.js"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header">
-      <a class="brand" href="#" aria-label="Quadcode AI home"
-        ><img
-          src="landing/quadcode-logo.png"
-          alt="quadcode.ai"
-          width="168"
-          height="40"
-      /></a>
+      <a class="brand" href="#" aria-label="Quadcode AI home">
+        <img src="landing/quadcode-mark.svg" alt="" width="28" height="28" />
+        <span>Quadcode AI</span>
+      </a>
       <nav id="main-nav" class="main-nav" aria-label="Main navigation">
         <a class="nav-active" href="#games" aria-current="page"
           >Games <span class="nav-label">NEW</span></a
@@ -39,10 +37,36 @@
         <a href="#pricing">Pricing</a>
         <a href="#faq">FAQ</a>
       </nav>
+      <div class="deal" data-deal hidden>
+        <button
+          class="deal__toggle"
+          type="button"
+          data-deal-toggle
+          aria-expanded="false"
+          aria-controls="deal-panel"
+        >
+          <span class="deal__badge" aria-hidden="true"><i data-icon="gift"></i></span>
+          <span class="deal__label"><b>40% off</b> limited offer</span>
+          <span class="deal__clock" data-deal-clock>10:00</span>
+          <i data-icon="chevron-down" class="deal__chev"></i>
+        </button>
+        <div class="deal__panel" id="deal-panel" data-deal-panel hidden>
+          <div class="deal__head">
+            <span class="deal__eyebrow">Limited offer</span>
+            <span class="deal__ends">ends in <b data-deal-clock>10:00</b></span>
+          </div>
+          <p class="deal__title"><span>40%</span> off your first payment</p>
+          <p class="deal__copy">Any plan. Held for you while the timer runs.</p>
+          <div class="deal__track"><span data-deal-bar></span></div>
+          <a class="deal__cta" data-deal-cta href="https://quadcode.ai/profile/plans"
+            >Claim discount <i data-icon="arrow-right"></i></a
+          >
+        </div>
+      </div>
       <a
         class="button secondary small header-cta"
         href="https://quadcode.ai/#download"
-        >Get Quadcode <i data-icon="download"></i></a
+        >Get Quadcode AI <i data-icon="download"></i></a
       >
       <button
         class="menu-toggle icon-button"
@@ -82,7 +106,7 @@
           </h1>
           <div class="hero-actions">
             <a class="button" href="https://quadcode.ai/#download"
-              >Download Quadcode <i data-icon="download"></i></a
+              >Download Quadcode AI <i data-icon="download"></i></a
             >
             <p class="platform-note">Desktop app for macOS &amp; Windows</p>
           </div>
@@ -91,7 +115,7 @@
           class="hero-showcase"
           role="region"
           aria-roledescription="carousel"
-          aria-label="Featured Quadcode projects — the first one is playable"
+          aria-label="Featured Quadcode AI projects — the first one is playable"
           tabindex="0"
         >
           <!-- .hero-deck exists so the arrows have the CARDS as their
@@ -124,7 +148,7 @@
           </p>
         </div>
         <p class="hero-caption">
-          Made by creators with <strong>quadcode.ai</strong>
+          Made by creators with <strong>Quadcode AI</strong>
         </p>
       </section>
 
@@ -164,17 +188,15 @@
           </h2>
           <div class="workspace-grid">
             <article class="workspace-card frame" data-reveal>
-              <div class="integration-art" aria-hidden="true">
-                <span class="tool-tile tile-one">Git</span
-                ><span class="tool-tile tile-two">MCP</span
-                ><span class="tool-tile tile-main"
-                  ><img
-                    src="landing/quadcode-mark.svg"
-                    alt=""
-                    width="88"
-                    height="88" /></span
-                ><span class="tool-tile tile-four">CLI</span
-                ><span class="tool-tile tile-five">3D</span>
+              <div class="integration-art stack-art" aria-hidden="true">
+                <span class="stack-icon"><img src="landing/tools/anthropic.svg" alt="" /></span
+                ><span class="stack-icon"><img src="landing/tools/github.svg" alt="" /></span
+                ><span class="stack-icon"><img src="landing/tools/blender.svg" alt="" /></span
+                ><span class="stack-icon stack-icon--main"
+                  ><img src="landing/quadcode-mark.svg" alt="" /></span
+                ><span class="stack-icon"><img src="landing/tools/unity.svg" alt="" /></span
+                ><span class="stack-icon"><img src="landing/tools/figma.svg" alt="" /></span
+                ><span class="stack-icon"><img src="landing/tools/git.svg" alt="" /></span>
               </div>
               <h3>Works with your stack</h3>
               <p>
@@ -205,7 +227,7 @@
                 files.
               </p>
               <a class="button secondary" href="https://quadcode.ai/#download"
-                ><i data-icon="download"></i>Get Quadcode</a
+                ><i data-icon="download"></i>Get Quadcode AI</a
               >
             </article>
           </div>
@@ -236,7 +258,7 @@
         <div class="reel-shade" aria-hidden="true"></div>
         <div class="reel-copy">
           <h2 id="explore-title" class="reel-kicker">
-            Made with <span class="accent">Quadcode</span>
+            Made with <span class="accent">Quadcode AI</span>
           </h2>
           <p class="eyebrow" data-reel-genre></p>
           <p class="reel-title" data-reel-title></p>
@@ -247,16 +269,6 @@
         </div>
         <div class="reel-bottom">
           <div class="reel-rail" data-reel-rail aria-label="Choose a game"></div>
-          <button
-            class="icon-button reel-toggle"
-            type="button"
-            data-reel-toggle
-            aria-pressed="false"
-            aria-label="Pause showreel"
-          >
-            <i data-icon="play" class="reel-toggle__play"></i
-            ><span class="reel-toggle__pause" aria-hidden="true"></span>
-          </button>
         </div>
         <p class="sr-only" aria-live="polite" data-reel-status></p>
       </section>
@@ -279,12 +291,16 @@
       </section>
 
       <section
-        class="steps section"
+        class="steps steps--hf section"
         id="workflow"
         aria-labelledby="steps-title"
       >
         <div class="container">
           <h2 class="center" id="steps-title">Three steps to a game</h2>
+          <p class="steps-sub center">
+            From a sentence to a playable build. No setup, no engine
+            experience needed.
+          </p>
           <div class="steps-grid">
             <article class="step" data-reveal>
               <div class="step-art step-prompt">
@@ -298,7 +314,7 @@
                     loop
                     playsinline
                     preload="metadata"
-                    aria-label="Quadcode chat: a game prompt is typed and sent"
+                    aria-label="Quadcode AI chat: a game prompt is typed and sent"
                   ></video>
                 </div>
               </div>
@@ -320,7 +336,7 @@
                     loop
                     playsinline
                     preload="metadata"
-                    aria-label="Quadcode hands the brief to ten agents, which work on it in parallel"
+                    aria-label="Quadcode AI hands the brief to ten agents, which work on it in parallel"
                   ></video>
                 </div>
               </div>
@@ -355,10 +371,29 @@
             </article>
           </div>
           <div class="center" data-reveal>
-            <a class="button secondary" href="https://quadcode.ai/#download"
-              >Try it yourself <i data-icon="arrow-right"></i></a
+            <a class="button steps-cta" href="https://quadcode.ai/#download"
+              >Start now <i data-icon="arrow-right"></i></a
             >
           </div>
+        </div>
+      </section>
+
+      <section class="tm section" id="reviews" aria-labelledby="tm-title">
+        <div class="container">
+          <header class="tm-head">
+            <h2 id="tm-title">Loved by game creators</h2>
+            <p>Solo devs, students and studios on what they built first.</p>
+          </header>
+        </div>
+        <div class="tm-rail">
+          <div class="tm-track" data-tm-track tabindex="0" aria-label="Reviews"></div>
+        </div>
+        <div class="container tm-nav">
+          <button class="tm-arrow" type="button" data-tm-prev aria-label="Previous reviews">
+            <i data-icon="arrow-left"></i></button
+          ><button class="tm-arrow" type="button" data-tm-next aria-label="Next reviews">
+            <i data-icon="arrow-right"></i>
+          </button>
         </div>
       </section>
 
@@ -372,7 +407,7 @@
           </h2>
           <p>Code, art, 3D and sound in one desktop app.</p>
           <a class="button" href="https://quadcode.ai/#download"
-            >Download Quadcode <i data-icon="download"></i></a
+            >Download Quadcode AI <i data-icon="download"></i></a
           >
         </div>
       </section>
@@ -406,7 +441,7 @@
             </h2>
             <p>
               Guides, workflows and project files<br />from people building with
-              Quadcode.
+              Quadcode AI.
             </p>
           </header>
           <div class="community-cards">
@@ -542,7 +577,7 @@
                 alt=""
                 width="38"
                 height="38"
-              /><span>quadcode.ai</span></a
+              /><span>Quadcode AI</span></a
             >
             <h2>Start your<br />first game.</h2>
           </div>
@@ -565,8 +600,8 @@
             ><a href="https://quadcode.ai/terms">Terms &amp; conditions</a>
           </div>
         </div>
-        <div class="footer-bottom" data-reveal>
-          <span>© <span id="year">2026</span> Quadcode</span
+        <div class="footer-bottom">
+          <span>© <span id="year">2026</span> Quadcode AI</span
           ><span>Made with Quadcode AI</span><a href="#games">Back to top <i data-icon="arrow-up"></i></a>
         </div>
       </div>
@@ -585,7 +620,7 @@
         height="720"
       />
       <div class="dialog-body">
-        <p class="eyebrow">Quadcode project preview</p>
+        <p class="eyebrow">Quadcode AI project preview</p>
         <h2 id="dialog-title">Dragon Flight</h2>
         <p id="dialog-description"></p>
         <a
@@ -594,10 +629,10 @@
           href="https://quadcode.ai/#make-alive"
           target="_blank"
           rel="noopener noreferrer"
-          >Explore on Quadcode <i data-icon="arrow-up-right"></i></a
+          >Explore on Quadcode AI <i data-icon="arrow-up-right"></i></a
         >
         <p class="dialog-note">
-          Opens the original Quadcode showcase in a new tab.
+          Opens the original Quadcode AI showcase in a new tab.
         </p>
       </div>
     </dialog>
@@ -605,7 +640,7 @@
       ><div class="noscript">
         Enable JavaScript to play the demo and explore the project galleries.
         <a href="play.html">Open the playground directly</a> or
-        <a href="https://quadcode.ai/#download">get Quadcode here.</a>
+        <a href="https://quadcode.ai/#download">get Quadcode AI here.</a>
       </div></noscript
     >
   </body>

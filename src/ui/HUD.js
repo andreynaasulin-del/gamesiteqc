@@ -6,7 +6,7 @@ const DOWNLOAD_URL = 'https://quadcode.ai/#download';
 const SOURCE_URL = 'https://github.com/achrefelouafi/LinearAbiltyCastingExtendedThreeJS';
 
 /**
- * Heads-up display for the Quadcode short edition.
+ * Heads-up display for the Quadcode AI short edition.
  *
  * Plain DOM — no framework. Four things on screen and nothing else: the brand
  * header, one CTA, the six ability cards, and a help panel you can hide.
@@ -43,14 +43,15 @@ export class HUD {
 
     root.innerHTML = `
       <header class="hud__brand">
-        <a class="hud__logo" href="${QUADCODE_URL}" target="_blank" rel="noopener" aria-label="Quadcode">
-          <img src="./brand/quadcode-logo.png" alt="Quadcode" width="132" height="28" />
+        <a class="hud__logo" href="${QUADCODE_URL}" target="_blank" rel="noopener" aria-label="Quadcode AI">
+          <img src="./brand/quadcode-mark.svg" alt="" width="28" height="28" />
+          <span>Quadcode AI</span>
         </a>
         <span class="hud__brand-tag">Games playground</span>
       </header>
 
       <a class="hud__cta" href="${DOWNLOAD_URL}" target="_blank" rel="noopener">
-        Get Quadcode
+        Get Quadcode AI
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 3.5 13 8l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </a>
 

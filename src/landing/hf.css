@@ -1,0 +1,648 @@
+/* ================================================================
+   HF parity round — loaded LAST, overrides earlier layers.
+   Reference: higgsfield.ai/games-intro (measured in browser):
+     · page: #0b0b0b ink + 1px dot grid (rgba 255/.08, 16px, ~.45)
+     · steps + testimonials: white band, light cards, dark type
+     · MCP-style card: brand glow rises from the bottom on hover
+   ================================================================ */
+
+:root {
+  --hf-ink: #0b0b0b;
+  --hf-group: 1200px;           /* one width for every content group */
+  --hf-card-radius: 24px;
+}
+
+/* ---- 9. Background: HF ink + dot grid, all old washes off ---------- */
+html {
+  background: var(--hf-ink) !important;
+}
+body {
+  background: transparent !important;
+}
+body::before {
+  content: "" !important;
+  display: block !important;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.45;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px) !important;
+  background-size: 16px 16px !important;
+}
+main > section::before,
+#capabilities .feature::before {
+  content: none !important;
+  background: none !important;
+}
+.bg-stage {
+  display: none !important;
+}
+
+/* ---- 2. Primary buttons: white type instead of black ---------------- */
+.button:not(.secondary):not(.dark):not(.outline),
+.button:not(.secondary):not(.dark):not(.outline) .i {
+  color: #fff;
+}
+
+/* ---- 7. One width per group ----------------------------------------- */
+@media (min-width: 901px) {
+  .container {
+    max-width: calc(var(--hf-group) + 2 * var(--gutter, 32px));
+  }
+  .workspace-grid,
+  .steps-grid,
+  .community-grid,
+  .faq-list,
+  #capabilities .feature-inner,
+  .rate,
+  .cta-panel {
+    max-width: var(--hf-group) !important;
+    margin-inline: auto;
+  }
+  .workspace-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .workspace-card {
+    min-height: 460px;
+  }
+}
+
+/* ---- 3. Integrations card: real tool icons, HF hover glow ------------ */
+.workspace-card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+/* HF spec (measured): 168px bottom band, transparent → brand/20, 300ms;
+   media scale 1.05; CTA white → brand. Ours: coral instead of lime. */
+.workspace-card::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 168px;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 106, 70, 0) 0%, rgba(255, 106, 70, 0.24) 100%);
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+.workspace-card > * { position: relative; z-index: 1; }
+.workspace-card .integration-art,
+.workspace-card .app-art {
+  background: transparent !important;
+  box-shadow: none !important;
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.workspace-card .button {
+  transition: background-color 300ms ease, color 300ms ease, box-shadow 300ms ease !important;
+}
+.workspace-card:hover::after,
+.workspace-card:focus-within::after { opacity: 1; }
+.workspace-card:hover .integration-art,
+.workspace-card:hover .app-art,
+.workspace-card:focus-within .integration-art,
+.workspace-card:focus-within .app-art { transform: scale(1.05); }
+.workspace-card:hover .button,
+.workspace-card:focus-within .button {
+  background: #ff6a46 !important;
+  background-image: none !important;
+  color: #fff !important;
+  box-shadow: 0 8px 24px -10px rgba(255, 106, 70, 0.7) !important;
+}
+/* Icon row scales with the card so the end icons never get clipped. */
+.workspace-card { container-type: inline-size; }
+.stack-art {
+  --s: min(56px, 10.5cqi);
+  display: grid !important;
+  grid-template-columns: repeat(7, var(--s));
+  gap: min(10px, 1.6cqi);
+  justify-content: center;
+  align-items: center;
+  height: 150px;
+  margin: 8px auto 28px;
+}
+.stack-icon {
+  display: grid;
+  place-items: center;
+  width: var(--s);
+  height: var(--s);
+  border-radius: calc(var(--s) * 0.29);
+  background: #1a1b1e;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transition:
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 320ms ease,
+    box-shadow 320ms ease;
+}
+.stack-icon img {
+  width: calc(var(--s) * 0.46);
+  height: calc(var(--s) * 0.46);
+  opacity: 0.55;
+  transition: opacity 320ms ease;
+}
+.stack-icon--main {
+  width: calc(var(--s) * 1.36);
+  height: calc(var(--s) * 1.36);
+  margin-inline: calc(var(--s) * -0.18);
+  border-radius: calc(var(--s) * 0.39);
+  background: #fff;
+}
+.stack-icon--main img {
+  width: calc(var(--s) * 0.82);
+  height: calc(var(--s) * 0.82);
+  opacity: 1;
+}
+.stack-icon:nth-child(1), .stack-icon:nth-child(7) { transform: translateY(18px); }
+.stack-icon:nth-child(2), .stack-icon:nth-child(6) { transform: translateY(6px); }
+@media (hover: hover) and (pointer: fine) {
+  .workspace-card:hover::after { opacity: 1; }
+  .workspace-card:hover .stack-icon { background: #232428; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16); }
+  .workspace-card:hover .stack-icon img { opacity: 1; }
+  .workspace-card:hover .stack-icon:nth-child(1),
+  .workspace-card:hover .stack-icon:nth-child(7) { transform: translateY(8px); }
+  .workspace-card:hover .stack-icon:nth-child(2),
+  .workspace-card:hover .stack-icon:nth-child(6) { transform: translateY(-2px); }
+  .workspace-card:hover .stack-icon:nth-child(3),
+  .workspace-card:hover .stack-icon:nth-child(5) { transform: translateY(-6px); }
+  .workspace-card:hover .stack-icon--main { transform: scale(1.06); background: #fff; }
+  .stack-icon:not(.stack-icon--main):hover {
+    background: #2c2d33 !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28), 0 10px 24px -8px rgba(255, 106, 70, 0.5) !important;
+  }
+  .workspace-card .app-tile { transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1); }
+  .workspace-card:hover .app-tile { transform: translateY(-6px) scale(1.04); }
+}
+@media (max-width: 560px) {
+  .stack-art { height: 120px; }
+}
+
+/* ---- 5. Three steps — HF 1:1: white band, square light cards --------- */
+#workflow.steps--hf,
+#reviews.tm {
+  background: #fff !important;
+  color: #131517;
+}
+#workflow.steps--hf {
+  padding-block: 96px 72px !important;
+}
+#workflow.steps--hf h2 {
+  color: #131517;
+  font-size: clamp(34px, 4.4vw, 60px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  margin: 0;
+}
+#workflow .steps-sub {
+  max-width: 560px;
+  margin: 16px auto 0;
+  color: #6b6d70;
+  font-size: 18px;
+  line-height: 1.45;
+}
+#workflow.steps--hf .steps-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 24px !important;
+  margin: 56px auto 48px !important;
+}
+#workflow.steps--hf .step,
+#workflow.steps--hf .step:nth-child(2) {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 0 !important;
+  background: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  text-align: center;
+}
+#workflow.steps--hf .step-art,
+#workflow.steps--hf .step:nth-child(2) .step-art,
+#workflow.steps--hf .step:nth-child(3) .step-art {
+  position: relative;
+  width: 100% !important;
+  aspect-ratio: 4 / 3 !important;
+  height: auto !important;
+  margin: 0 0 24px !important;
+  padding: 0 !important;
+  border-radius: var(--hf-card-radius);
+  background-color: #f6f6f7 !important;
+  background-image:
+    linear-gradient(rgba(19, 21, 23, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(19, 21, 23, 0.06) 1px, transparent 1px) !important;
+  background-size: 28px 28px !important;
+  background-position: center !important;
+  box-shadow: inset 0 0 0 1px rgba(19, 21, 23, 0.06), 0 1px 2px rgba(19, 21, 23, 0.04) !important;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+/* Screencasts are 4:3 (2222×1666): keep that ratio so no UI gets cropped. */
+#workflow.steps--hf .step-art > :not(.step-number) {
+  position: absolute !important;
+  inset: 14px !important;
+  width: auto !important;
+  height: auto !important;
+  aspect-ratio: auto !important;
+  max-width: none !important;
+  margin: 0 !important;
+  border-radius: 14px !important;
+  overflow: hidden;
+  box-shadow: 0 18px 40px -18px rgba(19, 21, 23, 0.45) !important;
+}
+#workflow.steps--hf .step-art video,
+#workflow.steps--hf .step-art img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  background: transparent;
+}
+/* Step 03 is game footage (16:9, no UI) — filling is fine there. */
+#workflow.steps--hf .step:nth-child(3) .step-art video {
+  object-fit: cover !important;
+}
+#workflow.steps--hf .step-number {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff;
+  color: #131517 !important;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(19, 21, 23, 0.14);
+  -webkit-text-stroke: 0 !important;
+  opacity: 1 !important;
+}
+#workflow.steps--hf .step > h3 {
+  margin: 0 0 8px !important;
+  color: #131517 !important;
+  font-size: 24px !important;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+#workflow.steps--hf .step > h3::before {
+  content: none !important;
+}
+#workflow.steps--hf .step > p {
+  max-width: 320px !important;
+  margin: 0 auto !important;
+  color: #898a8b !important;
+  font-size: 16px !important;
+  line-height: 1.5;
+}
+#workflow .steps-cta,
+#reviews .tm-arrow {
+  background: #131517 !important;
+  color: #fff !important;
+  box-shadow: none !important;
+  border-radius: 100px;
+}
+#workflow .steps-cta {
+  min-width: 200px;
+  padding-inline: 32px;
+}
+@media (max-width: 900px) {
+  #workflow.steps--hf .steps-grid {
+    grid-template-columns: 1fr !important;
+    max-width: 440px;
+  }
+  #workflow.steps--hf { padding-block: 64px 48px !important; }
+}
+
+/* ---- 6. Testimonials (placeholder quotes) --------------------------- */
+#reviews.tm {
+  padding-block: 24px 56px !important;
+  overflow: hidden;
+}
+.tm-head {
+  text-align: center;
+}
+.tm-head h2 {
+  margin: 0;
+  color: #131517;
+  font-size: clamp(34px, 4.4vw, 60px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+.tm-head p {
+  margin: 16px 0 0;
+  color: #6b6d70;
+  font-size: 18px;
+}
+.tm-rail {
+  margin-top: 48px;
+}
+.tm-track {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  padding: 8px max(24px, calc((100vw - var(--hf-group)) / 2)) 24px;
+  scroll-padding-inline: max(24px, calc((100vw - var(--hf-group)) / 2));
+}
+.tm-track::-webkit-scrollbar { display: none; }
+.tm-card {
+  flex: 0 0 min(384px, 82vw);
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(19, 21, 23, 0.06), 0 8px 24px -12px rgba(19, 21, 23, 0.18);
+}
+.tm-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 8px 4px;
+}
+.tm-card__who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.tm-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  /* Higgsfield-style: neutral grey disc, thin outline, one letter */
+  background: #f1f1f2;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+  color: #5d5f63;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+}
+.tm-card__name {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.tm-card__name strong {
+  color: #131517;
+  font-size: 15px;
+  font-weight: 600;
+}
+.tm-card__name small {
+  color: #8a8c90;
+  font-size: 13px;
+}
+.tm-stars {
+  display: inline-flex;
+  gap: 1px;
+  color: #ffb020;
+  flex: none;
+}
+.tm-card__quote {
+  flex: 1;
+  margin: 0;
+  padding: 20px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #f6f6f7, #efeff1);
+}
+.tm-card__quote p {
+  margin: 0;
+  color: #2a2c2f;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.tm-nav {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+.tm-arrow {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  cursor: pointer;
+  transition: transform 160ms ease, opacity 160ms ease;
+}
+.tm-arrow .i { width: 20px; height: 20px; }
+@media (hover: hover) and (pointer: fine) {
+  .tm-arrow:hover { transform: scale(1.06); }
+}
+
+/* ---- Footer: no dead space under the columns ------------------------ */
+#faq { padding-bottom: 24px !important; }
+footer.footer {
+  padding: 44px 0 20px !important;
+  min-height: 0 !important;
+}
+footer.footer .footer-top {
+  padding-bottom: 28px !important;
+  margin-bottom: 0 !important;
+}
+footer.footer .footer-bottom {
+  padding-top: 18px !important;
+  margin-top: 0 !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* ---- 8. Header deal dropdown (10 min · −40%) ------------------------ */
+/* Quiet by default: a slim glass pill next to the main CTA, one live dot.
+   Colour only where it carries meaning (the 40% and the progress). */
+.deal {
+  position: relative;
+  margin-left: auto;
+  margin-right: 12px;
+}
+.deal + .header-cta { margin-left: 0 !important; }
+.deal[hidden] { display: none; }
+.deal__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 10px 0 14px;
+  border: 0;
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+/* Longer, more visible pill: coral tint + gift badge that pulses. */
+.deal__toggle {
+  height: 40px !important;
+  padding: 0 14px 0 5px !important;
+  gap: 10px !important;
+  background: linear-gradient(90deg, rgba(255, 106, 70, 0.2), rgba(255, 106, 70, 0.06) 70%) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 106, 70, 0.45) !important;
+}
+.deal__badge {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #ff6a46;
+  color: #fff;
+  box-shadow: 0 0 0 0 rgba(255, 106, 70, 0.6);
+  animation: deal-pulse 2s ease-out infinite;
+}
+.deal__badge svg { width: 16px; height: 16px; }
+.deal__label {
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.deal__label b { color: #fff; font-weight: 700; }
+@keyframes deal-pulse {
+  70%, 100% { box-shadow: 0 0 0 8px rgba(255, 106, 70, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .deal__badge { animation: none; }
+}
+.deal__clock {
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.deal__chev {
+  width: 14px;
+  height: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  transition: transform 200ms ease;
+}
+.deal.is-open .deal__chev { transform: rotate(180deg); }
+.deal.is-open .deal__toggle,
+.deal__toggle:focus-visible {
+  background: linear-gradient(90deg, rgba(255, 106, 70, 0.3), rgba(255, 106, 70, 0.1) 70%) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 106, 70, 0.7) !important;
+}
+@media (hover: hover) and (pointer: fine) {
+  .deal__toggle:hover {
+    background: linear-gradient(90deg, rgba(255, 106, 70, 0.3), rgba(255, 106, 70, 0.1) 70%) !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 106, 70, 0.7) !important;
+  }
+}
+/* Mid-width desktop: drop the tail words before the nav gets squeezed */
+@media (max-width: 1180px) {
+  .deal__label { font-size: 0; }
+  .deal__label b { font-size: 14px; }
+}
+.deal__panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 60;
+  width: 280px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #121314;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 20px 48px -12px rgba(0, 0, 0, 0.7);
+  color: #fff;
+  transform-origin: top right;
+  animation: deal-in 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.deal__panel[hidden] { display: none; }
+@keyframes deal-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+}
+.deal__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+.deal__eyebrow {
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.deal__ends b {
+  color: #fff;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.deal__panel .deal__title {
+  margin: 0 0 6px;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+.deal__title span {
+  color: #ff7a52;
+}
+.deal__panel .deal__copy {
+  margin: 0 0 14px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.deal__track {
+  height: 2px;
+  margin-bottom: 14px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.deal__track span {
+  display: block;
+  height: 100%;
+  background: #ff6a46;
+  transform-origin: left;
+  transition: transform 1s linear;
+}
+.deal__cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 40px;
+  border-radius: 10px;
+  background: #fff;
+  color: #0b0b0b;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 160ms ease;
+}
+.deal__cta .i { width: 16px; height: 16px; }
+@media (hover: hover) and (pointer: fine) {
+  .deal__cta:hover { background: #e9e9ea; }
+}
+@media (max-width: 767px) {
+  .deal { margin-right: 8px; }
+  .deal__toggle { height: 34px !important; padding: 0 12px 0 3px !important; gap: 8px !important; font-size: 13px; }
+  .deal__badge { width: 28px; height: 28px; }
+  .deal__label, .deal__chev { display: none; }
+  .deal__clock { color: #fff; }
+  .deal__panel { position: fixed; top: 60px; left: 12px; right: 12px; width: auto; }
+}

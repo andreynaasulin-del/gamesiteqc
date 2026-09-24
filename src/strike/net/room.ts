@@ -3,7 +3,7 @@
  * through this surface.
  *
  * This file used to wrap the netcode, and the whole game was written against that wrapper.
- * On the Quadcode landing there is no lobby, no invite link and no account: the visitor
+ * On the Quadcode AI landing there is no lobby, no invite link and no account: the visitor
  * clicks Play and is in a match a second later. So the contract stayed and the transport
  * left — `local-room.ts` implements the same interface against a room of one human and
  * five bots, with no socket and no third-party SDK in the bundle.

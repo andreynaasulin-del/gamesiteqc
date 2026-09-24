@@ -2,7 +2,7 @@
   "name": "quadcode-games",
   "version": "1.0.0",
   "private": true,
-  "description": "Quadcode playable games landing: browser games running in the hero card.",
+  "description": "Quadcode AI playable games landing: browser games running in the hero card.",
   "type": "module",
   "scripts": {
     "dev": "vite",

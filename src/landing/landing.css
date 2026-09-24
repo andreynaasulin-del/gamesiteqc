@@ -58,11 +58,19 @@
   pointer-events: auto;
 }
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
   flex-shrink: 0;
+  color: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
 }
 .brand img {
-  width: 168px;
-  height: auto;
+  width: 28px;
+  height: 28px;
 }
 .main-nav {
   display: flex;
@@ -959,7 +967,7 @@
   border: 1px solid #ffffff2e;
   backdrop-filter: blur(10px);
 }
-/* The prompt bar is the real Quadcode chat composer (crop of the product
+/* The prompt bar is the real Quadcode AI chat composer (crop of the product
    UI, model = claude-opus-5.5). Only the sentence is live HTML, placed on
    the composer's input line; cqw keeps it locked to the image at any size. */
 .world-prompt {
@@ -1743,8 +1751,8 @@
     gap: 18px;
     font-size: 14px;
   }
-  .brand img {
-    width: 145px;
+  .brand {
+    font-size: 20px;
   }
   .feature-inner {
     gap: 35px;
@@ -1929,8 +1937,8 @@
     padding: 0 16px;
     gap: 12px;
   }
-  .brand img {
-    width: 139px;
+  .brand {
+    font-size: 19px;
   }
   .header-cta {
     min-height: 38px;
@@ -2316,8 +2324,12 @@
   }
 }
 @media (max-width: 380px) {
+  .brand {
+    font-size: 17px;
+  }
   .brand img {
-    width: 118px;
+    width: 24px;
+    height: 24px;
   }
   .site-header {
     gap: 7px;

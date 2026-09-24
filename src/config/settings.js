@@ -4405,7 +4405,7 @@ export const CastShape = Object.freeze({
  * array, and the index is the slot the keyboard binds to — adding an eleventh
  * ability is a new file, an entry here and a settings block above.
  */
-// Quadcode short edition. The remaining four ability classes (acid, growth,
+// Quadcode AI short edition. The remaining four ability classes (acid, growth,
 // cyber, cascade) are still in `abilities/` but unregistered, so Vite drops them.
 /**
  * Six casts, six elements, six colours — fire, crystal, void, stone, water,

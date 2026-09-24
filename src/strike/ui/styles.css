@@ -530,10 +530,13 @@ canvas {
   z-index: 2;
 }
 .ps-brand img {
+  width: 20px;
   height: 20px;
-  /* the logo ships black; the dark theme needs it white */
-  filter: invert(1);
-  opacity: 0.9;
+}
+.ps-brand strong {
+  color: #fff;
+  font-size: 18px;
+  letter-spacing: -0.04em;
 }
 .ps-brand span {
   font-size: 11px;

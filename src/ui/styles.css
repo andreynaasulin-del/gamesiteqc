@@ -1,7 +1,7 @@
 /* ------------------------------------------------------------------ *
- * Quadcode Games Playground — UI shell
+ * Quadcode AI Games Playground — UI shell
  * The 3D view owns the whole viewport; everything here floats on top.
- * Palette and type come from the Quadcode guidebook: League Spartan,
+ * Palette and type come from the Quadcode AI guidebook: League Spartan,
  * #0B0D15 / #13131E / #212233, accent #FF9569 → #DD344D.
  * ------------------------------------------------------------------ */
 
@@ -199,10 +199,20 @@ kbd {
   pointer-events: auto;
 }
 
+.hud__logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: inherit;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+}
 .hud__logo img {
   display: block;
+  width: 28px;
   height: 28px;
-  width: auto;
 }
 
 .hud__brand-tag {

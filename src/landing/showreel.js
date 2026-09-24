@@ -92,14 +92,14 @@ function initStage(root) {
     const t = e.target.closest(".reel-tile");
     if (!t) return;
     paused = false;
-    toggle.setAttribute("aria-pressed", "false");
+    toggle?.setAttribute("aria-pressed", "false");
     show(+t.dataset.i);
   });
   root.addEventListener("keydown", (e) => {
     if (e.key === "ArrowRight") show(index + 1);
     if (e.key === "ArrowLeft") show(index - 1);
   });
-  toggle.addEventListener("click", () => {
+  toggle?.addEventListener("click", () => {
     paused = !paused;
     toggle.setAttribute("aria-pressed", String(paused));
     toggle.setAttribute("aria-label", paused ? "Play showreel" : "Pause showreel");
@@ -118,8 +118,8 @@ function initStage(root) {
 
   if (reduced()) {
     paused = true;
-    toggle.setAttribute("aria-pressed", "true");
-    toggle.setAttribute("aria-label", "Play showreel");
+    toggle?.setAttribute("aria-pressed", "true");
+    toggle?.setAttribute("aria-label", "Play showreel");
   }
   show(0, { play: false });
 }

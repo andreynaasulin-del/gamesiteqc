@@ -17,6 +17,8 @@ const PATHS = {
   "arrow-up": '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
   play: '<path d="M6 4.5v15a.5.5 0 0 0 .76.43l12.5-7.5a.5.5 0 0 0 0-.86L6.76 4.07A.5.5 0 0 0 6 4.5z" fill="currentColor" stroke="none"/>',
   x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  "chevron-down": '<path d="m6 9 6 6 6-6"/>',
+  gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C9.5 3 12 5.5 12 8c0-2.5 2.5-5 4.5-5a2.5 2.5 0 0 1 0 5"/>',
   download:
     '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
   sparkles:

@@ -30,7 +30,8 @@ export function showUnsupported(
   const copy = COPY[reason]
   const screen = el('div', { class: 'ps-screen' }, [
     el('div', { class: 'ps-brand' }, [
-      el('img', { src: `${import.meta.env.BASE_URL}brand/quadcode-logo.png`, alt: 'Quadcode' }),
+      el('img', { src: `${import.meta.env.BASE_URL}brand/quadcode-mark.svg`, alt: '' }),
+      el('strong', { text: 'Quadcode AI' }),
       el('span', { text: 'Strike' }),
     ]),
     el('div', { class: 'ps-card ps-unsupported' }, [

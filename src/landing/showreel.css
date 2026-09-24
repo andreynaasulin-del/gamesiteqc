@@ -585,11 +585,11 @@ main > section::before,
 /* Topic 02 on tablet/desktop (the two-column layout starts at 768px):
    visual on top, copy below */
 @media (min-width: 768px) {
-  #capabilities .feature:nth-child(2) .feature-inner {
+  #capabilities .feature:has(.team-prompt) .feature-inner {
     grid-template-columns: minmax(0, 1fr) !important;
     gap: clamp(28px, 4svh, 44px);
   }
-  #capabilities .feature:nth-child(2) .feature-visual {
+  #capabilities .feature:has(.team-prompt) .feature-visual {
     order: 1 !important;
     width: 100%;
     max-width: 1040px;
@@ -597,7 +597,7 @@ main > section::before,
     max-height: none;
     justify-self: center;
   }
-  #capabilities .feature:nth-child(2) .feature-copy {
+  #capabilities .feature:has(.team-prompt) .feature-copy {
     order: 2 !important;
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -608,12 +608,12 @@ main > section::before,
     max-width: 1040px;
     justify-self: center;
   }
-  #capabilities .feature:nth-child(2) .feature-copy > .feature-number { grid-column: 1; grid-row: 1; }
-  #capabilities .feature:nth-child(2) .feature-copy > h3 { grid-column: 1; grid-row: 2 / 4; margin-bottom: 0; }
-  #capabilities .feature:nth-child(2) .feature-copy > p { grid-column: 2; grid-row: 2; max-width: none; }
-  #capabilities .feature:nth-child(2) .feature-copy > .tags { grid-column: 2; grid-row: 3; }
+  #capabilities .feature:has(.team-prompt) .feature-copy > .feature-number { grid-column: 1; grid-row: 1; }
+  #capabilities .feature:has(.team-prompt) .feature-copy > h3 { grid-column: 1; grid-row: 2 / 4; margin-bottom: 0; }
+  #capabilities .feature:has(.team-prompt) .feature-copy > p { grid-column: 2; grid-row: 2; max-width: none; }
+  #capabilities .feature:has(.team-prompt) .feature-copy > .tags { grid-column: 2; grid-row: 3; }
   /* the three agent cards get the width: roomy row, no dead band below */
-  #capabilities .feature:nth-child(2) .team-prompt { margin-top: clamp(18px, 3svh, 32px); }
+  #capabilities .feature:has(.team-prompt) .team-prompt { margin-top: clamp(18px, 3svh, 32px); }
 }
 
 /* 2 ─ compact vertical rhythm */

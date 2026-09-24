@@ -2,6 +2,8 @@ import { GameCard } from "./hero-game.js";
 import { games, gameAsset } from "./games.js";
 import { icon, hydrateIcons } from "./icons.js";
 import { initializeOffer } from "./offer.js";
+import { initializeDeal } from "./deal.js";
+import { initTestimonials } from "./testimonials.js";
 import { initMotion } from "./motion.js";
 import { initShowreel } from "./showreel.js";
 import {
@@ -16,7 +18,7 @@ import {
   PLANS_URL,
 } from "./plans.js";
 
-// Content is sourced from Quadcode's public showcase, not generated customer claims.
+// Content is sourced from Quadcode AI's public showcase, not generated customer claims.
 const asset = (name) => `landing/${name}`;
 
 const projects = [
@@ -26,7 +28,7 @@ const projects = [
     image: "dragon.webp",
     alt: "Dragon flying over a volcanic world at sunset",
     description:
-      "A flying game set above a volcanic landscape. An example from the Quadcode game and 3D showcase.",
+      "A flying game set above a volcanic landscape. An example from the Quadcode AI game and 3D showcase.",
     url: "https://quadcode.ai/#make-alive",
   },
   {
@@ -35,7 +37,7 @@ const projects = [
     image: "apartment.webp",
     alt: "A detailed, sunlit apartment with a kitchen and living room",
     description:
-      "A furnished apartment you can explore in the browser. See the original interactive experience in the Quadcode showcase.",
+      "A furnished apartment you can explore in the browser. See the original interactive experience in the Quadcode AI showcase.",
     url: "https://quadcode.ai/#make-alive",
   },
   {
@@ -51,7 +53,7 @@ const projects = [
     title: "Snake Grass",
     category: "3D · Locomotion demo",
     image: "snake.webp",
-    alt: "The Snake Grass game shown in the Quadcode showcase",
+    alt: "The Snake Grass game shown in the Quadcode AI showcase",
     description:
       "A real-time snake locomotion demo with steering, sprinting, a cobra pose and tree climbing. This is a capture from the running project, including its developer HUD.",
     url: "https://quadcode.ai/#make-alive",
@@ -62,7 +64,7 @@ const projects = [
     image: "chess.webp",
     alt: "Three-dimensional chess game with a rendered chessboard",
     description:
-      "A 3D chess project from the software examples on Quadcode. Explore the game in the original developer showcase.",
+      "A 3D chess project from the software examples on Quadcode AI. Explore the game in the original developer showcase.",
     url: "https://quadcode.ai/#capabilities",
   },
 ];
@@ -80,12 +82,6 @@ const featureData = [
     visual: "project",
   },
   {
-    title: "Three agents,<br>one project.",
-    copy: "Cody writes the game logic. Lumi designs the world. Sonic adds motion and sound. They share the same context and pass work to each other.",
-    tags: ["Specialized agents", "Shared context", "Any model"],
-    visual: "team",
-  },
-  {
     title: "3D worlds from<br>a sentence.",
     copy: "Describe a place, a character or a whole world. Built-in 3D tools turn it into assets you can drop straight into your game.",
     tags: ["3D assets", "Environments", "Characters"],
@@ -95,7 +91,7 @@ const featureData = [
 const faqData = [
   [
     "What is Quadcode AI?",
-    "Quadcode is a desktop creative workspace where specialized AI agents help you build games, apps, websites, visuals and audio. They open, edit and run the files in your project folder.",
+    "Quadcode AI is a desktop creative workspace where specialized AI agents help you build games, apps, websites, visuals and audio. They open, edit and run the files in your project folder.",
   ],
   [
     "Do I need to know how to code?",
@@ -103,11 +99,11 @@ const faqData = [
   ],
   [
     "Why a desktop app, not a browser tab?",
-    "The app works directly in your project folder. Agents can read and write files, run build steps and use local tools such as Unity, Blender and your command-line programs. Quadcode is available for macOS and Windows.",
+    "The app works directly in your project folder. Agents can read and write files, run build steps and use local tools such as Unity, Blender and your command-line programs. Quadcode AI is available for macOS and Windows.",
   ],
   [
     "Can I use my own models and tools?",
-    "Quadcode supports multiple model providers and connects to tools through MCP and local integrations. You can also orchestrate agentic CLIs such as Claude Code and Codex alongside your existing workflow.",
+    "Quadcode AI supports multiple model providers and connects to tools through MCP and local integrations. You can also orchestrate agentic CLIs such as Claude Code and Codex alongside your existing workflow.",
   ],
   [
     "Can it help with 3D, music and sound?",
@@ -115,7 +111,7 @@ const faqData = [
   ],
   [
     "Where should I start?",
-    "Get the desktop app from quadcode.ai, open a project and describe what you want to build. The community library includes step-by-step guides, skills and ready-to-go projects to explore.",
+    "Get the Quadcode AI desktop app, open a project and describe what you want to build. The community library includes step-by-step guides, skills and ready-to-go projects to explore.",
   ],
 ];
 
@@ -148,7 +144,7 @@ const tags = (items) =>
 
 function featureVisual(type) {
   if (type === "project") {
-    return `<div class="project-window screencast"><video class="project-window__video" data-feature-video src="${asset("ide/tidecliff-recording-battle-cut.mp4")}" poster="${asset("ide/tidecliff-recording-clean.jpg")}" width="2848" height="1336" muted loop playsinline preload="metadata" aria-label="Quadcode desktop interface: a prompt is typed, GPT-6 Astra edits the project files, and the running game appears in the Result tab"></video></div>`;
+    return `<div class="project-window screencast"><video class="project-window__video" data-feature-video src="${asset("ide/tidecliff-recording-battle-cut.mp4")}" poster="${asset("ide/tidecliff-recording-clean.jpg")}" width="2848" height="1336" muted loop playsinline preload="metadata" aria-label="Quadcode AI desktop interface: a prompt is typed, GPT-6 Astra edits the project files, and the running game appears in the Result tab"></video></div>`;
   }
   if (type === "team") {
     return `<div class="team-composition"><div class="team-label">One brief, three specialists</div><ul class="agent-roles">${agents.map((agent) => `<li class="agent-role agent-role--${agent.hue}"><span class="agent-role__mark">${icon(agent.glyph)}</span><strong>${agent.name}</strong><span>${escapeHtml(agent.role)}</span></li>`).join("")}</ul><div class="team-prompt">All of them work in the same project</div></div>`;
@@ -654,7 +650,7 @@ function openProject(project) {
       video.hidden = true;
       $("#dialog-image").hidden = false;
       $("#dialog-description").textContent =
-        "The video could not load. You can still explore this project on the official Quadcode site.";
+        "The video could not load. You can still explore this project on the official Quadcode AI site.";
     },
     { once: true },
   );
@@ -1075,3 +1071,5 @@ initializeHeaderAutoHide();
 initializeRateHover();
 placeOffer();
 initializeOffer();
+initializeDeal();
+initTestimonials();
