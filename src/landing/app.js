@@ -1023,6 +1023,11 @@ function initializeHeaderAutoHide() {
   update();
 }
 
+// Landing always opens at the top (ad traffic). Deep links (#pricing etc.)
+// still jump to their section.
+if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+if (!location.hash) scrollTo(0, 0);
+
 renderContent();
 hydrateIcons();
 initializeDialog();

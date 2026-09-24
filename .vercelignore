@@ -11,6 +11,14 @@ public/landing/explore/*.png
 public/landing/gallery/*.mp4
 public/landing/gallery/*.png
 public/landing/hq
+# Unused drafts (site uses community/*.webp and the ide/*-recording-* clips).
+public/landing/community/*.png
+public/landing/community/*.mp4
+public/landing/ide/tidecliff-[a-d].png
+public/landing/ide/*-ide.jpg
+public/landing/ide/*-ide.mp4
+public/landing/ide/*-recording-trimmed.mp4
+public/landing/ide/tidecliff-recording-sequence.mp4
 videos
 meta
 docs

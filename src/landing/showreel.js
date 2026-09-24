@@ -81,7 +81,18 @@ function initStage(root) {
     if (play && visible && !paused) video.play().catch(() => {});
     // Warm the next clip's first bytes so the swap does not flash black.
     next.href = stageSrc(reel[(index + 1) % reel.length].id);
-    tiles[index].scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+    revealTile(tiles[index]);
+  }
+
+  // Scroll ONLY the rail, horizontally. scrollIntoView() also scrolls the
+  // page, which yanked the landing to mid-page on load and on every swap.
+  function revealTile(tile) {
+    const r = rail.getBoundingClientRect();
+    const t = tile.getBoundingClientRect();
+    let dx = 0;
+    if (t.left < r.left) dx = t.left - r.left;
+    else if (t.right > r.right) dx = t.right - r.right;
+    if (dx) rail.scrollBy({ left: dx, behavior: reduced() ? "auto" : "smooth" });
   }
 
   video.addEventListener("timeupdate", () => {
