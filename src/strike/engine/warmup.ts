@@ -21,11 +21,17 @@ export interface CompilingRenderer {
  * or immediately when the renderer offers no compilation hook (headless tests, older backends).
  */
 export async function warmUpScene(renderer: CompilingRenderer, scene: Scene, camera: Camera): Promise<void> {
+  if (!renderer.compileAsync) {
+    try { renderer.compile?.(scene, camera) } catch { /* the frame loop compiles instead */ }
+    return
+  }
+  const restore = hideSprites(scene)
   try {
-    if (renderer.compileAsync) await renderer.compileAsync(scene, camera)
-    else renderer.compile?.(scene, camera)
+    await renderer.compileAsync(scene, camera)
   } catch {
     // A failed warm-up costs frames, never the match: fall through and let the frame loop compile.
+  } finally {
+    restore()
   }
 }
 
@@ -34,10 +40,43 @@ export async function warmUpScene(renderer: CompilingRenderer, scene: Scene, cam
  * loading screen is gone. Fire-and-forget: the object stays drawable while the build runs.
  */
 export function warmUpObject(renderer: CompilingRenderer, object: Object3D, scene: Scene, camera: Camera): void {
+  if (!renderer.compileAsync) {
+    try { renderer.compile?.(object, camera, scene) } catch { /* same rule as above */ }
+    return
+  }
+  const restore = hideSprites(object)
   try {
-    if (renderer.compileAsync) void renderer.compileAsync(object, camera, scene).catch(() => {})
-    else renderer.compile?.(object, camera, scene)
-  } catch {
     // Same rule as above: a warm-up is an optimisation, never a failure path.
+    void renderer.compileAsync(object, camera, scene).catch(() => {}).finally(restore)
+  } catch {
+    restore()
+  }
+}
+
+/**
+ * Sprites stay out of the async compile. three r185-r187 `compileAsync` yields to the frame loop
+ * between registering a material's bindings and writing their `@binding` indices
+ * (mrdoob/three.js#34632). A sprite's fresh `CanvasTexture` (name tag, death splat) is uploaded by
+ * the real frame in that gap, the two passes disagree, and WebGPU rejects the pipeline:
+ * "renderPipeline_SpriteMaterial_*: Binding doesn't exist in [BindGroupLayout]". A sprite program
+ * is tiny, so the frame loop builds it synchronously once the sprite is shown again.
+ *
+ * Sprites are parked by clearing their layer mask, not `visible`: the game drives `visible`
+ * (name tag range, death splat) and may flip it while the compile runs, but never touches layers,
+ * so restoring the mask cannot undo a game decision. Returns the restore function.
+ */
+function hideSprites(root: Object3D): () => void {
+  const parked: { object: Object3D; mask: number }[] = []
+  root.traverse((object) => {
+    if ((object as { isSprite?: boolean }).isSprite && object.layers.mask !== 0) {
+      parked.push({ object, mask: object.layers.mask })
+      object.layers.mask = 0
+    }
+  })
+  let done = false
+  return () => {
+    if (done) return
+    done = true
+    for (const { object, mask } of parked) object.layers.mask = mask
   }
 }
