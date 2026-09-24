@@ -659,6 +659,8 @@ footer.footer .footer-bottom {
     box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.06);
   }
   .site-header.is-hidden { filter: none !important; }
+  /* Row dividers are for the desktop inline layout; stacked they float alone. */
+  .platform-note::before, .hero-counter::before { content: none !important; }
   /* Narrow centred headings (max-width in ch) must stay centred. */
   h2.center, .section-heading .center { margin-inline: auto !important; }
   /* Workspace CTAs: same white buttons as desktop, not the dark mobile fallback. */
