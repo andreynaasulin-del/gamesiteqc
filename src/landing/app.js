@@ -151,7 +151,7 @@ function featureVisual(type) {
   }
   // Topic 03 creative: the island grows out of an empty glass slab; the
   // sentence is real HTML typed onto that slab (AI text would smear).
-  return `<picture><source srcset="${asset("topic03-world.webp")}" type="image/webp"><img src="${asset("topic03-world.jpg")}" alt="A floating island with a castle, waterfall and dragon being generated from a single typed sentence" width="2048" height="1152" loading="lazy" decoding="async"></picture><span class="world-tag eyebrow">Generated from one sentence</span><div class="world-prompt" aria-hidden="true"><img class="world-prompt__ui" src="${asset("ide/composer-opus.webp")}" alt="" width="1126" height="406" loading="lazy" decoding="async"><div class="world-prompt__line"><span class="world-prompt__text" data-world-type></span><span class="world-prompt__caret"></span></div></div>`;
+  return `<picture><source srcset="${asset("topic03-world.webp")}" type="image/webp"><img src="${asset("topic03-world.jpg")}" alt="A floating island with a castle, waterfall and dragon being generated from a single typed sentence" width="2048" height="1152" loading="lazy" decoding="async"></picture><div class="world-prompt" aria-hidden="true"><img class="world-prompt__ui" src="${asset("ide/composer-opus.webp")}" alt="" width="1126" height="406" loading="lazy" decoding="async"><div class="world-prompt__line"><span class="world-prompt__text" data-world-type></span><span class="world-prompt__caret"></span></div></div>`;
 }
 
 // ---- Pricing: the rate card ------------------------------------------------
