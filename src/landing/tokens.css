@@ -449,12 +449,16 @@ p {
   font-size: 14px;
   letter-spacing: 0.02em;
 }
-.tag::before {
-  content: "";
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--peach);
+/* The dot became a Lucide mark (app.js → TAG_ICONS). Peach keeps the old
+   accent; 1.75 stroke so a 15px glyph matches the 14px label weight. */
+.tag .tag-icon {
+  width: 15px;
+  height: 15px;
+  color: var(--peach);
+  margin-top: -2px;
+}
+.tag .tag-icon svg {
+  stroke-width: 1.75;
 }
 /* ------------------------------------------------------------------
    SECTIONS DO NOT PAINT LIGHT. This is the whole rule, and it used to be

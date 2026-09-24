@@ -749,8 +749,8 @@
   display: block;
   /* The clip is 16:9; reserve the box from the attributes so the card never
      reflows when the first frame decodes. */
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
+  aspect-ratio: 1920 / 900; /* IDE recording frame — shown whole, no crop */
+  object-fit: contain;
   background: #101011;
 }
 .project-prompt {
@@ -923,17 +923,90 @@
   border: 1px solid #ffffff15;
   width: 85%;
 }
-.visual-world > img {
+/* Topic 03: bright key art, no dark wash over it. Only a thin bottom
+   fade so the typed prompt sits on the glass slab with contrast. */
+.visual-world picture,
+.visual-world picture img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 42% center;
+  object-position: center 55%;
+}
+.visual-world picture img {
+  transform: scale(1.02);
+  transition: transform 1.6s var(--ease-out-quint);
+}
+@media (hover: hover) and (pointer: fine) {
+  .visual-world:hover picture img { transform: scale(1.06); }
 }
 .visual-world::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(0deg, #13131eea, transparent 60%);
+  background: linear-gradient(0deg, #0b1424b3, transparent 34%);
+  pointer-events: none;
+}
+.world-tag {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 2;
+  padding: 7px 12px;
+  border-radius: 999px;
+  color: #fff;
+  background: #0b142466;
+  border: 1px solid #ffffff2e;
+  backdrop-filter: blur(10px);
+}
+/* The prompt bar is the real Quadcode chat composer (crop of the product
+   UI, model = claude-opus-5.5). Only the sentence is live HTML, placed on
+   the composer's input line; cqw keeps it locked to the image at any size. */
+.world-prompt {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: 5%;
+  transform: translateX(-50%);
+  /* wide enough to fully cover the empty slab painted in the key art */
+  width: min(87%, 640px);
+  aspect-ratio: 1126 / 406;
+  container-type: inline-size;
+  border-radius: 2cqw;
+  box-shadow: 0 18px 50px #0b1424b3, 0 0 0 1px #ffffff1f;
+}
+.world-prompt__ui {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+.world-prompt__line {
+  position: absolute;
+  left: 2.7cqw;
+  right: 12cqw;
+  top: 30%;
+  height: 5.4cqw;
+  display: flex;
+  align-items: center;
+  color: #ececf1;
+  font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  font-size: 2.15cqw;
+  line-height: 1;
+}
+.world-prompt__text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.world-prompt__caret {
+  flex: none;
+  width: 2px;
+  height: 1.2em;
+  margin-left: 2px;
+  background: #ececf1;
+  animation: world-caret 1s steps(1) infinite;
+}
+@keyframes world-caret { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .world-prompt__caret { animation: none; }
+  .visual-world picture img { transition: none; }
 }
 .world-caption {
   position: absolute;
@@ -1347,6 +1420,15 @@
 }
 .mini-game .window-bar > span:last-child {
   color: var(--peach);
+}
+/* IDE recording: whole frame, never cropped */
+.mini-game > .mini-game__video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1920 / 900;
+  object-fit: contain;
+  background: #0d0d15;
 }
 /* Closing sections */
 .cta-section {

@@ -1,20 +1,168 @@
 /* ==========================================================================
-   ATMOSPHERE v4 — flat ink.
+   ATMOSPHERE v8 — rich, quiet, per-block mesh.
 
-   Reference study (higgsfield.ai, quadcode.ai): the strong sites do NOT
-   paint the background. It is one flat near-black; the media and the type
-   carry all the colour. Every glow/tint/grain experiment here (v1–v3) read
-   as "muddy / dirty / cheap", so the background is now deliberately boring.
-   Colour belongs to content: game art, the brand accent, big headlines.
+   History: v6 = 12 saturated scenes on a timer ("disco"); v7 = low-alpha
+   washes over grey slate (PO: grey, dirty, cheap). v8 rules:
+     · base is deep ink with a cool undertone, not grey;
+     · each block gets a 2–3 stop MESH of its own colours, pushed to the
+       screen EDGES — the centre, where the content sits, stays calm;
+     · chroma is high but alpha is controlled, so it reads as light in the
+       room, not as a coloured card;
+     · one static film-grain layer over everything: kills gradient banding
+       and gives the flat colour a printed, expensive surface;
+     · soft vignette so edges settle into the ink;
+     · still no timers and no flashes: bg-stage.js fades layers purely from
+       scroll position, the colour just follows you.
    ========================================================================== */
 
-html,
+/* NOTE: .bg-stage is switched off by showreel.css (Round 16+): the live
+   backgrounds are static per-section washes painted there. */
+:root {
+  --bg: #171b23;
+  --surface: #1c212b;
+  --raised: #232935;
+  --t-00: transparent;
+}
+
+html {
+  background: #171b23;
+}
 body {
-  background: var(--bg);
+  background: transparent;
+}
+
+.bg-stage {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  /* ink with a faint cool lift at the top — never flat, never grey */
+  background:
+    radial-gradient(120vmax 60vmax at 50% -10%, #1d2233 0%, transparent 60%),
+    linear-gradient(180deg, #161a25 0%, #12151e 55%, #151823 100%);
+}
+.bg-scene {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  /* smooths wheel steps only — the value itself comes from scroll */
+  transition: opacity 0.35s linear;
+  will-change: opacity;
+}
+
+/* Vignette: edges settle into ink, so the mesh reads as light, not paint. */
+.bg-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: radial-gradient(140% 110% at 50% 45%, transparent 55%, rgba(6, 7, 11, 0.55) 100%);
+}
+/* Film grain: one static SVG noise tile. Overlay keeps it neutral on both
+   the dark ink and the brighter colour pools. */
+.bg-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  opacity: 0.09;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.4 -0.2'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 220px 220px;
+}
+
+/* ---- Scenes: one mesh per block, colours taken from the block ---------- */
+/* Hero — brand coral rising from the bottom, a rose counter-light, deep
+   indigo in the far corner for depth. */
+.bg-scene--sunset {
+  background:
+    radial-gradient(60vmax 38vmax at 82% 108%, rgba(255, 106, 61, 0.62), transparent 70%),
+    radial-gradient(46vmax 30vmax at 12% 100%, rgba(232, 48, 90, 0.38), transparent 70%),
+    radial-gradient(55vmax 34vmax at 8% -5%, rgba(64, 76, 190, 0.4), transparent 70%);
+}
+/* Topic 01 — sea-green + sunlit gold (stone arena by the sea). */
+.bg-scene--meadow {
+  background:
+    radial-gradient(62vmax 42vmax at 100% 78%, rgba(22, 176, 140, 0.5), transparent 70%),
+    radial-gradient(44vmax 30vmax at -4% 8%, rgba(236, 176, 72, 0.32), transparent 70%),
+    radial-gradient(40vmax 26vmax at 30% 110%, rgba(40, 110, 200, 0.28), transparent 70%);
+}
+/* Topic 02 — electric cyan into cobalt. */
+.bg-scene--lagoon {
+  background:
+    radial-gradient(62vmax 42vmax at -2% 80%, rgba(0, 190, 210, 0.46), transparent 70%),
+    radial-gradient(50vmax 32vmax at 102% 6%, rgba(58, 104, 240, 0.42), transparent 70%);
+}
+/* Topic 03 — amber heat with a crimson edge. */
+.bg-scene--ember {
+  background:
+    radial-gradient(62vmax 42vmax at 102% 86%, rgba(255, 140, 40, 0.5), transparent 70%),
+    radial-gradient(44vmax 30vmax at -4% 12%, rgba(200, 36, 72, 0.38), transparent 70%);
+}
+/* Workspace — clean cobalt sky from above, a cool mint floor. */
+.bg-scene--sky {
+  background:
+    radial-gradient(80vmax 40vmax at 50% -12%, rgba(70, 120, 255, 0.5), transparent 70%),
+    radial-gradient(40vmax 24vmax at 90% 110%, rgba(60, 200, 190, 0.24), transparent 70%);
+}
+/* Showreel — the video is the colour; keep the room dark. */
+.bg-scene--night {
+  background:
+    radial-gradient(70vmax 36vmax at 50% 108%, rgba(40, 60, 140, 0.4), transparent 70%),
+    linear-gradient(180deg, rgba(6, 7, 11, 0.55), rgba(6, 7, 11, 0.55));
+}
+/* Gallery — emerald and warm lime-gold, like the worlds in the cards. */
+.bg-scene--forest {
+  background:
+    radial-gradient(60vmax 42vmax at -4% 84%, rgba(30, 180, 110, 0.44), transparent 70%),
+    radial-gradient(46vmax 30vmax at 104% 10%, rgba(230, 190, 70, 0.3), transparent 70%);
+}
+/* Steps — glacier blue with a soft periwinkle, bright but cold. */
+.bg-scene--alpine {
+  background:
+    radial-gradient(62vmax 40vmax at 20% -8%, rgba(100, 170, 255, 0.46), transparent 70%),
+    radial-gradient(46vmax 30vmax at 100% 100%, rgba(120, 130, 240, 0.3), transparent 70%);
+}
+/* CTA — the panel is already loud: a warm halo around it, nothing more. */
+.bg-scene--coral {
+  background:
+    radial-gradient(70vmax 40vmax at 50% 55%, rgba(255, 96, 70, 0.4), transparent 70%);
+}
+/* Community — teal room with a coral kiss that echoes the game pieces. */
+.bg-scene--seafoam {
+  background:
+    radial-gradient(60vmax 40vmax at -2% 30%, rgba(24, 170, 160, 0.46), transparent 70%),
+    radial-gradient(44vmax 28vmax at 104% 96%, rgba(255, 110, 70, 0.3), transparent 70%);
+}
+/* Pricing — calm indigo, a warm peach light above the table. */
+.bg-scene--dusk {
+  background:
+    radial-gradient(70vmax 34vmax at 60% -10%, rgba(255, 130, 90, 0.3), transparent 70%),
+    radial-gradient(56vmax 38vmax at -4% 90%, rgba(80, 80, 200, 0.4), transparent 70%);
+}
+/* FAQ — deep ocean, quiet end of the page. */
+.bg-scene--ocean {
+  background:
+    radial-gradient(64vmax 40vmax at 100% 100%, rgba(40, 110, 210, 0.42), transparent 70%),
+    radial-gradient(40vmax 26vmax at 0% 0%, rgba(30, 160, 170, 0.22), transparent 70%);
 }
 
 .aurora,
 .aurora::before,
 .aurora::after {
   display: none;
+}
+
+/* Grain is invisible on a phone screen and costs a full-screen blend. */
+@media (max-width: 767px) {
+  .bg-stage::after {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-scene {
+    transition: none;
+  }
 }

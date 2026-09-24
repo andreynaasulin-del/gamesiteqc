@@ -11,10 +11,14 @@
    ========================================================================== */
 
 :root {
-  --ink: #0e0f12;
-  --panel: #16171b;
-  --panel-2: #1d1f24;
-  --ring: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  /* v7: panels are neutral smoked glass, so they take each block's tint
+     instead of painting every block blue. */
+  --ink: #121418;
+  --panel: rgba(10, 12, 18, 0.46);
+  --panel-2: rgba(12, 14, 20, 0.62);
+  /* 1px ring + a hairline top highlight: the glass catches light from above
+     now that the room behind it is coloured. */
+  --ring: inset 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.07);
   --ring-hot: inset 0 0 0 1px rgba(255, 149, 105, 0.55);
   --hot: #ff5a3c; /* solid brand hit — between peach and coral, max chroma */
   --hot-2: #ff9569;
@@ -156,7 +160,7 @@ h2 em {
   .button.secondary:hover,
   .button.dark:hover,
   .button.outline:hover {
-    background: #262930;
+    background: rgba(24, 27, 36, 0.78);
     box-shadow: var(--ring-hot), 0 5px 0 #07080a;
   }
 }
@@ -213,7 +217,7 @@ h2 em {
   background: var(--panel-2) !important;
 }
 .project-prompt {
-  background: rgba(29, 31, 36, 0.92) !important;
+  background: rgba(14, 16, 22, 0.86) !important;
 }
 
 /* The CTA is the one loud banner on the page: SOLID brand, black type. */
@@ -292,7 +296,7 @@ main {
   rotate: 2.6deg;
   z-index: 1;
   margin-top: calc(-1 * clamp(60px, 6vw, 96px));
-  background: #1b1d22;
+  background: var(--panel-2);
   box-shadow: var(--ring);
 }
 .kinetic__track {
@@ -430,5 +434,257 @@ h2.is-split.sr {
   }
   .cta-panel::after {
     font-size: 110px;
+  }
+}
+
+/* ---- SCREENCASTS: the recording IS the visual -------------------------
+   PO: no fake window bars / prompt cards / outer panels around IDE
+   recordings — the real UI is already inside the video. Just the clip with
+   rounded corners. */
+.feature-visual.visual-project {
+  background: none !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  overflow: visible;
+}
+/* Topic 01: the screencast gets the big column and bleeds towards the
+   viewport edge, so it fills the block instead of floating small. */
+@media (min-width: 901px) {
+  .feature:has(.visual-project) .feature-inner {
+    grid-template-columns: 0.78fr 1.5fr;
+    gap: clamp(32px, 3.4vw, 56px);
+  }
+  .feature:has(.visual-project) .feature-visual {
+    width: calc(100% + min(1.6vw, 28px));
+    margin-inline: 0 calc(-1 * min(1.6vw, 28px));
+  }
+}
+/* Step 03 keeps the same square panel as steps 01/02 (headings line up);
+   the clip sits inside it like their cards do — inset, slightly tilted. */
+.step-art.step-play {
+  padding: 0 clamp(10px, 1.2vw, 16px);
+}
+.step-art.step-play .screencast {
+  rotate: -2deg !important;
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 24px 50px -20px rgba(0, 0, 0, 0.8);
+}
+.screencast {
+  position: relative;
+  inset: auto !important;
+  width: 100% !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: none !important;
+  rotate: none !important;
+  background: none !important;
+  border: 0 !important;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.75);
+}
+.screencast > video {
+  display: block;
+  position: static !important;
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 2848 / 1336;
+  object-fit: cover;
+  border-radius: inherit;
+  transform: none !important;
+  margin: 0 !important;
+}
+.screencast .window-bar,
+.feature-visual.visual-project .project-prompt {
+  display: none !important;
+}
+
+/* ---- TYPELINE: typed two-line section heading (motion.js) -------------- */
+.typeline__stage {
+  display: inline-grid;
+  justify-items: center;
+}
+/* All phrases + the live line share one cell: height and width are set by
+   the biggest phrase, so the header never reflows while typing. */
+.typeline__stage > * {
+  grid-area: 1 / 1;
+}
+.typeline__ghost {
+  visibility: hidden;
+}
+/* Ghosts and live line wrap by the same rules, so on a phone a long line
+   breaks in the ghost first and the reserved height already includes it. */
+.typeline__ghost,
+.typeline__live {
+  max-width: 100%;
+  text-wrap: balance;
+}
+/* Solid brand bar, the same width as a stroke of the heading's type.
+   Solid while typing, blinks only while the phrase is held. */
+.typeline__caret {
+  display: inline-block;
+  width: 0.075em;
+  height: 0.78em;
+  margin-left: 0.06em;
+  /* baseline + relative shift: vertical-align would grow the line box and
+     make the header twitch by 2px every time the caret changes lines */
+  vertical-align: baseline;
+  position: relative;
+  top: 0.04em;
+  background: var(--hot);
+  border-radius: 1px;
+  animation: typeline-blink 1s steps(1) infinite;
+}
+.typeline.is-typing .typeline__caret {
+  animation: none;
+}
+@keyframes typeline-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ---- COMMUNITY ART: one static frame per card -------------------------
+   Casual 3D series (chess / billiards / air hockey). The frame bleeds to
+   the card's top and side edges, and its bottom and sides fade into the
+   panel so no hard rectangle shows against the smoked-glass surface. */
+/* One padding variable drives both the card and the art's negative margin,
+   so the frame always meets the card edge exactly (old rules used 30 / 23 /
+   28px at different widths and the art drifted off the edge). */
+.community-card {
+  --cp: clamp(22px, 2vw, 30px);
+  position: relative;
+  overflow: hidden;
+  padding: 0 var(--cp) var(--cp) !important;
+  /* motion.js gives cards a clip-path wipe; clip-path makes the card an
+     isolated group and kills the art's blend. Scale-settle stays. */
+  clip-path: none !important;
+}
+.community-art {
+  position: relative;
+  display: block;
+  margin: 0 calc(-1 * var(--cp));
+  /* Source aspect — nothing is cropped (puck and bishop were cut at 16:10). */
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border-radius: var(--r-card) var(--r-card) 0 0;
+}
+/* Mask lives on the <img>, not the wrapper: a masked wrapper is an isolated
+   group and the blend below would have nothing to blend with.
+   Soft fade on the sides and a longer one at the bottom; the top keeps
+   its edge because it sits on the card's own rounded corner. */
+/* Bottom fade only: the sides now meet the card's own rounded edge, a side
+   fade there just smudged the board and table rims. */
+.community-art img {
+  -webkit-mask-image: linear-gradient(180deg, #000 64%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 64%, transparent 100%);
+}
+.community-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 42%;
+  /* Stills sit on flat #171b23. Lighten drops that flat dark into the
+     tinted panel behind, so there is no dark slab at the top of the card,
+     while the lit pieces keep their full colour. */
+  mix-blend-mode: lighten;
+  transform: none;
+  transition: transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .community-card:hover .community-art img {
+    transform: scale(1.04);
+  }
+}
+/* Text column: pulled up into the fade so art and copy read as one piece. */
+.community-card .resource-index {
+  position: relative;
+  z-index: 1;
+  margin-top: calc(-1 * clamp(10px, 1.4vw, 20px));
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--hot-2);
+}
+.community-card h3 {
+  font-size: clamp(21px, 1.55vw, 26px) !important;
+  font-weight: 700;
+  line-height: 1.15 !important;
+  letter-spacing: -0.015em;
+  margin: 12px 0 12px !important;
+  /* Same measure on all three, so every title breaks into two lines and
+     the body copy starts on one baseline across the row. */
+  max-width: 15ch;
+  text-wrap: balance;
+}
+/* Heading + three cards resolve in one laptop screen: the section title
+   answers to the screen height too, not only the width. */
+@media (min-width: 901px) {
+  .community h2 {
+    font-size: clamp(40px, min(5.6vw, 9svh), 96px);
+  }
+}
+.community-card p {
+  font-size: clamp(15px, 1.05vw, 16px);
+  line-height: 1.5;
+  color: #b4b3b8;
+  max-width: 40ch;
+  margin-bottom: clamp(18px, 2.6svh, 28px) !important;
+  text-wrap: pretty;
+}
+.community-card .resource-link {
+  align-items: center;
+  padding-top: 16px;
+}
+/* Desktop "one block, one screen": the art gives up height on short
+   screens instead of pushing the cards past the fold. */
+@media (min-width: 901px) and (min-height: 620px) {
+  .community-art {
+    max-height: 26svh;
+  }
+  .community-art img {
+    object-fit: contain;
+  }
+}
+/* One row grid across the three cards: label, title, body and link share
+   rows, so a title that wraps to three lines no longer pushes only its own
+   body copy down — every body and every link start on one line. */
+@media (min-width: 768px) {
+  .community-cards {
+    grid-template-rows: repeat(5, auto);
+    row-gap: 0;
+  }
+  .community-card {
+    display: grid !important;
+    grid-row: span 5;
+    grid-template-rows: subgrid;
+    align-content: start;
+  }
+  .community-card p {
+    align-self: start;
+  }
+  .community-card .resource-link {
+    align-self: end;
+  }
+}
+@media (max-width: 767px) {
+  .community-card {
+    --cp: 22px;
+    min-width: 82% !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .community-art img {
+    transition: none;
+    transform: none !important;
   }
 }

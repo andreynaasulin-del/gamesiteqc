@@ -265,3 +265,391 @@
 @media (prefers-reduced-motion: reduce) {
   .reel.is-swap .reel-copy > * { animation: none; }
 }
+
+/* ================================================================
+   Typography polish — calmer, editorial, no template tells.
+   Loaded last on purpose: overrides tokens/landing/bold.
+   ================================================================ */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+}
+h1, h2, h3 {
+  text-wrap: balance;
+  font-feature-settings: "kern" 1;
+}
+p, li, dd, .faq-item p {
+  text-wrap: pretty;
+}
+h2 { line-height: 0.95; }
+h3 { letter-spacing: -0.015em; line-height: 1.12; }
+
+/* Eyebrows: no dash, no wide-tracked shouting — a quiet label */
+.eyebrow {
+  gap: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+.eyebrow::before { content: none; display: none; }
+
+/* Solid colour instead of gradient-filled headline words */
+.accent,
+h1 .accent, h2 .accent,
+.ticker b {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentColor;
+  color: #ff7a5c;
+}
+.cta-panel h2 .accent { color: #fff; -webkit-text-fill-color: #fff; }
+
+/* Small labels: sentence case, modest tracking */
+.feature-number,
+.resource-index,
+.worlds-card figcaption span,
+.reel-kicker {
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.feature-number,
+.step-number { font-variant-numeric: normal; letter-spacing: 0; }
+
+/* Steps 01/03: the clip IS the panel — fills it edge to edge, rounded,
+   no tilt, no extra frame. */
+.step-art:has(.step-clip) {
+  padding: 0 !important;
+  overflow: hidden;
+  background: #0b0d12 !important;
+  /* Recordings are 4:3 — the card takes the clip's shape instead of a
+     square with empty bands. All three steps share it, so headings align. */
+  aspect-ratio: 4 / 3 !important;
+  max-height: none !important;
+  width: 100%;
+}
+.step-art .screencast.step-clip {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  rotate: none !important;
+  border-radius: inherit;
+  box-shadow: none;
+}
+.step-art .step-clip > video {
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: auto !important;
+  object-fit: cover;
+  border-radius: 0;
+}
+/* IDE recordings: card = video shape, so show the whole frame, no crop. */
+.step-art.step-prompt .step-clip > video,
+.step-art.step-build .step-clip > video {
+  object-fit: contain;
+}
+.step-art:has(.step-clip) .step-number {
+  z-index: 2;
+  top: 14px;
+  left: 14px;
+  padding: 5px 10px 3px;
+  border-radius: 8px;
+  background: rgba(8, 9, 13, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+}
+
+/* Drop the giant outlined "PLAY · BUILD · SHIP" loop behind the CTA */
+.cta-panel::after { content: none; animation: none; }
+
+/* Body copy: slightly airier and easier to read */
+section p:not(.eyebrow) { line-height: 1.45; }
+
+/* ================================================================
+   Round 16
+   1) No orange hover ring / spotlight on cards.
+   2) Per-block background: static tint taken from the block's own
+      dominant colour, painted ON the block (scrolls with it — no
+      scroll-driven fading, nothing "lights up"). Every tint uses the
+      same lightness/strength on one shared base, so the page keeps a
+      single tone. Top/bottom of each tint fade to the base, so blocks
+      meet without seams.
+   3) Three steps: stacked rows, big clip + text, clip shape = card.
+   ================================================================ */
+
+/* 1 ─ hover ring off */
+.spot::before { display: none !important; }
+.step:hover .step-art { border-color: transparent !important; }
+
+/* 2 ─ backgrounds */
+html { background: #20283a !important; overflow-x: clip; }
+body { background: transparent !important; }
+.bg-stage { display: none !important; }
+
+main > section,
+#capabilities .feature {
+  position: relative;
+  isolation: isolate;
+}
+main > section::before,
+#capabilities .feature::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  bottom: 0;
+  left: calc(50% - 50vw);
+  right: calc(50% - 50vw);
+  pointer-events: none;
+  background: radial-gradient(
+    var(--wash-size, 92vw 84%) at var(--tx, 70%) var(--ty, 55%),
+    var(--tint, transparent) 0%,
+    transparent 76%
+  );
+  /* Static edge fades: colours melt back into the same ink base between
+     blocks. No scroll-triggered highlights or motion. */
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 16%, #000 84%, transparent 100%);
+          mask-image: linear-gradient(180deg, transparent 0, #000 16%, #000 84%, transparent 100%);
+}
+/* The capabilities section itself stays base; its three features tint. */
+#capabilities::before { content: none; }
+
+/* Per-section colour, deliberately brighter than the ink base but still
+   restrained enough to keep copy and product footage in front. */
+#games                              { --tint: rgba(246, 157, 119, .42); --tx: 72%; --ty: 70%; --wash-size: 104vw 88%; } /* warm peach */
+#capabilities .feature:nth-of-type(1) { --tint: rgba(132, 211, 157, .40); --tx: 78%; --wash-size: 86vw 90%; } /* fresh green */
+#capabilities .feature:nth-of-type(2) { --tint: rgba(105, 207, 216, .42); --tx: 22%; --wash-size: 92vw 92%; } /* clear teal */
+#capabilities .feature:nth-of-type(3) { --tint: rgba(247, 177, 111, .40); --tx: 78%; --wash-size: 86vw 90%; } /* amber */
+#workspace                          { --tint: rgba(145, 174, 239, .40); --tx: 50%; --ty: 35%; --wash-size: 100vw 88%; } /* periwinkle */
+/* Explore is full-bleed gameplay: let the footage supply its own colour. */
+#explore                            { --tint: transparent; }
+.worlds                             { --tint: rgba(126, 201, 145, .40); --tx: 25%; --wash-size: 96vw 86%; } /* leaf green */
+#workflow                           { --tint: rgba(133, 197, 244, .44); --tx: 60%; --ty: 45%; --wash-size: 100vw 92%; } /* alpine blue */
+.cta-section                        { --tint: rgba(247, 142, 123, .40); --tx: 50%; --ty: 50%; --wash-size: 92vw 88%; } /* coral */
+#community                          { --tint: rgba(99, 210, 184, .40); --tx: 25%; --wash-size: 94vw 88%; } /* sea glass */
+#pricing                            { --tint: rgba(177, 163, 236, .40); --tx: 30%; --wash-size: 104vw 88%; } /* soft lilac */
+#faq                                { --tint: rgba(111, 183, 229, .40); --tx: 75%; --wash-size: 92vw 86%; } /* open sky */
+
+/* 3 ─ three steps */
+#workflow .steps-grid {
+  grid-template-columns: 1fr;
+  gap: clamp(56px, 7vw, 96px);
+  counter-reset: step;
+}
+#workflow .step {
+  counter-increment: step;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+  grid-template-rows: 1fr auto auto auto 1fr;
+  column-gap: clamp(32px, 4vw, 64px);
+  text-align: left;
+}
+#workflow .step-art {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  /* always fits the screen: height ≤ 62vh */
+  width: min(100%, calc(62vh * 4 / 3)) !important;
+  justify-self: center;
+  border: 0 !important;
+  border-radius: 20px;
+  box-shadow: 0 30px 80px -30px rgba(0, 0, 0, .55);
+}
+#workflow .step > :not(.step-art) { grid-column: 1; }
+#workflow .step > h3 { grid-row: 2; margin: 0 0 14px; font-size: clamp(28px, 2.6vw, 40px); }
+#workflow .step > p  { grid-row: 3; margin: 0; max-width: 360px; font-size: 18px; }
+#workflow .step > a  { grid-row: 4; margin-top: 22px; justify-self: start; }
+#workflow .step > h3::before {
+  content: counter(step, decimal-leading-zero);
+  display: block;
+  margin-bottom: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #ff7a5c;
+}
+/* number lives in the text column now, not on top of the UI */
+#workflow .step-art .step-number { display: none !important; }
+
+/* zig-zag: step 02 clip on the left */
+#workflow .step:nth-child(2) { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+#workflow .step:nth-child(2) .step-art { grid-column: 1; }
+#workflow .step:nth-child(2) > :not(.step-art) { grid-column: 2; }
+
+/* card shape = clip shape, whole frame visible */
+#workflow .step-art:has(.step-clip) { aspect-ratio: 4 / 3 !important; }
+#workflow .step-art.step-play:has(.step-clip) { aspect-ratio: 16 / 9 !important; width: min(100%, calc(62vh * 16 / 9)) !important; }
+#workflow .step-clip,
+#workflow .step-clip > video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: none !important;
+  border-radius: inherit;
+}
+#workflow .step-clip > video { object-fit: contain; }
+#workflow .step-art.step-play .step-clip > video { object-fit: cover; }
+
+/* ================================================================
+   Round 17 — richer, pricier backgrounds. Same static model as Round 16
+   (painted on the block, scrolls with it, nothing lights up on scroll).
+   Changes:
+     · base: deeper ink-navy with a slow vertical drift instead of one flat
+       slate — reads as a lit room, not grey;
+     · every block gets a TWO-colour mesh (key light + counter light in
+       opposite corners) instead of one blob — colour without a "spot";
+     · blobs are sized inside the block (≤70% of its height) and the mask
+       fades are long, so no block ever shows a hard band at its edge;
+     · a fixed film-grain layer under the content kills gradient banding
+       and gives the colour a printed surface. Static, no animation.
+   ================================================================ */
+html {
+  background:
+    linear-gradient(180deg, #1c2334 0%, #1a2031 35%, #1d2438 70%, #1a2030 100%) !important;
+  background-attachment: fixed !important;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.4;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0.16 0 0 0 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 200px 200px;
+}
+
+main > section::before,
+#capabilities .feature::before {
+  background:
+    radial-gradient(var(--k-size, 62vw 62%) at var(--kx, 80%) var(--ky, 45%), var(--k, transparent) 0%, transparent 72%),
+    radial-gradient(var(--c-size, 48vw 52%) at var(--cx, 12%) var(--cy, 62%), var(--c, transparent) 0%, transparent 72%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 24%, #000 76%, transparent 100%);
+          mask-image: linear-gradient(180deg, transparent 0, #000 24%, #000 76%, transparent 100%);
+  /* one global dial for colourfulness; static layer, rasterised once */
+  filter: saturate(1.35) brightness(1.08);
+}
+
+/* key (k) = the block's own colour, counter (c) = its complement.
+   Strength is matched across blocks so the page keeps one tone. */
+#games                                { --k: rgba(255, 128, 88, .46); --kx: 78%; --ky: 62%; --k-size: 70vw 66%;
+                                        --c: rgba(236, 72, 120, .26); --cx: 10%; --cy: 40%; }
+#capabilities .feature:nth-of-type(1) { --k: rgba(60, 200, 150, .40); --kx: 82%;
+                                        --c: rgba(240, 190, 90, .24); --cx: 8%;  --cy: 30%; }
+#capabilities .feature:nth-of-type(2) { --k: rgba(40, 196, 220, .42); --kx: 16%;
+                                        --c: rgba(90, 120, 250, .30); --cx: 90%; --cy: 30%; }
+#capabilities .feature:nth-of-type(3) { --k: rgba(255, 160, 70, .40); --kx: 84%;
+                                        --c: rgba(220, 70, 100, .26); --cx: 8%;  --cy: 35%; }
+#workspace                            { --k: rgba(100, 140, 255, .42); --kx: 50%; --ky: 30%; --k-size: 80vw 60%;
+                                        --c: rgba(70, 210, 200, .22); --cx: 85%; --cy: 75%; }
+#explore                              { --k: transparent; --c: transparent; }
+.worlds                               { --k: rgba(70, 200, 130, .38); --kx: 18%;
+                                        --c: rgba(236, 200, 90, .24); --cx: 88%; --cy: 30%; }
+#workflow                             { --k: rgba(110, 180, 255, .42); --kx: 70%; --ky: 35%;
+                                        --c: rgba(130, 120, 245, .26); --cx: 10%; --cy: 70%; }
+.cta-section                          { --k: rgba(255, 110, 80, .40); --kx: 50%; --ky: 50%; --k-size: 80vw 64%;
+                                        --c: transparent; }
+#community                            { --k: rgba(40, 200, 180, .40); --kx: 16%;
+                                        --c: rgba(255, 120, 80, .26); --cx: 88%; --cy: 70%; }
+#pricing                              { --k: rgba(120, 110, 240, .38); --kx: 22%; --ky: 60%;
+                                        --c: rgba(255, 150, 100, .28); --cx: 78%; --cy: 22%; --c-size: 56vw 34%; }
+#faq                                  { --k: rgba(70, 150, 240, .40); --kx: 78%;
+                                        --c: rgba(40, 190, 190, .20); --cx: 12%; --cy: 40%; }
+
+@media (max-width: 767px) {
+  body::before { display: none; }
+}
+
+/* ================================================================
+   Round 18 — content first, tighter rhythm.
+   1) Ad traffic must see the visual before the copy: when a feature
+      stacks, the visual goes first (all three). Topic 02 stacks on
+      desktop too: agents panel on top, copy under it in two columns.
+   2) The "one block = one screen" min-heights left big empty bands
+      around short blocks. Blocks now take their content height and share
+      one compact vertical gap.
+   ================================================================ */
+
+/* 1 ─ visual first when stacked */
+@media (max-width: 767px) {
+  #capabilities .feature .feature-visual { order: -1 !important; }
+  #capabilities .feature .feature-copy { order: 0 !important; }
+  #capabilities .feature-inner { gap: 28px; }
+}
+
+/* Topic 02 on tablet/desktop (the two-column layout starts at 768px):
+   visual on top, copy below */
+@media (min-width: 768px) {
+  #capabilities .feature:nth-child(2) .feature-inner {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: clamp(28px, 4svh, 44px);
+  }
+  #capabilities .feature:nth-child(2) .feature-visual {
+    order: 1 !important;
+    width: 100%;
+    max-width: 1040px;
+    aspect-ratio: auto;
+    max-height: none;
+    justify-self: center;
+  }
+  #capabilities .feature:nth-child(2) .feature-copy {
+    order: 2 !important;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
+    column-gap: clamp(32px, 5vw, 80px);
+    align-items: start;
+    width: 100%;
+    max-width: 1040px;
+    justify-self: center;
+  }
+  #capabilities .feature:nth-child(2) .feature-copy > .feature-number { grid-column: 1; grid-row: 1; }
+  #capabilities .feature:nth-child(2) .feature-copy > h3 { grid-column: 1; grid-row: 2 / 4; margin-bottom: 0; }
+  #capabilities .feature:nth-child(2) .feature-copy > p { grid-column: 2; grid-row: 2; max-width: none; }
+  #capabilities .feature:nth-child(2) .feature-copy > .tags { grid-column: 2; grid-row: 3; }
+  /* the three agent cards get the width: roomy row, no dead band below */
+  #capabilities .feature:nth-child(2) .team-prompt { margin-top: clamp(18px, 3svh, 32px); }
+}
+
+/* 2 ─ compact vertical rhythm */
+@media (min-width: 901px) {
+  .section,
+  .feature,
+  .feature:first-child {
+    min-height: 0 !important;
+  }
+  .feature {
+    padding-block: clamp(36px, 6svh, 72px) !important;
+  }
+  :is(#workspace, .worlds, #workflow, #community, #pricing, #faq, .cta-section) {
+    padding-block: clamp(48px, 8svh, 96px) !important;
+  }
+  #games { padding-bottom: clamp(32px, 5svh, 56px) !important; }
+}
+@media (max-width: 900px) {
+  .feature { padding-block: 40px !important; }
+  :is(#workspace, .worlds, #workflow, #community, #pricing, #faq, .cta-section) {
+    padding-block: 56px !important;
+  }
+}
+
+@media (max-width: 900px) {
+  #workflow .step,
+  #workflow .step:nth-child(2) {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+  #workflow .step .step-art,
+  #workflow .step:nth-child(2) .step-art,
+  #workflow .step > :not(.step-art),
+  #workflow .step:nth-child(2) > :not(.step-art) {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  #workflow .step .step-art { margin-bottom: 24px; }
+}

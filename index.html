@@ -3,12 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="theme-color" content="#0B0D15" />
+    <meta name="theme-color" content="#121B2D" />
     <meta
       name="description"
-      content="Create games with Quadcode AI. Play the first Quadcode game right in your browser, then meet the specialized agents for code, visuals, 3D and sound. Available for macOS and Windows."
+      content="Describe a game and Quadcode's AI agents build it: code, art, 3D and sound, in your own project files. Desktop app for macOS and Windows."
     />
-    <title>Create games with AI — Quadcode</title>
+    <title>Quadcode · Create games with AI</title>
     <link rel="icon" href="landing/quadcode-mark.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="src/landing/tokens.css" />
     <link rel="stylesheet" href="src/landing/landing.css" />
@@ -82,7 +82,7 @@
           </h1>
           <div class="hero-actions">
             <a class="button" href="https://quadcode.ai/#download"
-              ><span class="spark" aria-hidden="true"></span>Start creating</a
+              >Download Quadcode <i data-icon="download"></i></a
             >
             <p class="platform-note">Desktop app for macOS &amp; Windows</p>
           </div>
@@ -117,21 +117,21 @@
           </div>
           <p class="hero-meta">
             <span class="hero-hint"
-              ><i data-icon="play"></i>Click any card — it plays right here</span
+              ><i data-icon="play"></i>Click a card to play it here</span
             ><span class="hero-counter" id="hero-counter" aria-live="polite"
               >01 / 03</span
             >
           </p>
         </div>
         <p class="hero-caption">
-          Imagined by creators. Built with <strong>quadcode.ai</strong>
+          Made by creators with <strong>quadcode.ai</strong>
         </p>
       </section>
 
       <div class="kinetic" aria-hidden="true">
         <div class="kinetic__track">
-          <span>Type a prompt</span><span>Get a game</span><span>Play it now</span><span>Ship it tonight</span>
-          <span>Type a prompt</span><span>Get a game</span><span>Play it now</span><span>Ship it tonight</span>
+          <span>Describe it</span><span>Build it</span><span>Play it</span><span>Share it</span>
+          <span>Describe it</span><span>Build it</span><span>Play it</span><span>Share it</span>
         </div>
       </div>
       <div class="kinetic kinetic--ghost" aria-hidden="true">
@@ -147,8 +147,8 @@
         aria-labelledby="capabilities-title"
       >
         <header class="section-heading container">
-          <p class="eyebrow" data-reveal>Your solo creator superpower</p>
-          <h2 id="capabilities-title">Powered by your AI team</h2>
+          <p class="eyebrow" data-reveal>Features</p>
+          <h2 id="capabilities-title">A studio of AI agents</h2>
         </header>
         <div id="feature-list"></div>
       </section>
@@ -160,7 +160,7 @@
       >
         <div class="container">
           <h2 class="center" id="workspace-title">
-            Your tools.<br />One creative workspace.
+            Your tools,<br />one workspace.
           </h2>
           <div class="workspace-grid">
             <article class="workspace-card frame" data-reveal>
@@ -176,10 +176,10 @@
                 ><span class="tool-tile tile-four">CLI</span
                 ><span class="tool-tile tile-five">3D</span>
               </div>
-              <h3>The stack you already love</h3>
+              <h3>Works with your stack</h3>
               <p>
-                Bring your models, tools and workflows.<br />MCP and CLI
-                integrations connect them.
+                Bring your own models and tools.<br />MCP and CLI
+                integrations plug them in.
               </p>
               <a
                 class="button secondary"
@@ -199,10 +199,10 @@
                 </div>
                 <div class="app-shadow"></div>
               </div>
-              <h3>Your own AI studio</h3>
+              <h3>One desktop app</h3>
               <p>
-                Code, design, 3D and sound.<br />One desktop app. Your actual
-                project files.
+                Code, art, 3D and sound,<br />working on your actual project
+                files.
               </p>
               <a class="button secondary" href="https://quadcode.ai/#download"
                 ><i data-icon="download"></i>Get Quadcode</a
@@ -242,8 +242,7 @@
           <p class="reel-title" data-reel-title></p>
           <p class="reel-line" data-reel-line></p>
           <a class="button" href="https://quadcode.ai/#download"
-            ><span class="spark" aria-hidden="true"></span>Build a game like
-            this</a
+            >Make one like this <i data-icon="arrow-right"></i></a
           >
         </div>
         <div class="reel-bottom">
@@ -265,8 +264,8 @@
       <section class="worlds section" data-worlds aria-labelledby="worlds-title">
         <header class="worlds-head container">
           <div>
-            <p class="eyebrow">Any genre, any style</p>
-            <h2 id="worlds-title">Worlds creators build</h2>
+            <p class="eyebrow">Gallery</p>
+            <h2 id="worlds-title">What people build</h2>
           </div>
           <div class="worlds-nav">
             <button class="icon-button" type="button" data-worlds-prev aria-label="Scroll worlds back">
@@ -290,81 +289,74 @@
             <article class="step" data-reveal>
               <div class="step-art step-prompt">
                 <span class="step-number">01</span>
-                <div class="mini-prompt">
-                  <div class="prompt-genres">
-                    <span class="selected">Adventure</span><span>RPG</span
-                    ><span>3D</span>
-                  </div>
-                  <p>Create a dragon flying through a volcanic world.</p>
-                  <div class="mini-prompt-footer">
-                    <span>Example prompt</span
-                    ><i class="send-symbol" data-icon="arrow-up"></i>
-                  </div>
+                <div class="mini-game screencast step-clip">
+                  <video
+                    class="mini-game__video"
+                    data-feature-video
+                    src="landing/steps/step01-prompt.mp4?v=r17"
+                    muted
+                    loop
+                    playsinline
+                    preload="metadata"
+                    aria-label="Quadcode chat: a game prompt is typed and sent"
+                  ></video>
                 </div>
               </div>
-              <h3>Build the prompt</h3>
+              <h3>Describe it</h3>
               <p>
-                Describe the world, the characters and how you want to play.
-                Start with your idea.
+                Say what the world looks like, who's in it and how it
+                plays.
               </p>
             </article>
             <article class="step" data-reveal>
               <div class="step-art step-build">
                 <span class="step-number">02</span>
-                <div class="mini-agents">
-                  <div class="mini-agent">
-                    <span class="mini-agent__mark agent-role--peach"><i data-icon="code"></i></span>
-                    <div>
-                      <strong>Cody</strong><span>Game logic &amp; code</span>
-                    </div>
-                    <span class="agent-status" aria-hidden="true"></span>
-                  </div>
-                  <div class="mini-agent">
-                    <span class="mini-agent__mark agent-role--coral"><i data-icon="palette"></i></span>
-                    <div>
-                      <strong>Lumi</strong><span>Worlds &amp; visual design</span>
-                    </div>
-                    <span class="agent-status" aria-hidden="true"></span>
-                  </div>
-                  <div class="mini-agent">
-                    <span class="mini-agent__mark agent-role--steel"><i data-icon="waveform"></i></span>
-                    <div><strong>Sonic</strong><span>Motion &amp; sound</span></div>
-                    <span class="agent-status" aria-hidden="true"></span>
-                  </div>
+                <div class="mini-game screencast step-clip">
+                  <video
+                    class="mini-game__video"
+                    data-feature-video
+                    src="landing/steps/step02-agents.mp4?v=r17"
+                    muted
+                    loop
+                    playsinline
+                    preload="metadata"
+                    aria-label="Quadcode hands the brief to ten agents, which work on it in parallel"
+                  ></video>
                 </div>
               </div>
-              <h3>Your agents build</h3>
+              <h3>Agents build it</h3>
               <p>
-                Specialists work on the code, visuals and sound, using the tools
-                your project needs.
+                Code, art, 3D, sound and testing go to separate agents that
+                work in parallel.
               </p>
             </article>
             <article class="step" data-reveal>
               <div class="step-art step-play">
                 <span class="step-number">03</span>
-                <div class="mini-game">
-                  <div class="window-bar">
-                    <span>dragon-world</span><span>Preview <i data-icon="arrow-up-right"></i></span>
-                  </div>
-                  <img
-                    src="landing/dragon.webp"
-                    alt="Dragon Flight game preview"
-                    width="640"
-                    height="360"
-                    loading="lazy"
-                  />
+                <div class="mini-game screencast step-clip">
+                  <video
+                    class="mini-game__video"
+                    data-feature-video
+                    src="landing/ide/frostline.mp4"
+                    poster="landing/ide/frostline.png"
+                    muted
+                    loop
+                    playsinline
+                    preload="metadata"
+                    aria-label="The finished game: a snowboarder racing down a frozen mountain"
+                  ></video>
                 </div>
               </div>
-              <h3>Play & iterate</h3>
+              <h3>Play the result</h3>
               <p>
-                Run your project. Try it out. Ask for changes and keep shaping
-                it into your game.
+                Run it, try it, ask for changes. Keep going until it feels
+                right.
               </p>
             </article>
           </div>
           <div class="center" data-reveal>
             <a class="button secondary" href="https://quadcode.ai/#download"
-              >Start now <i data-icon="arrow-right"></i></a
+              >Try it yourself <i data-icon="arrow-right"></i></a
             >
           </div>
         </div>
@@ -373,14 +365,14 @@
       <section class="cta-section section" aria-labelledby="cta-title">
         <div class="cta-panel container frame">
           <div class="aurora" aria-hidden="true"></div>
-          <p class="eyebrow" data-reveal>From your imagination to your project</p>
+          <p class="eyebrow" data-reveal>Get started</p>
           <h2 id="cta-title">
             Describe a game.<br />Your agents build
             <span class="accent">the rest.</span>
           </h2>
-          <p>Code, visuals, 3D and sound — all in one workspace.</p>
+          <p>Code, art, 3D and sound in one desktop app.</p>
           <a class="button" href="https://quadcode.ai/#download"
-            ><span class="spark" aria-hidden="true"></span>Start creating</a
+            >Download Quadcode <i data-icon="download"></i></a
           >
         </div>
       </section>
@@ -392,19 +384,38 @@
       >
         <div class="container">
           <header class="center">
-            <p class="eyebrow" data-reveal>The Quadcode community</p>
-            <h2 id="community-title">
-              Real projects.<br />Shared by creators.
+            <p class="eyebrow" data-reveal>Community</p>
+            <!-- Typed headline (motion.js → initTypeline). The sr-only line is
+                 the real, stable heading; the stage is decorative. Ghost
+                 copies of every phrase share one grid cell, so the block is
+                 always as tall as the longest phrase and nothing below
+                 jumps while it types. -->
+            <h2 id="community-title" class="typeline" data-typeline>
+              <span class="sr-only">Learn from real projects.</span>
+              <span class="typeline__stage" aria-hidden="true"
+                ><span class="typeline__ghost">Learn from<br />real projects.</span
+                ><span class="typeline__ghost">Start from<br />a finished game.</span
+                ><span class="typeline__ghost">Borrow what<br />already works.</span
+                ><span class="typeline__live"
+                  ><span data-typeline-a>Learn from</span><br /><span
+                    class="accent"
+                    data-typeline-b
+                    >real projects.</span
+                  ><span class="typeline__caret"></span></span
+              ></span>
             </h2>
             <p>
-              See the process, not just the result.<br />Guides, workflows and
-              project files you can build on.
+              Guides, workflows and project files<br />from people building with
+              Quadcode.
             </p>
           </header>
           <div class="community-cards">
             <a href="https://guides.quadcode.ai/#guides" class="community-card" data-reveal
-              ><span class="resource-index">01 / LEARN</span>
-              <h3>Go from a blank project<br />to your first build.</h3>
+              ><span class="community-art" aria-hidden="true"
+                ><img src="landing/community/chess.webp" alt="" width="1200" height="800" loading="lazy" decoding="async"
+              /></span>
+              <span class="resource-index">Guides</span>
+              <h3>From a blank project to your first build.</h3>
               <p>
                 Step-by-step guides that show the brief, the decisions and the
                 finished files.
@@ -413,20 +424,26 @@
                 >Explore guides <i data-icon="arrow-up-right"></i></span
               ></a
             ><a href="https://guides.quadcode.ai/#guides" class="community-card" data-reveal
-              ><span class="resource-index">02 / EXPERIMENT</span>
-              <h3>Start with something<br />you can take apart.</h3>
+              ><span class="community-art" aria-hidden="true"
+                ><img src="landing/community/billiards.webp" alt="" width="1200" height="800" loading="lazy" decoding="async"
+              /></span>
+              <span class="resource-index">Projects</span>
+              <h3>Open a project and take it apart.</h3>
               <p>
-                Ready-to-go projects. Open the files, see how they work and make
-                them your own.
+                Finished projects with all the files. See how they work and
+                make them your own.
               </p>
               <span class="resource-link"
                 >Discover projects <i data-icon="arrow-up-right"></i></span
               ></a
             ><a href="https://guides.quadcode.ai/#guides" class="community-card" data-reveal
-              ><span class="resource-index">03 / CREATE</span>
-              <h3>Give your agents<br />a repeatable workflow.</h3>
+              ><span class="community-art" aria-hidden="true"
+                ><img src="landing/community/hockey.webp" alt="" width="1200" height="800" loading="lazy" decoding="async"
+              /></span>
+              <span class="resource-index">Skills</span>
+              <h3>Give your agents a repeatable workflow.</h3>
               <p>
-                Explore skills for design, development and game creation in the
+                Reusable skills for design, code and game building, from the
                 community library.
               </p>
               <span class="resource-link"
@@ -451,12 +468,11 @@
                in the same grid as the heading. -->
           <div class="rate" data-reveal>
             <header class="rate__corner">
-              <p class="eyebrow">Credits, not seats</p>
-              <h2 id="pricing-title">Pick your pace</h2>
+              <p class="eyebrow">Pricing</p>
+              <h2 id="pricing-title">Choose a plan</h2>
               <p class="rate__lede">
-                One app, every agent. Choose how many credits you get each
-                month and which models can use them. Pro is half price right
-                now.
+                Every plan includes all agents. Plans differ in monthly credits
+                and which models you can use. Pro is half price for now.
               </p>
             </header>
             <!-- THE HOLD. First attempt put this in the corner cell, under
@@ -511,7 +527,7 @@
 
       <section class="faq section" id="faq" aria-labelledby="faq-title">
         <div class="container">
-          <h2 class="center" id="faq-title">Got any questions left?</h2>
+          <h2 class="center" id="faq-title">Questions</h2>
           <div id="faq-list" class="faq-list"></div>
         </div>
       </section>
@@ -528,7 +544,7 @@
                 height="38"
               /><span>quadcode.ai</span></a
             >
-            <h2>Your own<br />creative superpower.</h2>
+            <h2>Start your<br />first game.</h2>
           </div>
           <div class="footer-column" data-reveal>
             <h3>Product</h3>

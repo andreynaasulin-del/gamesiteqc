@@ -74,20 +74,20 @@ const agents = [
 ];
 const featureData = [
   {
-    title: "Your idea.<br>A real project.",
-    copy: "Describe the game you want to make. Your agents write the code, create the assets and run the project — right in your own files, not a disposable sandbox.",
-    tags: ["Real project files", "Code & assets", "Run locally"],
+    title: "Your idea,<br>real files.",
+    copy: "Describe the game you want. Agents write the code, make the assets and run the build inside your project folder, so everything stays yours.",
+    tags: ["Project files", "Code and assets", "Runs locally"],
     visual: "project",
   },
   {
-    title: "A team, not<br>just a chatbot.",
-    copy: "Cody builds the logic. Lumi designs the world. Sonic brings it to life with motion and sound. Specialized agents, working together on one project.",
-    tags: ["Specialized agents", "Shared context", "Your models"],
+    title: "Three agents,<br>one project.",
+    copy: "Cody writes the game logic. Lumi designs the world. Sonic adds motion and sound. They share the same context and pass work to each other.",
+    tags: ["Specialized agents", "Shared context", "Any model"],
     visual: "team",
   },
   {
     title: "3D worlds from<br>a sentence.",
-    copy: "Imagine an environment, a character or a whole new world. Work with integrated creative tools to build 3D assets and bring them into your game.",
+    copy: "Describe a place, a character or a whole world. Built-in 3D tools turn it into assets you can drop straight into your game.",
     tags: ["3D assets", "Environments", "Characters"],
     visual: "world",
   },
@@ -95,7 +95,7 @@ const featureData = [
 const faqData = [
   [
     "What is Quadcode AI?",
-    "Quadcode is a desktop creative workspace where specialized AI agents help you build games, apps, websites, visuals and audio. They work with real project files and tools, not just messages in a chat.",
+    "Quadcode is a desktop creative workspace where specialized AI agents help you build games, apps, websites, visuals and audio. They open, edit and run the files in your project folder.",
   ],
   [
     "Do I need to know how to code?",
@@ -129,17 +129,33 @@ const escapeHtml = (value) =>
         char
       ],
   );
+// Chip marks (Lucide, same set as the buttons) instead of peach dots.
+const TAG_ICONS = {
+  "Project files": "folder",
+  "Code and assets": "file-code",
+  "Runs locally": "laptop",
+  "Specialized agents": "bot",
+  "Shared context": "link",
+  "Any model": "cpu",
+  "3D assets": "box",
+  Environments: "mountain",
+  Characters: "user",
+};
 const tags = (items) =>
-  `<div class="tags">${items.map((item) => `<span class="tag">${escapeHtml(item)}</span>`).join("")}</div>`;
+  `<div class="tags">${items
+    .map((item) => `<span class="tag">${icon(TAG_ICONS[item] || "sparkles", "i tag-icon")}${escapeHtml(item)}</span>`)
+    .join("")}</div>`;
 
 function featureVisual(type) {
   if (type === "project") {
-    return `<div class="project-window"><div class="window-bar"><span class="window-dots" aria-hidden="true">●●●</span><span>quadcode.ai · your workspace</span><span>${icon("expand")}</span></div><video class="project-window__video" data-feature-video src="${asset("quadcode-ide.mp4")}" poster="${asset("quadcode-ide.webp")}" width="1280" height="720" muted loop playsinline preload="metadata" aria-label="Quadcode desktop interface: a prompt is typed, GPT-6 Astra edits the project files, and the running game appears in the Result tab"></video></div><div class="project-prompt"><span>Example prompt</span><p>Build a 3D adventure. Make it my own.</p><footer><span>Code · Visuals · Sound</span>${icon("arrow-up", "i send-symbol")}</footer></div>`;
+    return `<div class="project-window screencast"><video class="project-window__video" data-feature-video src="${asset("ide/tidecliff-recording-battle-cut.mp4")}" poster="${asset("ide/tidecliff-recording-clean.jpg")}" width="2848" height="1336" muted loop playsinline preload="metadata" aria-label="Quadcode desktop interface: a prompt is typed, GPT-6 Astra edits the project files, and the running game appears in the Result tab"></video></div>`;
   }
   if (type === "team") {
-    return `<div class="team-composition"><div class="team-label">One brief. Your own creative team.</div><ul class="agent-roles">${agents.map((agent) => `<li class="agent-role agent-role--${agent.hue}"><span class="agent-role__mark">${icon(agent.glyph)}</span><strong>${agent.name}</strong><span>${escapeHtml(agent.role)}</span></li>`).join("")}</ul><div class="team-prompt">Your game. Everyone on the same page.</div></div>`;
+    return `<div class="team-composition"><div class="team-label">One brief, three specialists</div><ul class="agent-roles">${agents.map((agent) => `<li class="agent-role agent-role--${agent.hue}"><span class="agent-role__mark">${icon(agent.glyph)}</span><strong>${agent.name}</strong><span>${escapeHtml(agent.role)}</span></li>`).join("")}</ul><div class="team-prompt">All of them work in the same project</div></div>`;
   }
-  return `<img src="${asset("goth-room.webp")}" alt="Gothic room built with Quadcode: stained glass, volumetric lighting and candles" width="1280" height="720" loading="lazy"><div class="world-caption"><span class="eyebrow">Built with Quadcode</span><strong>A world worth exploring.</strong><p>Gothic Room · Real-time 3D environment</p></div>`;
+  // Topic 03 creative: the island grows out of an empty glass slab; the
+  // sentence is real HTML typed onto that slab (AI text would smear).
+  return `<picture><source srcset="${asset("topic03-world.webp")}" type="image/webp"><img src="${asset("topic03-world.jpg")}" alt="A floating island with a castle, waterfall and dragon being generated from a single typed sentence" width="2048" height="1152" loading="lazy" decoding="async"></picture><span class="world-tag eyebrow">Generated from one sentence</span><div class="world-prompt" aria-hidden="true"><img class="world-prompt__ui" src="${asset("ide/composer-opus.webp")}" alt="" width="1126" height="406" loading="lazy" decoding="async"><div class="world-prompt__line"><span class="world-prompt__text" data-world-type></span><span class="world-prompt__caret"></span></div></div>`;
 }
 
 // ---- Pricing: the rate card ------------------------------------------------
@@ -397,7 +413,7 @@ function renderContent() {
   $("#feature-list").innerHTML = featureData
     .map(
       (feature, index) =>
-        `<article class="feature"><div class="container feature-inner"><div class="feature-copy" data-reveal><span class="feature-number">0${index + 1} / CREATE WITHOUT THE CHAOS</span><h3>${feature.title}</h3><p>${escapeHtml(feature.copy)}</p>${tags(feature.tags)}</div><div class="feature-visual visual-${feature.visual}" data-reveal>${featureVisual(feature.visual)}</div></div></article>`,
+        `<article class="feature"><div class="container feature-inner"><div class="feature-copy" data-reveal><span class="feature-number">0${index + 1}</span><h3>${feature.title}</h3><p>${escapeHtml(feature.copy)}</p>${tags(feature.tags)}</div><div class="feature-visual visual-${feature.visual}" data-reveal>${featureVisual(feature.visual)}</div></div></article>`,
     )
     .join("");
   $("#plan-list").innerHTML = rateMarkup();
@@ -1017,6 +1033,38 @@ initializeDialog();
 initializeHero();
 // Old static image gallery replaced by the video showreel (showreel.js).
 initShowreel();
+initWorldTyping();
+
+// Topic 03: types a sentence onto the glass slab, holds, erases, next one.
+// Runs only while the visual is on screen; reduced motion gets it static.
+function initWorldTyping() {
+  const el = document.querySelector("[data-world-type]");
+  if (!el) return;
+  const lines = [
+    "A floating island with a castle, a waterfall and a dragon",
+    "A harbor town at sunset with ships and lanterns",
+    "A jungle temple hidden behind a giant waterfall",
+  ];
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    el.textContent = lines[0];
+    return;
+  }
+  let li = 0, ci = 0, dir = 1, timer = 0, on = false;
+  const tick = () => {
+    const s = lines[li];
+    ci += dir;
+    el.textContent = s.slice(0, ci);
+    let wait = dir > 0 ? 38 + Math.random() * 40 : 14;
+    if (dir > 0 && ci >= s.length) { dir = -1; wait = 2600; }
+    else if (dir < 0 && ci <= 0) { dir = 1; li = (li + 1) % lines.length; wait = 450; }
+    timer = on ? setTimeout(tick, wait) : 0;
+  };
+  new IntersectionObserver(([e]) => {
+    on = e.isIntersecting;
+    if (on && !timer) timer = setTimeout(tick, 300);
+    if (!on) { clearTimeout(timer); timer = 0; }
+  }, { threshold: 0.3 }).observe(el.closest(".feature-visual") || el);
+}
 initializeNavigation();
 initializeReveal();
 initMotion();

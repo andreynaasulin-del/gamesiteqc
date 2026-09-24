@@ -4,6 +4,15 @@
 // sources are the compressed copies in landing/web/ (never the originals).
 
 const v = (id) => `landing/web/${id}.mp4`;
+// The stage is full-bleed: on a wide or retina screen 1080p gets stretched
+// and looks soft, so those screens get the 1440p copy (Topaz HQ source).
+// Save-Data / slow links always stay on 1080p.
+const bigStage = () => {
+  const c = navigator.connection;
+  if (c && (c.saveData || /(^|-)2g|3g/.test(c.effectiveType || ""))) return false;
+  return innerWidth * Math.min(devicePixelRatio || 1, 2) > 2100;
+};
+const stageSrc = (id) => (bigStage() ? `landing/web/${id}-1440.mp4` : v(id));
 
 export const reel = [
   { id: "railrun-v2", title: "Railrun", genre: "FPS · Train heist", line: "Sprint the roof of a speeding train and hold the line." },
@@ -68,10 +77,10 @@ function initStage(root) {
     line.textContent = g.line;
     status.textContent = `${g.title}, ${index + 1} of ${reel.length}`;
     video.poster = `landing/explore/posters/${g.id}.webp`;
-    video.src = v(g.id);
+    video.src = stageSrc(g.id);
     if (play && visible && !paused) video.play().catch(() => {});
     // Warm the next clip's first bytes so the swap does not flash black.
-    next.href = v(reel[(index + 1) % reel.length].id);
+    next.href = stageSrc(reel[(index + 1) % reel.length].id);
     tiles[index].scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
   }
 

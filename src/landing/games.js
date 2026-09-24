@@ -19,7 +19,7 @@ export const games = [
     title: "Elemental Sandbox",
     category: "Playable now · 3D action",
     description:
-      "One character, six casts. Pick a spell, aim on the floor, fire — and knock the training targets over.",
+      "One character, six casts. Pick a spell, aim at the floor and knock the training targets over.",
     controls: [
       { keys: ["Q", "W", "E", "R", "D", "F"], label: "pick a cast" },
       { keys: ["Click"], label: "fire at the floor" },
@@ -36,7 +36,7 @@ export const games = [
     title: "Rocket Arena",
     category: "Playable now · car soccer",
     description:
-      "Rocket-powered car soccer: drive, boost, jump, flip — and put the ball in the orange net before the clock runs out.",
+      "Rocket-powered car soccer. Drive, boost, jump and flip, then put the ball in the orange net before time runs out.",
     controls: [
       { keys: ["W", "A", "S", "D"], label: "drive · steer" },
       { keys: ["Space"], label: "jump · tap twice to flip" },
