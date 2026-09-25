@@ -4,22 +4,27 @@
 // picker) / TEAM (Best value, seat stepper), Monthly⇄Annual switch, skewed
 // OFF badges, blue model tag, credit box, struck/now price, Get Plan block,
 // 7-DAY UNLIMITED box, feature list, 365-DAY box, disclaimer lines.
-// Structure and styling are theirs; every number and model name is ours
-// (TIERS below). Plus = our real Pro ($29/mo, $180/yr, 5,000 credits).
+// Structure and styling are theirs; every number is ours (TIERS below) and
+// every model name is read from MODEL_CATALOG in plans.js — no hand-typed
+// names, so a model dropped from the plans cannot linger here.
+// Plus = our real Pro ($29/mo, $180/yr, 5,000 credits).
 // ---------------------------------------------------------------------------
 import { icon } from "./icons.js";
 import { DEAL_MS, formatDeal } from "./deal.js";
-import { PLANS_URL } from "./plans.js";
+import { PLANS_URL, MODEL_CATALOG } from "./plans.js";
 
 export const DEAL_PERCENT = 40;
 const DEAL_KEY = "qc.deal.until";
 
-// Real per-generation prices from the app's model pickers (1 credit = 1 qcc).
+// Model names and per-generation prices come from MODEL_CATALOG (plans.js),
+// the one list of models that are really in our plans — never typed here.
 // Drives the "= N / ~ N" lines in every credit box.
+const MODEL = Object.fromEntries(MODEL_CATALOG.map((m) => [m.id, m]));
 const COST = {
-  image: { name: "GPT-Image", qcc: 4.2 }, // ~4.2 qcc / image
-  video: { name: "Seedance", qcc: 110 }, // ~110 credits / video
+  image: { name: MODEL["gpt-image"].name, qcc: MODEL["gpt-image"].cost },
+  video: { name: MODEL.seedance.name, qcc: MODEL.seedance.cost },
 };
+const N = (id) => MODEL[id].name;
 
 const esc = (value) =>
   String(value).replace(
@@ -34,14 +39,15 @@ const TIERS = [
     id: "starter",
     name: "Starter",
     tone: "base",
-    tag: "Seedance 2.0",
+    tag: N("seedance"),
     pitch: "For first-time creators trying AI game building",
     options: [{ credits: 1000, monthly: 9, annual: 9 }],
+    // Mirrors MONTHLY_MODELS: Seedance/Kling capped at 720p, Veo 3 & Omni locked.
     unlimited: [
-      { name: "Seedance 2.5", hot: true, note: "No free gens" },
-      { name: "GPT-Image", chip: "no" },
-      { name: "Seedance 2.0", chip: "no" },
-      { name: "Veo", chip: "no" },
+      { name: N("veo-3"), hot: true, note: "From Plus" },
+      { name: N("gpt-image"), chip: "no" },
+      { name: N("seedance"), res: "720p", chip: "no" },
+      { name: N("gemini-omni"), note: "From Plus" },
     ],
     features: [
       ["All agents: code, art, 3D & sound", true],
@@ -55,14 +61,14 @@ const TIERS = [
     id: "plus",
     name: "Plus",
     tone: "brand",
-    tag: "Seedance 2.0",
+    tag: N("seedance"),
     pitch: "For creators shipping their first real games",
     options: [{ credits: 5000, monthly: 29, annual: 15 }],
     unlimited: [
-      { name: "Seedance 2.5", hot: true, res: "720p", chip: "free:3" },
-      { name: "GPT-Image", res: "2K", chip: "unl" },
-      { name: "Seedance 2.0", chip: "no" },
-      { name: "Veo", chip: "no" },
+      { name: N("veo-3"), hot: true, chip: "free:3" },
+      { name: N("gpt-image"), res: "2K", chip: "unl" },
+      { name: N("seedance"), res: "1080p", chip: "no" },
+      { name: N("gemini-omni"), chip: "no" },
     ],
     features: [
       ["All agents: code, art, 3D & sound", true],
@@ -72,8 +78,8 @@ const TIERS = [
       ["Early access to new models", false],
     ],
     yearly: [
-      { name: "GPT-Image", chip: "unl365" },
-      { name: "Seedance 2.0", chip: "free:100" },
+      { name: N("gpt-image"), chip: "unl365" },
+      { name: N("seedance"), chip: "free:100" },
     ],
   },
   {
@@ -81,7 +87,7 @@ const TIERS = [
     name: "Ultra",
     tone: "pink",
     badge: "Best value",
-    tag: "Seedance 2.5",
+    tag: N("veo-3"),
     pitch: "For heavy creators building every day",
     options: [
       { credits: 10000, monthly: 49, annual: 35 },
@@ -89,10 +95,10 @@ const TIERS = [
       { credits: 30000, monthly: 129, annual: 93 },
     ],
     unlimited: [
-      { name: "Seedance 2.5", hot: true, res: "1080p", chip: "free:10" },
-      { name: "GPT-Image", res: "4K", chip: "unl" },
-      { name: "Seedance 2.0", res: "720p", chip: "unl" },
-      { name: "Veo", chip: "free:5" },
+      { name: N("veo-3"), hot: true, chip: "free:10" },
+      { name: N("gpt-image"), res: "4K", chip: "unl" },
+      { name: N("seedance"), res: "1080p", chip: "unl" },
+      { name: N("gemini-omni"), chip: "free:5" },
     ],
     features: [
       ["All agents: code, art, 3D & sound", true],
@@ -102,9 +108,9 @@ const TIERS = [
       ["Early access to new models", true, "New"],
     ],
     yearly: [
-      { name: "GPT-Image", chip: "unl365" },
-      { name: "Seedance 2.0", chip: "unl365" },
-      { name: "Seedance 2.5", chip: "free:300" },
+      { name: N("gpt-image"), chip: "unl365" },
+      { name: N("seedance"), chip: "unl365" },
+      { name: N("veo-3"), chip: "free:300" },
     ],
   },
 ];

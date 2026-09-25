@@ -59,20 +59,33 @@ test("Annual prices are real twelve-month costs with no duplicated Pro yearly", 
   const annual = plans.map(yearlyCost);
   assert.equal(new Set(annual).size, annual.length, "two columns show the same annual price");
   assert.equal(yearlySavings(byId.yearly), yearlyCost(byId["monthly-pro"]) - yearlyCost(byId.yearly));
-  // The "−48%" on the Annual toggle is that saving, rounded.
-  assert.equal(Math.round((yearlySavings(byId.yearly) / yearlyCost(byId["monthly-pro"])) * 100), 48);
 });
 
-// The launch discount is a Pro offer. The entry tier is sold at list, so
-// its column carries no struck price — and the two Pro columns must.
-test("only the Pro terms carry a struck regular rate", () => {
+// Higgsfield logic. Monthly view: list price, nothing struck, no discount
+// anywhere (launch discount retired, so no column has an anchor and the
+// hold removes itself). Annual view: ANNUAL_DISCOUNT off EVERY column,
+// rounded down so the "30% OFF" badge never over-promises.
+test("Monthly is list price; Annual is 30% off on all three columns", async () => {
+  const { ANNUAL_DISCOUNT, listMonthly, annualMonthly, annualTotal, annualSaving, yearlyCost } =
+    await import("../src/landing/plans.js");
+  assert.equal(ANNUAL_DISCOUNT, 0.3);
+  for (const plan of plans) assert.equal(planAnchor(plan), null, `${plan.id}: struck price in Monthly view`);
+
   const byId = Object.fromEntries(plans.map((plan) => [plan.id, plan]));
-  assert.equal(planAnchor(byId.monthly), null);
-  assert.equal(planAnchor(byId["monthly-pro"]), anchorPrice(byId["monthly-pro"].price));
-  assert.equal(planAnchor(byId.yearly), anchorPrice(byId.yearly.price));
-  // The heading may not promise a discount on every plan when one is at list.
+  assert.deepEqual(plans.map(listMonthly), [9, 29, 15]);
+  assert.deepEqual(plans.map((p) => annualMonthly(p)), [6, 20, 10]);
+  assert.equal(annualTotal(byId["monthly-pro"]), 240);
+  for (const plan of plans) {
+    const off = 1 - annualMonthly(plan) / listMonthly(plan);
+    assert.ok(off >= ANNUAL_DISCOUNT, `${plan.id}: only ${Math.round(off * 100)}% off`);
+    assert.ok(off < ANNUAL_DISCOUNT + 0.05, `${plan.id}: ${Math.round(off * 100)}% is not "30% off"`);
+    assert.equal(annualSaving(plan), yearlyCost(plan) - annualTotal(plan));
+    assert.ok(annualSaving(plan) > 0, plan.id);
+  }
+  // The copy says the same thing the numbers do.
   const landing = readFileSync("index.html", "utf8");
-  assert.doesNotMatch(landing, /Every plan is\s+half/i);
+  assert.match(landing, /30% OFF/);
+  assert.doesNotMatch(landing, /half its\s+regular rate/i);
 });
 
 // The two credit figures are a product decision, not styling. Anyone
@@ -121,15 +134,10 @@ test("no free tier is offered on the landing", () => {
   }
 });
 
-test("struck-through anchor is derived from one discount constant", () => {
-  assert.equal(PLAN_DISCOUNT, 0.5);
-  assert.equal(anchorPrice(9), 18);
-  assert.equal(anchorPrice(29), 58);
-  assert.equal(anchorPrice(180), 360);
-  // An anchor must always be above the price, never equal to it.
-  for (const plan of plans) {
-    assert.ok(anchorPrice(plan.price) > plan.price, plan.id);
-  }
+test("the half-price launch discount is retired", () => {
+  assert.equal(PLAN_DISCOUNT, 0);
+  // With no discount the "anchor" is just the price — never a fake higher one.
+  for (const plan of plans) assert.equal(anchorPrice(plan.price), plan.price, plan.id);
 });
 
 test("credit figures are grouped for reading, and every plan is complete", () => {

@@ -796,14 +796,38 @@ footer.footer .footer-bottom {
 .rate__price .rate__amount {
   grid-row: 2;
 }
-/* Monthly has no anchor: keep its figure on the same baseline as the two
-   Pro figures by reserving the anchor's line. */
-.rate__price:not(:has(.rate__was))::before {
+/* Monthly view hides the anchor: reserve its line so the figures do not
+   jump when the toggle flips. */
+.rate__price .rate__was[hidden] { display: none; }
+.rate__price:has(.rate__was[hidden])::before {
   content: "";
   grid-column: 1 / -1;
   grid-row: 1;
   height: 30px;
 }
+
+/* "30% OFF" next to the plan name — Annual view only (data-rate-off). */
+.rate__name {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.rate__off {
+  display: inline-block;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(255, 106, 70, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(255, 106, 70, 0.45);
+  color: #ff7a52;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.rate__off[hidden] { display: none; }
 
 /* One model per row now (10 rows), so rows are a touch tighter. */
 .rate {
@@ -856,7 +880,7 @@ footer.footer .footer-bottom {
   .rate__cell { justify-content: space-between; }
   .rate__price { flex-direction: column; align-items: center; }
   .rate__price .rate__was { order: -1; font-size: 26px; }
-  .rate__price:not(:has(.rate__was))::before { display: none; }
+  .rate__price:has(.rate__was[hidden])::before { display: none; }
   .offer {
     width: auto;
     justify-content: center;

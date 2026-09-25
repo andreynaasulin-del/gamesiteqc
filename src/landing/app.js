@@ -13,6 +13,11 @@ import {
   yearlySavings,
   monthlyEquivalent,
   yearlyCost,
+  ANNUAL_DISCOUNT,
+  listMonthly,
+  annualMonthly,
+  annualTotal,
+  annualSaving,
   MODEL_CATALOG,
   generationsFor,
   UNLOCK_LABEL,
@@ -276,71 +281,34 @@ function rateGateCellMarkup(plan, column) {
 // line, and the button — inline-width, so three different labels sit as
 // three buttons rather than three identical bars.
 function rateHeadMarkup(plan, column) {
-  // The headline figure is what the plan is actually billed AT, in its own
-  // unit — $9/month, $29/month, $180/year. It used to be $180 divided by
-  // twelve ("$15/month") on the yearly column: that number is the
-  // per-month *comparison* figure (see monthlyEquivalent, still used for
-  // that maths elsewhere), not a price anyone is charged, and printing it
-  // as THE price read as "Pro yearly costs $15 a month".
+  // The headline figure is always PER MONTH, as on Higgsfield — in both
+  // views. The billing line underneath says what is actually charged.
   const price = plan.price;
-  const perUnit = plan.per === "year" ? "year" : "month";
-  // Struck regular rate, in the same unit as the price beside it — only on
-  // plans that are actually on offer. Monthly is sold at list, so its price
-  // stands alone.
-  const anchor = planAnchor(plan);
-  const was = anchor == null ? "" : `<s class="rate__was" aria-label="Regular price">$${anchor}</s>`;
-  const savings = yearlySavings(plan);
-  // "$180" is not repeated here — it is already the headline figure above.
-  // The saving is the yearly column's one hook, so the figure is lifted out
-  // of the sentence into the accent rather than left as grey body text.
-  // The sentence itself comes from plans.js on EVERY column; the yearly one
-  // only splices the saving into it. It used to be hardcoded here for
-  // `per === "year"`, which left that plan's own `billing` string in
-  // plans.js permanently unread — edit it and nothing on the page moved.
-  // The period is re-attached after the splice so all three columns end
-  // with one, the yearly one included (it did not before).
-  // `savings` is a number and the base is escaped, so this is safe to
-  // interpolate as markup.
-  // "against twelve months of Pro" was the same claim in nine words and it
-  // wrapped to a second line at every desktop width — so the billing row
-  // was two lines tall in all three columns to serve one of them, on a
-  // table that has to fit one screen. "vs. monthly Pro" fits on one line at
-  // 316px and names the reference plan, which is read from `comparedTo`
-  // rather than typed, so it cannot drift from the plan the saving is
-  // actually computed against.
-  const base = escapeHtml(plan.billing).replace(/\.\s*$/, "");
-  const reference = plans.find((candidate) => candidate.id === plan.comparedTo);
-  const billing = savings
-    ? `${base} — <strong class="rate__save">saves $${savings}</strong> vs. monthly ${escapeHtml(reference?.name ?? "Pro")}.`
-    : `${base}.`;
-  // Both units precomputed from plan.price / planAnchor (never typed); the
-  // Monthly ⇄ Annual buttons (initRatePeriod) swap them in place.
   const yearly = plan.per === "year";
-  const amounts = { month: yearly ? Math.round(price / 12) : price, year: yearly ? price : price * 12 };
-  const anchors =
-    anchor == null ? null : { month: yearly ? Math.round(anchor / 12) : anchor, year: yearly ? anchor : anchor * 12 };
-  // Annual view = what each column really costs over twelve months
-  // (yearlyCost in plans.js). Monthly and Pro are not sold on a yearly
-  // term, so their annual figure is 12 × the monthly price and their
-  // billing line says so — they are NOT relabelled "billed annually",
-  // and Pro is NOT shown at $15 (that is Pro yearly's price; printing it
-  // in the Pro column too would put the same plan on the card twice).
-  // The only real yearly discount is Pro yearly's saving vs. Pro.
-  const data = `data-month="${amounts.month}" data-year="${yearlyCost(plan)}"${
-    anchors ? ` data-was-month="${anchors.month}" data-was-year="${anchors.year}"` : ""
-  }`;
-  const billingYear = yearly
-    ? billing
-    : `12 × $${price}, ${base.charAt(0).toLowerCase()}${base.slice(1)}.`;
+  // The billing sentence comes from plans.js; the period is re-attached so
+  // every column ends with one. The base is escaped, so it is safe markup.
+  const base = escapeHtml(plan.billing).replace(/\.\s*$/, "");
+  const offLabel = `${Math.round(ANNUAL_DISCOUNT * 100)}% OFF`;
+  // Monthly ⇄ Annual, Higgsfield's logic (initRatePeriod swaps in place):
+  //   Monthly → list price per month. Nothing struck, no badge, no saving.
+  //   Annual  → ANNUAL_DISCOUNT off EVERY column: per-month figure "billed
+  //             annually", the list price struck beside it, a "30% OFF"
+  //             badge on the name, and the saving in dollars.
+  // Every figure comes from plans.js (listMonthly / annualMonthly /
+  // annualTotal / annualSaving) — none is typed here.
+  const list = listMonthly(plan);
+  const data = `data-month="${list}" data-year="${annualMonthly(plan)}" data-was-year="${list}"`;
+  const billingMonth = yearly ? `$${price} billed once a year.` : `${base}.`;
+  const billingYear = `$${formatCredits(annualTotal(plan))} billed annually — <strong class="rate__save">save $${formatCredits(annualSaving(plan))}</strong>.`;
   return `<header class="rate__head" style="--c:${column}">
     <p class="rate__caption">${plan.badge ? escapeHtml(plan.badge) : escapeHtml(plan.pitch)}</p>
-    <h3 class="rate__name">${escapeHtml(plan.name)}</h3>
+    <h3 class="rate__name">${escapeHtml(plan.name)}<span class="rate__off" data-rate-off hidden>${offLabel}</span></h3>
     <p class="rate__credits"><strong>${formatCredits(plan.credits)}</strong> credits a month</p>
     <p class="rate__price" ${data}>
-      <span class="rate__amount"><span class="rate__currency">$</span><strong data-rate-amount>${price}</strong><span class="rate__per">/ <span data-rate-unit>${perUnit}</span></span></span>
-      ${was.replace("<s ", "<s data-rate-was ")}
+      <span class="rate__amount"><span class="rate__currency">$</span><strong data-rate-amount>${list}</strong><span class="rate__per">/ month</span></span>
+      <s class="rate__was" data-rate-was aria-label="Regular price" hidden>$${list}</s>
     </p>
-    <p class="rate__billing"><span data-rate-billing="month">${billing}</span><span data-rate-billing="year" hidden>${billingYear}</span></p>
+    <p class="rate__billing"><span data-rate-billing="month">${billingMonth}</span><span data-rate-billing="year" hidden>${billingYear}</span></p>
     <a class="button small${plan.featured ? "" : " secondary"} rate__cta" href="${PLANS_URL}">${escapeHtml(plan.cta)} ${icon("arrow-right")}</a>
   </header>`;
 }
@@ -356,22 +324,24 @@ function initRatePeriod() {
       b.classList.toggle("is-active", on);
       b.setAttribute("aria-pressed", String(on));
     });
+    const annual = period === "year";
+    // Both views are per month. Monthly: list, nothing struck. Annual: the
+    // discounted figure with the list price struck and the OFF badge shown.
     document.querySelectorAll(".rate__price[data-month]").forEach((p) => {
       p.querySelector("[data-rate-amount]").textContent = p.dataset[period];
-      // Annual prints the real twelve-month total, so the unit is "year".
-      p.querySelector("[data-rate-unit]").textContent = period;
       const was = p.querySelector("[data-rate-was]");
-      if (was) was.textContent = `$${period === "year" ? p.dataset.wasYear : p.dataset.wasMonth}`;
+      if (was) was.hidden = !annual;
+    });
+    document.querySelectorAll("[data-rate-off]").forEach((badge) => {
+      badge.hidden = !annual;
     });
     document.querySelectorAll("[data-rate-billing]").forEach((line) => {
       line.hidden = line.dataset.rateBilling !== period;
     });
   };
-  // "−48%" on the Annual button: derived from the yearly plan vs. its monthly reference.
-  const yearlyPlan = plans.find((p) => p.per === "year" && p.comparedTo);
-  const ref = yearlyPlan && plans.find((p) => p.id === yearlyPlan.comparedTo);
+  // "30% OFF" on the Annual button — the same constant every column uses.
   const off = document.querySelector(".rate__period-off");
-  if (off && ref) off.textContent = `−${Math.round((yearlySavings(yearlyPlan) / (ref.price * 12)) * 100)}%`;
+  if (off) off.textContent = `${Math.round(ANNUAL_DISCOUNT * 100)}% OFF`;
   buttons.forEach((b) => b.addEventListener("click", () => apply(b.dataset.ratePeriod)));
   // Annual by default: it is the term with the biggest saving on the card.
   apply("year");
@@ -398,7 +368,7 @@ function rateLabelsMarkup() {
   return MODEL_CATALOG.map((entry, i) => {
     const row = rowFor(i);
     // aria-hidden, because every cell's sr-only sentence already names its
-    // own feature ("Pro — Video · Seedance 2.0: included"). Left readable it
+    // own feature ("Pro — Video · Seedance: included"). Left readable it
     // would announce all seven model names once before the grid and then
     // again inside each of the twenty-one cells.
     const label = `<div class="rate__label${i === last ? " rate__label--last" : ""}" style="--r:${row}" data-r="${row}" aria-hidden="true"><span class="rate__role">${escapeHtml(entry.role)}</span><span class="rate__model">${escapeHtml(entry.name)}</span></div>`;

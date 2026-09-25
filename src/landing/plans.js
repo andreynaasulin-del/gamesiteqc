@@ -7,12 +7,21 @@
 // people building continuously. The yearly card is the same 5,000 a month
 // paid once.
 //
-// One discount constant, not three hand-written "was" prices: the struck
-// anchor is always derived, so a price change can never leave a stale
-// crossed-out number on the page.
+// Discount logic is Higgsfield's: the MONTHLY view is list price, nothing
+// struck, no discount. The ANNUAL view takes ANNUAL_DISCOUNT off every
+// column, prints the per-month figure "billed annually" with the list
+// price struck beside it, and states the saving in dollars.
+//
+// One discount constant, not hand-written "was" prices: every struck figure
+// is derived, so a price change can never leave a stale number on the page.
 // ---------------------------------------------------------------------------
 
-export const PLAN_DISCOUNT = 0.5;
+/** Launch (half-price) discount — retired. Kept at 0 so planAnchor() is
+ *  null everywhere and the six-hour hold removes itself (placeOffer). */
+export const PLAN_DISCOUNT = 0;
+
+/** Paying for a year takes this much off every plan. */
+export const ANNUAL_DISCOUNT = 0.3;
 
 /** Pre-discount price shown struck through. Derived, never authored. */
 export const anchorPrice = (price, discount = PLAN_DISCOUNT) =>
@@ -40,9 +49,8 @@ export const formatCredits = (credits) => credits.toLocaleString("en-US");
 //
 // Row names are model FAMILIES the public site already claims ("GPT, Claude,
 // Gemini … in one environment", Veo for video, Claude Code / Codex CLIs) plus
-// the generators this very landing was produced with (Seedance 2.0/2.5). No
-// version numbers: a card that says "4.5" is a card somebody has to remember
-// to edit the week a 4.6 ships.
+// the top image/video models from the app's own pickers. Versions only where
+// the picker itself prints one (Veo 3, Seedream 5 Pro).
 //
 // The GATES below are a proposal to be confirmed by the product owner —
 // see the end-of-task note. They live in one place so a change is one edit.
@@ -55,16 +63,23 @@ export const formatCredits = (credits) => credits.toLocaleString("en-US");
 // app's own pickers); where it is known the cell prints how many of that
 // generation the plan's credits buy, computed, never typed.
 export const MODEL_CATALOG = [
+  // Source of truth: quadcode.ai ("GPT, Claude, Gemini, Grok in one place",
+  // Claude Code / Codex CLI) and the app's own image/video pickers — names
+  // and qcc costs exactly as the pickers print them. Only the flagged
+  // (NEW / 👍) top models; legacy and open-source rows are left out.
   { id: "claude", name: "Claude", role: "Code" },
   { id: "gpt", name: "GPT", role: "Code" },
   { id: "gemini", name: "Gemini", role: "Code" },
+  { id: "grok", name: "Grok", role: "Code" },
   { id: "claude-code", name: "Claude Code", role: "CLI" },
   { id: "codex", name: "Codex", role: "CLI" },
   { id: "gpt-image", name: "GPT-Image", role: "Image", cost: 4.2, unit: "images" },
-  { id: "seedance-2", name: "Seedance 2.0", role: "Video", cost: 110, unit: "videos" },
-  { id: "seedance-25", name: "Seedance 2.5", role: "Video", cost: 110, unit: "videos" },
+  { id: "nanobanana", name: "Nano Banana", role: "Image", cost: 9.2, unit: "images" },
+  { id: "seedream", name: "Seedream 5 Pro", role: "Image", cost: 4, unit: "images" },
+  { id: "seedance", name: "Seedance", role: "Video", cost: 110, unit: "videos" },
+  { id: "veo-3", name: "Veo 3", role: "Video", cost: 200, unit: "videos" },
+  { id: "gemini-omni", name: "Gemini Omni Flash", role: "Video", cost: 408, unit: "videos" },
   { id: "kling", name: "Kling", role: "Video", cost: 55, unit: "videos" },
-  { id: "veo-3", name: "Veo 3", role: "Video" },
 ];
 
 /** "~238 images" — what a plan's monthly credits buy of one model. */
@@ -86,25 +101,31 @@ const MONTHLY_MODELS = {
   claude: FULL,
   gpt: FULL,
   gemini: FULL,
+  grok: FULL,
   "claude-code": FULL,
   codex: FULL,
   "gpt-image": FULL,
-  "seedance-2": { state: "capped", limit: "720p" },
-  "seedance-25": null,
-  kling: { state: "capped", limit: "720p" },
+  nanobanana: FULL,
+  seedream: FULL,
+  seedance: { state: "capped", limit: "720p" },
   "veo-3": null,
+  "gemini-omni": null,
+  kling: { state: "capped", limit: "720p" },
 };
 const PRO_MODELS = {
   claude: FULL,
   gpt: FULL,
   gemini: FULL,
+  grok: FULL,
   "claude-code": FULL,
   codex: FULL,
   "gpt-image": FULL,
-  "seedance-2": { state: "full", limit: "1080p" },
-  "seedance-25": { state: "full", limit: "1080p" },
-  kling: { state: "full", limit: "1080p" },
+  nanobanana: FULL,
+  seedream: FULL,
+  seedance: { state: "full", limit: "1080p" },
   "veo-3": FULL,
+  "gemini-omni": FULL,
+  kling: { state: "full", limit: "1080p" },
 };
 
 export const plans = [
@@ -115,9 +136,6 @@ export const plans = [
     price: 9,
     per: "month",
     unit: "credits / mo",
-    // Sold at list price: no struck anchor on this column. The discount
-    // belongs to Pro — see planDiscount().
-    discount: 0,
     // Captions are one line each so the three names sit level; the pitch
     // is the long form for anywhere with room.
     badge: "For your first game",
@@ -154,7 +172,7 @@ export const plans = [
     models: PRO_MODELS,
     // "MCP & CLI integrations" used to sit here — but the CLI row is open on
     // Monthly too, so the perk contradicted the table above it.
-    features: ["Everything in Monthly", "1080p video on every model", "Seedance 2.5 & Veo 3"],
+    features: ["Everything in Monthly", "1080p video on every model", "Veo 3 & Gemini Omni"],
     cta: "Go Pro",
   },
   {
@@ -188,6 +206,21 @@ export const monthlyEquivalent = (plan) =>
 /** What a column really costs over twelve months: a yearly plan is its
  *  price, a monthly plan is twelve payments. Drives the Annual view. */
 export const yearlyCost = (plan) => (plan.per === "year" ? plan.price : plan.price * 12);
+
+/** Monthly view figure: list price per month, never discounted. */
+export const listMonthly = (plan) => monthlyEquivalent(plan);
+
+/** Annual view figure: per month, billed annually, ANNUAL_DISCOUNT off.
+ *  Rounded DOWN to whole dollars so the badge never over-promises: the
+ *  real discount is always at least ANNUAL_DISCOUNT. */
+export const annualMonthly = (plan, discount = ANNUAL_DISCOUNT) =>
+  Math.floor(listMonthly(plan) * (1 - discount));
+
+/** What the annual term charges once a year. */
+export const annualTotal = (plan) => annualMonthly(plan) * 12;
+
+/** Dollars kept by paying annually vs. twelve months at list. */
+export const annualSaving = (plan) => yearlyCost(plan) - annualTotal(plan);
 
 /**
  * What the yearly buyer keeps versus paying the monthly reference plan twelve
