@@ -477,3 +477,9 @@ tests/landing-plans.js` → 18 pass.
 - `src/landing/motion.js` (`initMotion()` in app.js after initializeReveal): h2 split-word rise, `.wipe` media reveal, `.spot` card spotlight/tilt, `.scroll-progress`. Reduced motion → nothing hidden.
 - Large coral box-shadows read BROWN on ink — keep shadows black.
 - Screenshot tool: use JS `scrollIntoView` then a plain viewport screenshot; selector screenshots of tall sections come out blank.
+
+
+## Marketing posters never go to the site (2026-09-24)
+`marketing/` creatives (feedback-credits etc.) are delivered as files only — NEVER copy them into `public/` or deploy them. A 4K poster was once pushed to prod by mistake (`220b707`) and reverted (`e7f0175`). "Deploy" from PO means the site, not the creative.
+Fixed `2cd63d3`: restored `public/textures/cathedral/{color,normal,roughness,ao}.jpg` (ambientCG Rock030 1K, CC0, ~5 MB; used by `loaders/StoneTextures.js`) and committed `public/landing/ide/composer-opus.webp` (was referenced by app.js but never in git).
+Deploys go from a clean worktree of HEAD → any asset the site references MUST be committed, or prod 404s. Before deploying, run: untracked `public/` files whose basename appears in `*.html`/`src` → must be empty.

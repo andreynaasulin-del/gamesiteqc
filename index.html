@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="src/landing/bold.css" />
     <link rel="stylesheet" href="src/landing/showreel.css" />
     <link rel="stylesheet" href="src/landing/hf.css" />
+    <link rel="stylesheet" href="src/landing/paywall.css" />
     <script type="module" src="src/landing/app.js"></script>
   </head>
   <body>
@@ -33,7 +34,6 @@
         >
         <a href="#capabilities">Capabilities</a>
         <a href="#workflow">How it works</a>
-        <a href="#community">Community</a>
         <a href="#pricing">Pricing</a>
         <a href="#faq">FAQ</a>
       </nav>
@@ -414,101 +414,18 @@
       </section>
 
       <section
-        class="community section"
-        id="community"
-        aria-labelledby="community-title"
-      >
-        <div class="container">
-          <header class="center">
-            <p class="eyebrow" data-reveal>Community</p>
-            <!-- Typed headline (motion.js → initTypeline). The sr-only line is
-                 the real, stable heading; the stage is decorative. Ghost
-                 copies of every phrase share one grid cell, so the block is
-                 always as tall as the longest phrase and nothing below
-                 jumps while it types. -->
-            <h2 id="community-title" class="typeline" data-typeline>
-              <span class="sr-only">Learn from real projects.</span>
-              <span class="typeline__stage" aria-hidden="true"
-                ><span class="typeline__ghost">Learn from<br />real projects.</span
-                ><span class="typeline__ghost">Start from<br />a finished game.</span
-                ><span class="typeline__ghost">Borrow what<br />already works.</span
-                ><span class="typeline__live"
-                  ><span data-typeline-a>Learn from</span><br /><span
-                    class="accent"
-                    data-typeline-b
-                    >real projects.</span
-                  ><span class="typeline__caret"></span></span
-              ></span>
-            </h2>
-            <p>
-              Guides, workflows and project files<br />from people building with
-              Quadcode AI.
-            </p>
-          </header>
-          <div class="community-cards">
-            <a href="https://guides.quadcode.ai/#guides" class="community-card" data-reveal
-              ><span class="community-art" aria-hidden="true"
-                ><img src="landing/community/chess.webp" alt="" width="1200" height="800" loading="lazy" decoding="async"
-              /></span>
-              <span class="resource-index">Guides</span>
-              <h3>From a blank project to your first build.</h3>
-              <p>
-                Step-by-step guides that show the brief, the decisions and the
-                finished files.
-              </p>
-              <span class="resource-link"
-                >Explore guides <i data-icon="arrow-up-right"></i></span
-              ></a
-            ><a href="https://guides.quadcode.ai/#guides" class="community-card" data-reveal
-              ><span class="community-art" aria-hidden="true"
-                ><img src="landing/community/billiards.webp" alt="" width="1200" height="800" loading="lazy" decoding="async"
-              /></span>
-              <span class="resource-index">Projects</span>
-              <h3>Open a project and take it apart.</h3>
-              <p>
-                Finished projects with all the files. See how they work and
-                make them your own.
-              </p>
-              <span class="resource-link"
-                >Discover projects <i data-icon="arrow-up-right"></i></span
-              ></a
-            ><a href="https://guides.quadcode.ai/#guides" class="community-card" data-reveal
-              ><span class="community-art" aria-hidden="true"
-                ><img src="landing/community/hockey.webp" alt="" width="1200" height="800" loading="lazy" decoding="async"
-              /></span>
-              <span class="resource-index">Skills</span>
-              <h3>Give your agents a repeatable workflow.</h3>
-              <p>
-                Reusable skills for design, code and game building, from the
-                community library.
-              </p>
-              <span class="resource-link"
-                >Browse workflows <i data-icon="arrow-up-right"></i></span
-              ></a
-            >
-          </div>
-        </div>
-      </section>
-
-      <section
         class="pricing section"
         id="pricing"
         aria-labelledby="pricing-title"
       >
         <div class="container">
-          <!-- One rate card, not three cards. The plans are columns of a
-               single typeset table; every model family is named once, on
-               the left, and the section heading sits in the table's corner
-               cell where a spec sheet would print its title. #plan-list is
-               a display:contents shell so the JS-rendered cells take part
-               in the same grid as the heading. -->
-          <div class="rate" data-reveal>
-            <header class="rate__corner">
-              <p class="eyebrow">Pricing</p>
-              <h2 id="pricing-title">Choose a plan</h2>
-              <p class="rate__lede">
-                Every plan includes all agents. Plans differ in monthly credits
-                and which models you can use. Pro is half price for now.
+          <!-- Paywall: Higgsfield pricing cards 1:1, our values.
+               Markup rendered by src/landing/paywall.js into #plan-list. -->
+          <div class="pw" data-reveal>
+            <header class="pw-head">
+              <h2 id="pricing-title">Pick your plan</h2>
+              <p class="pw-head__lede">
+                Get access to every agent and model. Pay less with annual billing.
               </p>
             </header>
             <!-- THE HOLD. First attempt put this in the corner cell, under
@@ -547,9 +464,12 @@
               <p class="sr-only offer__scope">On Pro and Pro yearly.</p>
               <p class="sr-only" data-offer-live aria-live="polite"></p>
             </div>
-            <div class="rate__body" id="plan-list"></div>
+            <div class="pw-body" id="plan-list"></div>
           </div>
-          <footer class="rate__foot" data-reveal>
+          <footer class="pw-foot" data-reveal>
+            <a class="pw-btn pw-btn--brand pw-foot__cta" href="https://quadcode.ai/profile/plans"
+              >Claim 40% off · ends in <b data-pw-clock>10:00</b> <i data-icon="arrow-right"></i></a
+            >
             <p id="rate-every-plan"></p>
             <p>
               Prices in USD, before tax. Manage or cancel from your profile.
@@ -592,8 +512,7 @@
           </div>
           <div class="footer-column" data-reveal>
             <h3>Resources</h3>
-            <a href="https://guides.quadcode.ai/#guides">Community</a
-            ><a href="#workflow">How it works</a><a href="#faq">FAQ</a>
+            <a href="#workflow">How it works</a><a href="#faq">FAQ</a>
           </div>
           <div class="footer-column" data-reveal>
             <h3>Legal</h3>

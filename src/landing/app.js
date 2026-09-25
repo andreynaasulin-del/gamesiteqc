@@ -6,6 +6,7 @@ import { initializeDeal } from "./deal.js";
 import { initTestimonials } from "./testimonials.js";
 import { initMotion } from "./motion.js";
 import { initShowreel } from "./showreel.js";
+import { paywallMarkup, initPaywallClock, initPaywallToggle } from "./paywall.js";
 import {
   plans,
   planAnchor,
@@ -78,7 +79,7 @@ const featureData = [
   {
     title: "Your idea,<br>real files.",
     copy: "Describe the game you want. Agents write the code, make the assets and run the build inside your project folder, so everything stays yours.",
-    tags: ["Project files", "Code and assets", "Runs locally"],
+    tags: ["Code and assets", "Runs locally"],
     visual: "project",
   },
   {
@@ -111,7 +112,7 @@ const faqData = [
   ],
   [
     "Where should I start?",
-    "Get the Quadcode AI desktop app, open a project and describe what you want to build. The community library includes step-by-step guides, skills and ready-to-go projects to explore.",
+    "Get the Quadcode AI desktop app, open a project and describe what you want to build.",
   ],
 ];
 
@@ -127,7 +128,6 @@ const escapeHtml = (value) =>
   );
 // Chip marks (Lucide, same set as the buttons) instead of peach dots.
 const TAG_ICONS = {
-  "Project files": "folder",
   "Code and assets": "file-code",
   "Runs locally": "laptop",
   "Specialized agents": "bot",
@@ -412,7 +412,7 @@ function renderContent() {
         `<article class="feature"><div class="container feature-inner"><div class="feature-copy" data-reveal><span class="feature-number">0${index + 1}</span><h3>${feature.title}</h3><p>${escapeHtml(feature.copy)}</p>${tags(feature.tags)}</div><div class="feature-visual visual-${feature.visual}" data-reveal>${featureVisual(feature.visual)}</div></div></article>`,
     )
     .join("");
-  $("#plan-list").innerHTML = rateMarkup();
+  $("#plan-list").innerHTML = paywallMarkup();
   $("#rate-every-plan").innerHTML =
     `<strong>Every plan:</strong> ${everyPlan().map(escapeHtml).join(" · ")}.`;
   $("#faq-list").innerHTML = faqData
@@ -1077,4 +1077,6 @@ initializeRateHover();
 placeOffer();
 initializeOffer();
 initializeDeal();
+initPaywallClock();
+initPaywallToggle();
 initTestimonials();

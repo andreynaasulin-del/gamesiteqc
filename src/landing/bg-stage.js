@@ -15,7 +15,6 @@ const MAP = [
   [".worlds", "forest"],
   ["#workflow", "alpine"],
   [".cta-section", "coral"],
-  ["#community", "seafoam"],
   ["#pricing", "dusk"],
   ["#faq", "ocean"],
 ];
