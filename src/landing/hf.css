@@ -322,6 +322,56 @@ main > section::before,
   #workflow.steps--hf { padding-block: 64px 48px !important; }
 }
 
+/* ---- Section CTAs: one centred action at the end of every block ------ */
+.section-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 48px;
+  text-align: center;
+}
+.section-cta .button { min-width: 220px; justify-content: center; }
+.section-cta__note { margin: 0; font-size: 13px; color: #8f8e90; }
+.section-cta__lead {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text, #fff);
+}
+/* White band (reviews): dark pill, like the steps CTA. */
+.section-cta--light { margin-top: 32px; }
+.section-cta--light .button {
+  background: #131517 !important;
+  color: #fff !important;
+  box-shadow: none !important;
+  border-radius: 100px;
+}
+@media (max-width: 900px) {
+  .section-cta { margin-top: 36px; }
+  /* Content width like every other CTA on the phone, not a full bar. */
+  .section-cta .button { min-width: 220px; min-height: 48px; }
+}
+
+/* ---- Polish pass: one rhythm for headings, buttons, labels ---------- */
+/* Section titles: 88px dark vs 60px white bands read as two sites.
+   One scale, white bands a step smaller. */
+:root { --h2: clamp(40px, 5vw, 76px); }
+#workflow.steps--hf h2,
+.tm-head h2 { font-size: clamp(34px, 4.2vw, 60px); }
+/* margin:0 above killed the auto-centring: the 14ch box sat on the left. */
+#workflow.steps--hf h2 { margin-inline: auto; max-width: 16ch; }
+h2, h3, .section-cta__lead { text-wrap: balance; }
+p { text-wrap: pretty; }
+/* Pricing eyebrow matched the rest of the page. */
+.rate__corner .eyebrow { font-size: 15px !important; }
+/* Workspace buttons were 50px, every other CTA is 48. */
+.workspace-card .button { min-height: 48px !important; height: 48px !important; box-sizing: border-box; }
+/* Hero legend: six key chips squeezed "pick a cast" into three lines. */
+.hero-game__controls li span { white-space: nowrap; }
+.hero-game__controls-wrap { max-width: none; flex-shrink: 0; }
+
 /* ---- 6. Testimonials (placeholder quotes) --------------------------- */
 #reviews.tm {
   padding-block: 24px 56px !important;

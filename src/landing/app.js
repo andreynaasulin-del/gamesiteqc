@@ -6,7 +6,6 @@ import { initializeDeal } from "./deal.js";
 import { initTestimonials } from "./testimonials.js";
 import { initMotion } from "./motion.js";
 import { initShowreel } from "./showreel.js";
-import { paywallMarkup, initPaywallClock, initPaywallToggle } from "./paywall.js";
 import {
   plans,
   planAnchor,
@@ -308,17 +307,53 @@ function rateHeadMarkup(plan, column) {
   const billing = savings
     ? `${base} — <strong class="rate__save">saves $${savings}</strong> vs. monthly ${escapeHtml(reference?.name ?? "Pro")}.`
     : `${base}.`;
+  // Both units precomputed from plan.price / planAnchor (never typed); the
+  // Monthly ⇄ Annual buttons (initRatePeriod) swap them in place.
+  const yearly = plan.per === "year";
+  const amounts = { month: yearly ? Math.round(price / 12) : price, year: yearly ? price : price * 12 };
+  const anchors =
+    anchor == null ? null : { month: yearly ? Math.round(anchor / 12) : anchor, year: yearly ? anchor : anchor * 12 };
+  const data = `data-month="${amounts.month}" data-year="${amounts.year}"${
+    anchors ? ` data-was-month="${anchors.month}" data-was-year="${anchors.year}"` : ""
+  }`;
   return `<header class="rate__head" style="--c:${column}">
     <p class="rate__caption">${plan.badge ? escapeHtml(plan.badge) : escapeHtml(plan.pitch)}</p>
     <h3 class="rate__name">${escapeHtml(plan.name)}</h3>
     <p class="rate__credits"><strong>${formatCredits(plan.credits)}</strong> credits a month</p>
-    <p class="rate__price">
-      <span class="rate__amount"><span class="rate__currency">$</span><strong>${price}</strong><span class="rate__per">/ ${perUnit}</span></span>
-      ${was}
+    <p class="rate__price" ${data}>
+      <span class="rate__amount"><span class="rate__currency">$</span><strong data-rate-amount>${price}</strong><span class="rate__per">/ <span data-rate-unit>${perUnit}</span></span></span>
+      ${was.replace("<s ", "<s data-rate-was ")}
     </p>
     <p class="rate__billing">${billing}</p>
     <a class="button small${plan.featured ? "" : " secondary"} rate__cta" href="${PLANS_URL}">${escapeHtml(plan.cta)} ${icon("arrow-right")}</a>
   </header>`;
+}
+
+// Monthly ⇄ Annual buttons: rewrite every column's figure, unit and struck
+// anchor from the data-* written by rateHeadMarkup.
+function initRatePeriod() {
+  const buttons = [...document.querySelectorAll("[data-rate-period]")];
+  if (!buttons.length) return;
+  const apply = (period) => {
+    buttons.forEach((b) => {
+      const on = b.dataset.ratePeriod === period;
+      b.classList.toggle("is-active", on);
+      b.setAttribute("aria-pressed", String(on));
+    });
+    document.querySelectorAll(".rate__price[data-month]").forEach((p) => {
+      p.querySelector("[data-rate-amount]").textContent = p.dataset[period];
+      p.querySelector("[data-rate-unit]").textContent = period;
+      const was = p.querySelector("[data-rate-was]");
+      if (was) was.textContent = `$${period === "year" ? p.dataset.wasYear : p.dataset.wasMonth}`;
+    });
+  };
+  // "−48%" on the Annual button: derived from the yearly plan vs. its monthly reference.
+  const yearlyPlan = plans.find((p) => p.per === "year" && p.comparedTo);
+  const ref = yearlyPlan && plans.find((p) => p.id === yearlyPlan.comparedTo);
+  const off = document.querySelector(".rate__period-off");
+  if (off && ref) off.textContent = `−${Math.round((yearlySavings(yearlyPlan) / (ref.price * 12)) * 100)}%`;
+  buttons.forEach((b) => b.addEventListener("click", () => apply(b.dataset.ratePeriod)));
+  apply("month");
 }
 
 function ratePlanMarkup(plan, index) {
@@ -412,7 +447,7 @@ function renderContent() {
         `<article class="feature"><div class="container feature-inner"><div class="feature-copy" data-reveal><span class="feature-number">0${index + 1}</span><h3>${feature.title}</h3><p>${escapeHtml(feature.copy)}</p>${tags(feature.tags)}</div><div class="feature-visual visual-${feature.visual}" data-reveal>${featureVisual(feature.visual)}</div></div></article>`,
     )
     .join("");
-  $("#plan-list").innerHTML = paywallMarkup();
+  $("#plan-list").innerHTML = rateMarkup();
   $("#rate-every-plan").innerHTML =
     `<strong>Every plan:</strong> ${everyPlan().map(escapeHtml).join(" · ")}.`;
   $("#faq-list").innerHTML = faqData
@@ -1077,6 +1112,5 @@ initializeRateHover();
 placeOffer();
 initializeOffer();
 initializeDeal();
-initPaywallClock();
-initPaywallToggle();
+initRatePeriod();
 initTestimonials();

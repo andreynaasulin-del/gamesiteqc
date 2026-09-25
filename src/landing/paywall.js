@@ -80,7 +80,7 @@ const TIERS = [
     id: "ultra",
     name: "Ultra",
     tone: "pink",
-    ribbon: "Most popular",
+    badge: "Best value",
     tag: "Seedance 2.5",
     pitch: "For heavy creators building every day",
     options: [
@@ -105,23 +105,6 @@ const TIERS = [
       { name: "GPT-Image", chip: "unl365" },
       { name: "Seedance 2.0", chip: "unl365" },
       { name: "Seedance 2.5", chip: "free:300" },
-    ],
-  },
-  {
-    id: "team",
-    name: "Team",
-    tone: "blue",
-    ribbon: "Best value",
-    tag: "Seedance 2.5",
-    pitch: "For studios and classrooms building together",
-    perSeat: true,
-    seats: { min: 2, max: 50, start: 2 },
-    options: [{ credits: 5000, monthly: 39, annual: 32 }],
-    groups: [
-      ["Workspace & Collaboration", ["Shared projects & asset library", "Shared credit pool", "Roles & permissions"]],
-      ["Analytics & Support", ["Usage analytics per seat", "Priority support"]],
-      ["Admin & Control", ["Centralised billing", "Seat management"]],
-      ["Security & Compliance", ["SSO (SAML)", "Your data is never used for training"]],
     ],
   },
 ];
@@ -167,7 +150,7 @@ function creditBox(t) {
         </div>`
       : t.perSeat
         ? `<div class="pw-seats"><span class="pw-seats__label"><b data-pw-seats>${t.seats.start} seats</b></span><span class="pw-seats__ctl"><button type="button" data-pw-seat="-1" aria-label="Remove seat">${icon("minus", "i")}</button><button type="button" data-pw-seat="1" aria-label="Add seat">${icon("plus", "i")}</button></span></div>`
-        : `<div class="pw-credits__fixed">${icon("check", "i")}<span>Fixed <span data-pw-credits-fixed></span> credits/mo</span></div>`;
+        : `<div class="pw-credits__fixed">${icon("check", "i")}<span>Fixed amount of <span data-pw-credits-fixed></span> credits/mo</span></div>`;
   return `<div class="pw-credits">
     <p class="pw-credits__main">${icon("sparkles", "i pw-credits__i")}<b data-pw-credits></b>credits${t.perSeat ? "/seat" : ""}/mo.</p>
     <p class="pw-credits__sub">= <b data-pw-images></b> ${COST.image.name} images</p>
@@ -203,18 +186,17 @@ function cardMarkup(t) {
               .join("")}</ul></div>`
           : ""
       }`;
-  return `<div class="pw-wrap pw-wrap--${t.tone}${t.ribbon ? " has-ribbon" : ""}" data-pw-tier="${t.id}">
-    ${t.ribbon ? `<p class="pw-ribbon">${icon(t.tone === "blue" ? "gem" : "crown", "i")}${esc(t.ribbon)}</p>` : ""}
+  return `<div class="pw-wrap pw-wrap--${t.tone}${t.badge ? " is-featured" : ""}" data-pw-tier="${t.id}">
     <article class="pw-card pw-card--${t.tone}">
       <div class="pw-card__top">
-        <div class="pw-card__title"><h3>${esc(t.name)}</h3><span class="pw-badge" data-pw-off hidden></span><span class="pw-tag">${icon("waveform", "i")}${esc(t.tag)}</span></div>
+        <div class="pw-card__title"><h3>${esc(t.name)}</h3><span class="pw-badge" data-pw-off hidden></span>${t.badge ? `<span class="pw-badge pw-badge--value">${esc(t.badge)}</span>` : ""}</div>
         <p class="pw-card__pitch">${esc(t.pitch)}</p>
         ${creditBox(t)}
         <div class="pw-price"><span class="pw-price__nums"><s class="pw-price__was" data-pw-was hidden></s><span class="pw-price__now" data-pw-now></span></span><span class="pw-price__per" data-pw-per></span></div>
       </div>
       <div class="pw-card__bottom">
         <div class="pw-cta">
-          <a class="pw-btn pw-btn--${t.tone}" href="${PLANS_URL}">Get Plan</a>
+          <a class="pw-btn pw-btn--${t.tone}" href="${PLANS_URL}">Get ${esc(t.name)}</a>
           <p class="pw-cta__save" data-pw-save></p>
         </div>
         ${body}

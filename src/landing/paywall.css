@@ -44,7 +44,7 @@
 }
 
 /* ---- toggle ---- */
-.pw-toggle { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.pw-toggle { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
 .pw-toggle__lbl { font: 500 16px/24px Inter, sans-serif; color: var(--pw-dim); cursor: pointer; }
 .pw-toggle__lbl.is-on { color: #fff; }
 .pw-switch {
@@ -85,11 +85,12 @@
   transform: skewX(-11deg);
 }
 .pw-badge[hidden] { display: none; }
+.pw-badge--value { background: var(--pw-blue); }
 
 /* ---- grid + wrapper (ribbon lives in the wrapper, 2px frame) ---- */
 .pw-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 20px;
   align-items: stretch;
 }
@@ -101,7 +102,11 @@
   border-radius: 18px;
   background: transparent;
 }
-.pw-wrap:not(.has-ribbon) { padding-top: 38px; }
+/* No ribbons: all three cards start on one top line. */
+.pw-wrap.is-featured {
+  background: linear-gradient(180deg, var(--pw-hot), rgba(255, 0, 91, .38));
+  box-shadow: 0 30px 70px -34px rgba(255, 0, 91, .55);
+}
 /* Featured frames: the border keeps its colour all the way down (no more
    "fading out" bottom edge) and a soft under-glow lifts the card, so the
    taller Ultra reads as intentional, not as an overflowing column. */
@@ -411,11 +416,10 @@
 .pw-foot__cta { width: fit-content; margin: 0 auto 16px; padding: 0 28px; }
 .pw-foot__cta b { font-variant-numeric: tabular-nums; }
 
-@media (max-width: 1200px) {
-  .pw-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 900px) {
+  .pw-grid { grid-template-columns: 1fr; }
+  .pw-toggle { justify-content: center; }
 }
 @media (max-width: 680px) {
-  .pw-grid { grid-template-columns: 1fr; }
-  .pw-wrap:not(.has-ribbon) { padding-top: 2px; }
   .pw-head h2 { font-size: 34px; line-height: 40px; }
 }
