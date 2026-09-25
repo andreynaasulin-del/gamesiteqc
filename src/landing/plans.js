@@ -50,14 +50,26 @@ export const formatCredits = (credits) => credits.toLocaleString("en-US");
 
 // `role` is a one-word column label, not a sentence: the ladder reads as a
 // table (ROLE · model · state) and every row stays on one line.
+// One row per model, the way Higgsfield lists them — no bundled "X · Y"
+// rows and no invented families. `cost` is credits per generation (from the
+// app's own pickers); where it is known the cell prints how many of that
+// generation the plan's credits buy, computed, never typed.
 export const MODEL_CATALOG = [
-  { id: "code", name: "GPT · Claude · Gemini", role: "Code" },
-  { id: "cli", name: "Claude Code · Codex", role: "CLI" },
-  { id: "image", name: "Image & UI models", role: "Image" },
-  { id: "video", name: "Seedance 2.0", role: "Video" },
-  { id: "video-pro", name: "Seedance 2.5 · Veo", role: "Video+" },
-  { id: "audio", name: "Music, voice & SFX", role: "Audio" },
+  { id: "claude", name: "Claude", role: "Code" },
+  { id: "gpt", name: "GPT", role: "Code" },
+  { id: "gemini", name: "Gemini", role: "Code" },
+  { id: "claude-code", name: "Claude Code", role: "CLI" },
+  { id: "codex", name: "Codex", role: "CLI" },
+  { id: "gpt-image", name: "GPT-Image", role: "Image", cost: 4.2, unit: "images" },
+  { id: "seedance-2", name: "Seedance 2.0", role: "Video", cost: 110, unit: "videos" },
+  { id: "seedance-25", name: "Seedance 2.5", role: "Video", cost: 110, unit: "videos" },
+  { id: "kling", name: "Kling", role: "Video", cost: 55, unit: "videos" },
+  { id: "veo-3", name: "Veo 3", role: "Video" },
 ];
+
+/** "~238 images" — what a plan's monthly credits buy of one model. */
+export const generationsFor = (plan, entry) =>
+  entry.cost ? `~${formatCredits(Math.floor(plan.credits / entry.cost))} ${entry.unit}` : null;
 
 /** Label on a locked row: names the tier that opens it, so a lock is a
  *  pointer, not a dead end. */
@@ -71,20 +83,28 @@ export const UNLOCK_LABEL = "From Pro";
 // model cannot silently be "missing" from a card.
 const FULL = { state: "full" };
 const MONTHLY_MODELS = {
-  code: FULL,
-  cli: FULL,
-  image: FULL,
-  video: { state: "capped", limit: "720p" },
-  "video-pro": null,
-  audio: null,
+  claude: FULL,
+  gpt: FULL,
+  gemini: FULL,
+  "claude-code": FULL,
+  codex: FULL,
+  "gpt-image": FULL,
+  "seedance-2": { state: "capped", limit: "720p" },
+  "seedance-25": null,
+  kling: { state: "capped", limit: "720p" },
+  "veo-3": null,
 };
 const PRO_MODELS = {
-  code: FULL,
-  cli: FULL,
-  image: FULL,
-  video: { state: "full", limit: "1080p" },
-  "video-pro": FULL,
-  audio: FULL,
+  claude: FULL,
+  gpt: FULL,
+  gemini: FULL,
+  "claude-code": FULL,
+  codex: FULL,
+  "gpt-image": FULL,
+  "seedance-2": { state: "full", limit: "1080p" },
+  "seedance-25": { state: "full", limit: "1080p" },
+  kling: { state: "full", limit: "1080p" },
+  "veo-3": FULL,
 };
 
 export const plans = [
@@ -134,7 +154,7 @@ export const plans = [
     models: PRO_MODELS,
     // "MCP & CLI integrations" used to sit here — but the CLI row is open on
     // Monthly too, so the perk contradicted the table above it.
-    features: ["Everything in Monthly", "1080p video & full audio", "Cinematic video & sound models"],
+    features: ["Everything in Monthly", "1080p video on every model", "Seedance 2.5 & Veo 3"],
     cta: "Go Pro",
   },
   {

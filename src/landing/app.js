@@ -13,6 +13,7 @@ import {
   yearlySavings,
   monthlyEquivalent,
   MODEL_CATALOG,
+  generationsFor,
   UNLOCK_LABEL,
   everyPlan,
   PLANS_URL,
@@ -234,21 +235,25 @@ function rateCellMarkup(entry, access, column, row, plan) {
   const capped = !locked && access.state === "capped";
   const placement = `style="--c:${column};--r:${row}" data-r="${row}"`;
   const label = `${entry.role} · ${entry.name}`;
+  // "~45 videos" next to the state, like Higgsfield's compare table.
+  const gens = locked ? null : generationsFor(plan, entry);
+  const count = gens ? `<span class="rate__gens">${escapeHtml(gens)}</span>` : "";
   let glyph;
   let verdict;
   if (locked) {
     glyph = `<span class="rate__unlock">${icon("lock", "i rate__lock")}${escapeHtml(UNLOCK_LABEL)}</span>`;
     verdict = `not included, ${UNLOCK_LABEL.toLowerCase()}`;
   } else if (capped) {
-    glyph = `<span class="rate__cap"><span class="rate__upto">up to</span> ${escapeHtml(access.limit)}</span>`;
+    glyph = `<span class="rate__cap"><span class="rate__upto">up to</span> ${escapeHtml(access.limit)}</span>${count}`;
     verdict = `included, up to ${access.limit}`;
   } else if (access.limit) {
-    glyph = `<span class="rate__cap">${escapeHtml(access.limit)}</span>`;
+    glyph = `<span class="rate__cap">${escapeHtml(access.limit)}</span>${count}`;
     verdict = `included, ${access.limit}`;
   } else {
-    glyph = icon("check", "i rate__check");
+    glyph = count || icon("check", "i rate__check");
     verdict = "included";
   }
+  if (gens) verdict += `, ${gens} a month`;
   const sr = `${plan.name} — ${label}: ${verdict}.`;
   return `<div class="rate__cell${locked ? " rate__cell--off" : ""}" ${placement} data-label="${escapeHtml(label)}">${glyph}<span class="sr-only">${escapeHtml(sr)}</span></div>`;
 }
@@ -313,9 +318,19 @@ function rateHeadMarkup(plan, column) {
   const amounts = { month: yearly ? Math.round(price / 12) : price, year: yearly ? price : price * 12 };
   const anchors =
     anchor == null ? null : { month: yearly ? Math.round(anchor / 12) : anchor, year: yearly ? anchor : anchor * 12 };
-  const data = `data-month="${amounts.month}" data-year="${amounts.year}"${
-    anchors ? ` data-was-month="${anchors.month}" data-was-year="${anchors.year}"` : ""
+  // Annual view, Higgsfield-style: the figure is the MONTHLY cost when the
+  // plan is paid for a year (yearly total / 12), and the billing line says
+  // what is actually charged once a year. Never "$348 / year" in the
+  // headline — buyers compare per-month numbers.
+  const perMonthYearly = Math.round(amounts.year / 12);
+  const wasMonthYearly = anchors ? Math.round(anchors.year / 12) : null;
+  const data = `data-month="${amounts.month}" data-year="${perMonthYearly}"${
+    anchors ? ` data-was-month="${anchors.month}" data-was-year="${wasMonthYearly}"` : ""
   }`;
+  const save = savings
+    ? ` — <strong class="rate__save">saves $${savings}</strong> vs. monthly ${escapeHtml(reference?.name ?? "Pro")}`
+    : "";
+  const billingYear = `$${amounts.year} billed annually${save}.`;
   return `<header class="rate__head" style="--c:${column}">
     <p class="rate__caption">${plan.badge ? escapeHtml(plan.badge) : escapeHtml(plan.pitch)}</p>
     <h3 class="rate__name">${escapeHtml(plan.name)}</h3>
@@ -324,7 +339,7 @@ function rateHeadMarkup(plan, column) {
       <span class="rate__amount"><span class="rate__currency">$</span><strong data-rate-amount>${price}</strong><span class="rate__per">/ <span data-rate-unit>${perUnit}</span></span></span>
       ${was.replace("<s ", "<s data-rate-was ")}
     </p>
-    <p class="rate__billing">${billing}</p>
+    <p class="rate__billing"><span data-rate-billing="month">${billing}</span><span data-rate-billing="year" hidden>${billingYear}</span></p>
     <a class="button small${plan.featured ? "" : " secondary"} rate__cta" href="${PLANS_URL}">${escapeHtml(plan.cta)} ${icon("arrow-right")}</a>
   </header>`;
 }
@@ -342,9 +357,13 @@ function initRatePeriod() {
     });
     document.querySelectorAll(".rate__price[data-month]").forEach((p) => {
       p.querySelector("[data-rate-amount]").textContent = p.dataset[period];
-      p.querySelector("[data-rate-unit]").textContent = period;
+      // Both views are priced per month; Annual is "per month, billed annually".
+      p.querySelector("[data-rate-unit]").textContent = "month";
       const was = p.querySelector("[data-rate-was]");
       if (was) was.textContent = `$${period === "year" ? p.dataset.wasYear : p.dataset.wasMonth}`;
+    });
+    document.querySelectorAll("[data-rate-billing]").forEach((line) => {
+      line.hidden = line.dataset.rateBilling !== period;
     });
   };
   // "−48%" on the Annual button: derived from the yearly plan vs. its monthly reference.
@@ -353,7 +372,8 @@ function initRatePeriod() {
   const off = document.querySelector(".rate__period-off");
   if (off && ref) off.textContent = `−${Math.round((yearlySavings(yearlyPlan) / (ref.price * 12)) * 100)}%`;
   buttons.forEach((b) => b.addEventListener("click", () => apply(b.dataset.ratePeriod)));
-  apply("month");
+  // Annual by default: it is the term with the biggest saving on the card.
+  apply("year");
 }
 
 function ratePlanMarkup(plan, index) {
