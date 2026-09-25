@@ -47,6 +47,22 @@ test("the two Pro terms are the same product, and monthly Pro is recommended", (
   assert.equal(anchorPrice(yearly.price) / yearly.price, anchorPrice(pro.price) / pro.price);
 });
 
+// Annual view: every column shows its real twelve-month cost. Pro is not
+// re-priced at Pro yearly's figure (that would print one plan twice), and
+// the only annual discount is Pro yearly's saving against twelve Pro months.
+test("Annual prices are real twelve-month costs with no duplicated Pro yearly", async () => {
+  const { yearlyCost } = await import("../src/landing/plans.js");
+  const byId = Object.fromEntries(plans.map((plan) => [plan.id, plan]));
+  assert.equal(yearlyCost(byId.monthly), 108);
+  assert.equal(yearlyCost(byId["monthly-pro"]), 348);
+  assert.equal(yearlyCost(byId.yearly), 180);
+  const annual = plans.map(yearlyCost);
+  assert.equal(new Set(annual).size, annual.length, "two columns show the same annual price");
+  assert.equal(yearlySavings(byId.yearly), yearlyCost(byId["monthly-pro"]) - yearlyCost(byId.yearly));
+  // The "−48%" on the Annual toggle is that saving, rounded.
+  assert.equal(Math.round((yearlySavings(byId.yearly) / yearlyCost(byId["monthly-pro"])) * 100), 48);
+});
+
 // The launch discount is a Pro offer. The entry tier is sold at list, so
 // its column carries no struck price — and the two Pro columns must.
 test("only the Pro terms carry a struck regular rate", () => {

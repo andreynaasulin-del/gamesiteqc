@@ -12,6 +12,7 @@ import {
   formatCredits,
   yearlySavings,
   monthlyEquivalent,
+  yearlyCost,
   MODEL_CATALOG,
   generationsFor,
   UNLOCK_LABEL,
@@ -318,19 +319,19 @@ function rateHeadMarkup(plan, column) {
   const amounts = { month: yearly ? Math.round(price / 12) : price, year: yearly ? price : price * 12 };
   const anchors =
     anchor == null ? null : { month: yearly ? Math.round(anchor / 12) : anchor, year: yearly ? anchor : anchor * 12 };
-  // Annual view, Higgsfield-style: the figure is the MONTHLY cost when the
-  // plan is paid for a year (yearly total / 12), and the billing line says
-  // what is actually charged once a year. Never "$348 / year" in the
-  // headline — buyers compare per-month numbers.
-  const perMonthYearly = Math.round(amounts.year / 12);
-  const wasMonthYearly = anchors ? Math.round(anchors.year / 12) : null;
-  const data = `data-month="${amounts.month}" data-year="${perMonthYearly}"${
-    anchors ? ` data-was-month="${anchors.month}" data-was-year="${wasMonthYearly}"` : ""
+  // Annual view = what each column really costs over twelve months
+  // (yearlyCost in plans.js). Monthly and Pro are not sold on a yearly
+  // term, so their annual figure is 12 × the monthly price and their
+  // billing line says so — they are NOT relabelled "billed annually",
+  // and Pro is NOT shown at $15 (that is Pro yearly's price; printing it
+  // in the Pro column too would put the same plan on the card twice).
+  // The only real yearly discount is Pro yearly's saving vs. Pro.
+  const data = `data-month="${amounts.month}" data-year="${yearlyCost(plan)}"${
+    anchors ? ` data-was-month="${anchors.month}" data-was-year="${anchors.year}"` : ""
   }`;
-  const save = savings
-    ? ` — <strong class="rate__save">saves $${savings}</strong> vs. monthly ${escapeHtml(reference?.name ?? "Pro")}`
-    : "";
-  const billingYear = `$${amounts.year} billed annually${save}.`;
+  const billingYear = yearly
+    ? billing
+    : `12 × $${price}, ${base.charAt(0).toLowerCase()}${base.slice(1)}.`;
   return `<header class="rate__head" style="--c:${column}">
     <p class="rate__caption">${plan.badge ? escapeHtml(plan.badge) : escapeHtml(plan.pitch)}</p>
     <h3 class="rate__name">${escapeHtml(plan.name)}</h3>
@@ -357,8 +358,8 @@ function initRatePeriod() {
     });
     document.querySelectorAll(".rate__price[data-month]").forEach((p) => {
       p.querySelector("[data-rate-amount]").textContent = p.dataset[period];
-      // Both views are priced per month; Annual is "per month, billed annually".
-      p.querySelector("[data-rate-unit]").textContent = "month";
+      // Annual prints the real twelve-month total, so the unit is "year".
+      p.querySelector("[data-rate-unit]").textContent = period;
       const was = p.querySelector("[data-rate-was]");
       if (was) was.textContent = `$${period === "year" ? p.dataset.wasYear : p.dataset.wasMonth}`;
     });

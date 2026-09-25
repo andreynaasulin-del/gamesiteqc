@@ -185,6 +185,10 @@ export const plans = [
 export const monthlyEquivalent = (plan) =>
   plan.per === "year" ? plan.price / 12 : plan.price;
 
+/** What a column really costs over twelve months: a yearly plan is its
+ *  price, a monthly plan is twelve payments. Drives the Annual view. */
+export const yearlyCost = (plan) => (plan.per === "year" ? plan.price : plan.price * 12);
+
 /**
  * What the yearly buyer keeps versus paying the monthly reference plan twelve
  * times. Derived from the two prices on the page, so it can never disagree
