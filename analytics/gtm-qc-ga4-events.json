@@ -1,0 +1,179 @@
+{
+  "exportFormatVersion": 2,
+  "exportTime": "2026-09-28 16:00:00",
+  "containerVersion": {
+    "path": "accounts/6379347251/containers/265445559/versions/0",
+    "accountId": "6379347251",
+    "containerId": "265445559",
+    "containerVersionId": "0",
+    "container": {
+      "path": "accounts/6379347251/containers/265445559",
+      "accountId": "6379347251",
+      "containerId": "265445559",
+      "name": "quadcodegamesite",
+      "publicId": "GTM-KHDFGGHN",
+      "usageContext": ["WEB"],
+      "fingerprint": "1790600000000",
+      "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6379347251/containers/265445559/workspaces?apiLink=container"
+    },
+    "tag": [
+      {
+        "accountId": "6379347251",
+        "containerId": "265445559",
+        "tagId": "901",
+        "name": "GA4 - qc events",
+        "type": "gaawe",
+        "parameter": [
+          { "type": "BOOLEAN", "key": "sendEcommerceData", "value": "false" },
+          { "type": "TEMPLATE", "key": "eventName", "value": "{{QC - GA4 event name}}" },
+          { "type": "TEMPLATE", "key": "measurementIdOverride", "value": "G-2L0YK1G1K0" },
+          {
+            "type": "LIST",
+            "key": "eventSettingsTable",
+            "list": [
+              { "type": "MAP", "map": [
+                { "type": "TEMPLATE", "key": "parameter", "value": "cta_section" },
+                { "type": "TEMPLATE", "key": "parameterValue", "value": "{{DLV - cta_section}}" }
+              ] },
+              { "type": "MAP", "map": [
+                { "type": "TEMPLATE", "key": "parameter", "value": "cta_text" },
+                { "type": "TEMPLATE", "key": "parameterValue", "value": "{{DLV - cta_text}}" }
+              ] },
+              { "type": "MAP", "map": [
+                { "type": "TEMPLATE", "key": "parameter", "value": "plan" },
+                { "type": "TEMPLATE", "key": "parameterValue", "value": "{{DLV - plan}}" }
+              ] },
+              { "type": "MAP", "map": [
+                { "type": "TEMPLATE", "key": "parameter", "value": "game" },
+                { "type": "TEMPLATE", "key": "parameterValue", "value": "{{DLV - game}}" }
+              ] },
+              { "type": "MAP", "map": [
+                { "type": "TEMPLATE", "key": "parameter", "value": "open_game" },
+                { "type": "TEMPLATE", "key": "parameterValue", "value": "{{DLV - open_game}}" }
+              ] },
+              { "type": "MAP", "map": [
+                { "type": "TEMPLATE", "key": "parameter", "value": "load_bucket" },
+                { "type": "TEMPLATE", "key": "parameterValue", "value": "{{DLV - load_bucket}}" }
+              ] },
+              { "type": "MAP", "map": [
+                { "type": "TEMPLATE", "key": "parameter", "value": "pricing_control" },
+                { "type": "TEMPLATE", "key": "parameterValue", "value": "{{DLV - pricing_control}}" }
+              ] }
+            ]
+          }
+        ],
+        "fingerprint": "1790600000000",
+        "firingTriggerId": ["801"],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": { "type": "MAP" },
+        "consentSettings": { "consentStatus": "NOT_SET" }
+      }
+    ],
+    "trigger": [
+      {
+        "accountId": "6379347251",
+        "containerId": "265445559",
+        "triggerId": "801",
+        "name": "QC - GA4 events",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "MATCH_REGEX",
+            "parameter": [
+              { "type": "TEMPLATE", "key": "arg0", "value": "{{_event}}" },
+              { "type": "TEMPLATE", "key": "arg1", "value": "^qc_(cta_download|plan_click|open_game|pricing_interact|game_ready|hero_game_ready|play_60s|play_cast_10|rocket_online|strike_team_pick)$" }
+            ]
+          }
+        ],
+        "fingerprint": "1790600000000"
+      }
+    ],
+    "variable": [
+      {
+        "accountId": "6379347251",
+        "containerId": "265445559",
+        "variableId": "701",
+        "name": "QC - GA4 event name",
+        "type": "jsm",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "javascript", "value": "function () {\n  return String({{Event}}).replace(/^qc_/, '');\n}" }
+        ],
+        "fingerprint": "1790600000000"
+      },
+      {
+        "accountId": "6379347251", "containerId": "265445559", "variableId": "702",
+        "name": "DLV - cta_section", "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
+          { "type": "TEMPLATE", "key": "name", "value": "cta_section" }
+        ],
+        "fingerprint": "1790600000000"
+      },
+      {
+        "accountId": "6379347251", "containerId": "265445559", "variableId": "703",
+        "name": "DLV - cta_text", "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
+          { "type": "TEMPLATE", "key": "name", "value": "cta_text" }
+        ],
+        "fingerprint": "1790600000000"
+      },
+      {
+        "accountId": "6379347251", "containerId": "265445559", "variableId": "704",
+        "name": "DLV - plan", "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
+          { "type": "TEMPLATE", "key": "name", "value": "plan" }
+        ],
+        "fingerprint": "1790600000000"
+      },
+      {
+        "accountId": "6379347251", "containerId": "265445559", "variableId": "705",
+        "name": "DLV - game", "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
+          { "type": "TEMPLATE", "key": "name", "value": "game" }
+        ],
+        "fingerprint": "1790600000000"
+      },
+      {
+        "accountId": "6379347251", "containerId": "265445559", "variableId": "706",
+        "name": "DLV - open_game", "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
+          { "type": "TEMPLATE", "key": "name", "value": "open_game" }
+        ],
+        "fingerprint": "1790600000000"
+      },
+      {
+        "accountId": "6379347251", "containerId": "265445559", "variableId": "707",
+        "name": "DLV - load_bucket", "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
+          { "type": "TEMPLATE", "key": "name", "value": "load_bucket" }
+        ],
+        "fingerprint": "1790600000000"
+      },
+      {
+        "accountId": "6379347251", "containerId": "265445559", "variableId": "708",
+        "name": "DLV - pricing_control", "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
+          { "type": "TEMPLATE", "key": "name", "value": "pricing_control" }
+        ],
+        "fingerprint": "1790600000000"
+      }
+    ],
+    "builtInVariable": [
+      { "accountId": "6379347251", "containerId": "265445559", "type": "EVENT", "name": "Event" }
+    ],
+    "fingerprint": "1790600000000"
+  }
+}

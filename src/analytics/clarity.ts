@@ -1,5 +1,5 @@
 import posthog from 'posthog-js';
-import { TRACK_EVENT, type TrackDetail, type TrackTags } from './events';
+import { TRACK_EVENT, dataLayerEvent, loadBucket, type TrackDetail, type TrackTags } from './events';
 
 // Games embedded in the landing are part of the parent session, not separate visits.
 const params = new URLSearchParams(location.search);
@@ -26,6 +26,7 @@ if (!embedded && navigator.doNotTrack !== '1' && !(local && !params.has('analyti
   const setTag = (key: string, value: string | number | boolean) =>
     call('set', key, String(value).slice(0, 255));
 
+  const dataLayerKeys = new Set<string>();
   const event = (name: string, tags?: TrackTags) => {
     // Raw milliseconds make an unfilterable tag; buckets are what Clarity segments need.
     for (const [k, v] of Object.entries(tags ?? {})) {
@@ -36,7 +37,7 @@ if (!embedded && navigator.doNotTrack !== '1' && !(local && !params.has('analyti
     if (UPGRADE_ON.has(name)) call('upgrade', name);
     // Same event stream for GTM: custom-event triggers on `qc_<name>`, params as dataLayer variables.
     const dl = ((window as Window & { dataLayer?: unknown[] }).dataLayer ??= []);
-    dl.push({ event: `qc_${name}`, ...tags });
+    dl.push(dataLayerEvent(name, tags, dataLayerKeys));
   };
 
   const pathKey = location.pathname.match(/\/(play|rocket|strike)(?:\.html)?$/)?.[1];
@@ -239,10 +240,6 @@ function trackLanding(event: (name: string, tags?: TrackTags) => void) {
   });
 
   trackTime(event, 'time', [15, 60, 180]);
-}
-
-function loadBucket(ms: number): string {
-  return ms < 3000 ? '<3s' : ms < 6000 ? '3-6s' : ms < 12000 ? '6-12s' : '12s+';
 }
 
 function setTagSafe(key: string, value: string) {
