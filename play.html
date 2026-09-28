@@ -2,12 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!-- Google Tag Manager. Skipped inside ?embed iframes: the host page already counts the visit. -->
-    <script>if(!/[?&]embed\b/.test(location.search)&&window.top===window.self){(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    <!-- Embedded games (?embed) share the host page's visit: GTM pageview triggers must exclude page_context = embed. -->
+    <script>window.dataLayer=window.dataLayer||[];window.dataLayer.push({page_context:/[?&]embed\b/.test(location.search)?'embed':'page'});</script>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
     j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-KHDFGGHN');}</script>
+    })(window,document,'script','dataLayer','GTM-KHDFGGHN');</script>
     <!-- End Google Tag Manager -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Quadcode AI Games Playground — six casts, one character</title>
