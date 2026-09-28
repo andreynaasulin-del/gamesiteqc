@@ -6,6 +6,9 @@ archive/
 .DS_Store
 *.log
 .vercel
+# Secrets (META_CAPI_TOKEN etc.) — `vercel env pull` writes here
+.env
+.env.*
 # Generation sources (up to 115 MB each) stay local; web copies + posters are committed.
 public/landing/explore/*.mp4
 public/landing/explore/*.png

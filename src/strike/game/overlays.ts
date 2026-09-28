@@ -587,7 +587,7 @@ export interface PauseMenuOptions {
   onResume(): void
   onMap(map: MapSelection): void
   onAudio(on: boolean): void
-  /** Sound is off until the player asks for it; the toggle has to open on the truth. */
+  /** Current sound preference, including before the first browser gesture. */
   audioOn(): boolean
   onLeave(): void
   /** Room state: does the host fill empty slots with bots? Read while the menu is open. */
@@ -629,7 +629,7 @@ export function createPauseMenu(opts: PauseMenuOptions): PauseMenu {
   const invite = el('button', { class: 'ps-btn ps-btn--block' }, ['Copy invite link'])
   // No transport, no link. The button would copy an empty string and say "copied".
   if (!opts.room.inviteUrl) invite.hidden = true
-  const sound = el('button', { class: 'ps-btn ps-btn--block' }, ['Sound: off'])
+  const sound = el('button', { class: 'ps-btn ps-btn--block' }, ['Sound: on'])
   const bots = el('button', { class: 'ps-btn ps-btn--block' }, ['Bots: on'])
   const leave = el('button', { class: 'ps-btn ps-btn--ghost ps-btn--block' }, [
     // There is no lobby to go back to on this build: full-screen it restarts the match,
@@ -705,12 +705,7 @@ export function createPauseMenu(opts: PauseMenuOptions): PauseMenu {
   let open = false
   let audioOn = opts.audioOn()
 
-  /**
-   * Sound is not this menu's state to remember — the game turns it on at the player's first
-   * gesture, so the row has to be re-read every time the card appears. It used to be written
-   * once here and then only by the 500 ms poller, which meant the menu opened claiming
-   * "Sound: off" over a match that was already making noise.
-   */
+  /** Read the current preference when opening and while the menu is visible. */
   const renderSound = () => {
     audioOn = opts.audioOn()
     sound.textContent = `Sound: ${audioOn ? 'on' : 'off'}`
@@ -800,9 +795,8 @@ export function createPauseMenu(opts: PauseMenuOptions): PauseMenu {
     })
   })
   sound.addEventListener('click', () => {
-    audioOn = !opts.audioOn()
-    sound.textContent = `Sound: ${audioOn ? 'on' : 'off'}`
-    opts.onAudio(audioOn)
+    opts.onAudio(!opts.audioOn())
+    renderSound()
   })
   bots.addEventListener('click', () => {
     if (!opts.isHost()) return

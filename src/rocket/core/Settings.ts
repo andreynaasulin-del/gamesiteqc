@@ -59,6 +59,7 @@ export function loadSettings(): Settings {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return base;
     const saved = JSON.parse(raw) as Partial<Settings>;
+    const volume = clamp01(num(saved.volume, base.volume));
     return {
       mode: saved.mode === '2v2' ? '2v2' : '1v1',
       practice: !!saved.practice,
@@ -68,8 +69,9 @@ export function loadSettings(): Settings {
         : base.matchMinutes,
       camera: saved.camera === 'standard' ? 'standard' : 'ball',
       infiniteBoost: !!saved.infiniteBoost,
-      volume: clamp01(num(saved.volume, base.volume)),
-      muted: !!saved.muted,
+      volume: volume || base.volume,
+      // A previous session's mute or 0% volume must not silence the next match.
+      muted: false,
       roomServer: typeof saved.roomServer === 'string' && saved.roomServer ? saved.roomServer : base.roomServer,
       roomCode: typeof saved.roomCode === 'string' ? saved.roomCode.slice(0, 12) : '',
       keys: mergeKeyMap(saved.keys),

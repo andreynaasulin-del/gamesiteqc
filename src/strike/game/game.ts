@@ -153,10 +153,8 @@ export async function startGame(opts: GameOptions): Promise<Game> {
     play(name: SoundName | OptionalSoundName, at?: Vector3, listener?: AudioListenerPose, gain?: number): void
   }
   const rawAudio = createAudio() as GameAudio
-  // Every new match is silent, regardless of settings from previous visits. It stays that way
-  // only until the player's first gesture — see `startAudioOnce`.
-  let muted = true
-  rawAudio.setMuted(true)
+  // Sound is enabled in settings from the start; the browser unlocks playback on the first gesture.
+  let muted = false
   /** Has the first-gesture sound start already run? It is offered once per session. */
   let audioOffered = false
   const audio: GameAudio = {
@@ -884,18 +882,9 @@ export async function startGame(opts: GameOptions): Promise<Game> {
     return out
   }
 
-  /**
-   * Sound comes up with the first team pick, and from nowhere else.
-   *
-   * A match opens muted because an AudioContext may only start inside a user gesture — not
-   * because silence is the intent. Picking a side is that gesture, and it is the one click
-   * every player makes, so the match stops starting silent with the only way out buried two
-   * levels deep in the Esc menu. It runs once: a player who then turns sound off stays off.
-   *
-   * If the browser refuses the first gesture, the Esc menu toggle can retry mid-match.
-   */
+  /** Start playback on a user gesture; keep the setting ON before AudioContext unlocks. */
   function startAudioOnce(): void {
-    if (audioOffered || !AUDIO_AUTOSTART) return
+    if (audioOffered || !AUDIO_AUTOSTART || muted) return
     audioOffered = true
     muted = false
     rawAudio.setMuted(false)

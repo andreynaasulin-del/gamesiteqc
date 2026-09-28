@@ -134,7 +134,8 @@ export class HUD {
    */
   setSound(muted: boolean, volumePercent: number, blocked = false) {
     const el = this.el.soundFlag;
-    if (blocked) el.textContent = 'Sound: Click to enable';
+    if (blocked && !muted) el.textContent = 'Sound: On — click to start';
+    else if (blocked) el.textContent = 'Sound: Muted — press M';
     else if (muted) el.textContent = 'Sound: Muted — press M';
     else if (volumePercent === 0) el.textContent = 'Sound: 0% — press +';
     else el.textContent = `Sound: ${volumePercent}%`;
