@@ -20,6 +20,7 @@ import { warmUpObject, warmUpScene } from '../engine/warmup'
 import { createGlassSystem, type GlassSystem } from '../map/glass'
 import { createNavMeshHelper } from '../map/navmesh'
 import { bindNetToRegistry, requestTeamSwap } from '../net/client'
+import { track } from '../../analytics/events'
 import type { HostAuthority } from '../net/host'
 import {
   BOTS_FILL_DEFAULT,
@@ -813,6 +814,7 @@ export async function startGame(opts: GameOptions): Promise<Game> {
       }
       if (match.phase === 'ended' && endedRound !== match.round) {
         endedRound = match.round
+        track('strike_round_end', { round: match.round })
         board.end(match, registry.list(), binding.spectators())
       }
       if (match.phase !== 'ended' && boardOpen) board.show(registry.list(), match, binding.spectators())
@@ -925,6 +927,7 @@ export async function startGame(opts: GameOptions): Promise<Game> {
     if (authority) void room.rpc.call(RPCS.teamResult, result, 'others')
     if (result?.ok && result.player === room.me.id) {
       if (result.assigned) pickedTeam = result.assigned
+      track('strike_team_pick', { choice: String(choice) })
       closeTeamScreen()
     }
     return result

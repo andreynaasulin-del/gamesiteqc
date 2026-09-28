@@ -6,6 +6,7 @@ import { CameraRig } from './CameraRig.js';
 import { frame } from './FrameUniforms.js';
 import { QualityGovernor } from './QualityGovernor.js';
 import { EmbedPresence } from './Embed.js';
+import { track } from '../analytics/events';
 
 import { Environment } from '../world/Environment.js';
 import { Ground } from '../world/Ground.js';
@@ -172,6 +173,7 @@ export class App {
     this.decals.setBudget(tier.maxDecals);
     this._contactEvery = tier.contactEvery;
 
+    if (previous && reason === 'slow') track('quality_drop', { tier: String(tier.id) });
     if (previous && reason === 'slow' && this.quality.downgrades === 1) {
       // Say it once. Nobody wants a toast every time the governor breathes.
       this.hud.showToast('Smoothing frame rate — quality adjusted', 2200);
@@ -276,6 +278,13 @@ export class App {
   _cast(origin, direction, distance) {
     const element = this.element;
     this.abilities.cast(origin, direction, distance, element);
+    this._casts = (this._casts ?? 0) + 1;
+    // First cast per ability and a depth milestone; every cast would drown the session timeline.
+    if (!this._castSeen?.has(element)) {
+      (this._castSeen ??= new Set()).add(element);
+      track('play_cast', { ability: element });
+    }
+    if (this._casts === 10) track('play_cast_10');
     this.cooldowns.set(element, Math.max(0, settings[element].cooldown));
 
     // Snap onto the shot and throw the body into it. Which clip that is belongs

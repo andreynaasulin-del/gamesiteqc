@@ -12,6 +12,8 @@
  *     its poster, and when the player wants out (`qc:exit`, Esc with nothing
  *     armed) so it can return the card to its preview state
  */
+import { track } from '../analytics/events';
+
 export const EMBED = new URLSearchParams(window.location.search).has('embed');
 
 if (EMBED) {
@@ -73,6 +75,7 @@ export class EmbedPresence {
 
   /** Tell the host the scene is interactive. */
   announceReady() {
+    track('game_ready', { load_ms: Math.round(performance.now()) });
     if (!EMBED || window.parent === window) return;
     window.parent.postMessage({ type: MESSAGE.READY }, window.location.origin);
   }

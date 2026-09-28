@@ -37,6 +37,7 @@ import { keyLabel, type ActionId } from './Bindings';
 import { loadSettings, saveSettings, type Settings } from './Settings';
 import { OnlineSession } from '../net/OnlineSession';
 import { EVENT } from '../net/Protocol';
+import { track } from '../../analytics/events';
 
 const _v = new THREE.Vector3();
 const _n = new THREE.Vector3();
@@ -690,6 +691,7 @@ export class Game {
 
   private onGoal(scorer: 'blue' | 'orange') {
     this.state.scoreGoal(scorer);
+    track('rocket_goal', { scorer });
     // Blue attacks +z, so the ball is sitting in orange's net.
     this.goalTeam = scorer === 'blue' ? 'orange' : 'blue';
     this.goalFlashTimer = MATCH.goalCelebration;
@@ -737,6 +739,7 @@ export class Game {
   /** Roster, camera and HUD after connecting, disconnecting or changing role. */
   onOnlineChanged() {
     this.localIndex = this.online.role === 'guest' ? 2 : 0;
+    if (this.onlineEngaged) track('rocket_online', { role: this.online.isHost ? 'host' : 'guest' });
     // A room can fill while you're sat in the menu on a paused game. Online
     // has no pause, so the match has to start whether the menu is up or not.
     if (this.onlineEngaged) this.state.setPaused(false);
@@ -1148,6 +1151,7 @@ export class Game {
 
   /** Fresh match: 0-0, full clock, everyone back at kickoff. */
   restartMatch() {
+    track('rocket_restart', { mode: this.settings.mode });
     this.state.reset();
     // reset() drops us straight into the countdown; if this came from the menu,
     // stay paused until the player closes it — but never online, where the
