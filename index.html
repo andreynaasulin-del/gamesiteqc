@@ -2,8 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <!-- Embedded games (?embed) share the host page's visit: GTM pageview triggers must exclude page_context = embed. -->
-    <script>window.dataLayer=window.dataLayer||[];window.dataLayer.push({page_context:/[?&]embed\b/.test(location.search)?'embed':'page'});</script>
+    <!-- Embedded games (?embed) share the host page's visit: Google tags are blocked there so GA4 counts one page_view. -->
+    <script>window.dataLayer=window.dataLayer||[];var qcEmbed=/[?&]embed\b/.test(location.search);window.dataLayer.push(qcEmbed?{page_context:'embed','gtm.blocklist':['google']}:{page_context:'page'});</script>
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
