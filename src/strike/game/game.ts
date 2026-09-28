@@ -892,9 +892,7 @@ export async function startGame(opts: GameOptions): Promise<Game> {
    * every player makes, so the match stops starting silent with the only way out buried two
    * levels deep in the Esc menu. It runs once: a player who then turns sound off stays off.
    *
-   * `AUDIO_AUTOSTART` is off while the mix is being reworked, which makes this a no-op and
-   * leaves the Esc menu toggle — a user gesture in its own right, so it can still start the
-   * context — as the only way in. Nothing is torn down: the toggle works mid-match.
+   * If the browser refuses the first gesture, the Esc menu toggle can retry mid-match.
    */
   function startAudioOnce(): void {
     if (audioOffered || !AUDIO_AUTOSTART) return

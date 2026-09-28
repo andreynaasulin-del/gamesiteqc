@@ -225,18 +225,8 @@ export const DECALS = {
   maxQueued: 48,
 }
 
-/**
- * Does sound come up by itself on the first team pick?
- *
- * `false` keeps every match silent until someone asks for sound in the Esc menu. Nothing else
- * changes — the context, the sample bank and the mixer are all still built the moment they are
- * asked for, so turning it on mid-match costs nothing and loses nothing.
- *
- * Off on purpose while the mix is being reworked: the current one is loud enough to be a
- * distraction in playtests, and "mute it every time you reload the page" is not a workflow.
- * Flip to `true` to restore the first-gesture start.
- */
-export const AUDIO_AUTOSTART = false
+/** Start sound on the team-pick gesture, as required by browser autoplay policies. */
+export const AUDIO_AUTOSTART = true
 
 export const DOORS = {
   /** Players toggle doors/windows with E when the crosshair is on one within this range (m). */
